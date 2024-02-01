@@ -1,0 +1,18 @@
+#! /usr/bin/bash
+filename=$1
+tb=$2
+modulename="${filename##*/}"
+modulename="${modulename/.v/}"
+isim_exe="${modulename}_iverilog-tb"
+isim_log="${modulename}_iverlog.log"
+
+# Compile tb binary
+iverilog -g2005-sv -o $isim_exe $tb $filename
+
+if [ -e $isim_exe ]; then
+    # Run the binary
+    ./$isim_exe | tee $isim_log
+
+    # Delete the binary
+    rm -f $isim_exe
+fi

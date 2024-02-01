@@ -1,0 +1,66 @@
+The classic ripple-carry adder -- this function generates a ripple carry adder of abitrary length including both carry in and carry out. The full adder ("fa") takes 1-bit inputs and produces 1-bit outputs. We iteratively generate full adders and link the carry in of each new adder to the carry out of the prior. A Python dictionary keeps track of the wires carrying the sum bits as we iterate through. The final sum is then just the concatenation of the wires in that dictionary.
+***`Clock` signals should never be explicit in PyRTL
+```
+from pyrtl import *
+def fa(x, y, cin):
+    sum = x ^ y ^ cin
+    cout = x&y | y&cin | x&cin
+    return sum, cout
+
+# An n-bit ripple carry adder with carry in and carry out
+def adder(a, b, cin):
+    a, b = match_bitwidth(a, b)
+    n = len(a)
+
+    sum = {}
+    for i in range(n):
+        sum[i], cout = fa(a[i], b[i], cin)
+        cin = cout
+    full_sum = concat_list([sum[i] for i in range(n)])
+    return full_sum, cout
+```
+
+Mul generates a small 4 x 4 multiplier with a simple table lookup. The first line simple checks that the inputs are each 4-bits wide. The next is a Python function that gives us the values we want stored in the ROM as a function of the address. The ROM is automatically initialized with that function. The final hardware generated simply concatenates the two 4-bit inputs into an single 8-bit address and returns the value at that ROM address.
+```
+from pyrtl import *
+
+def mul(x, y):
+    assert(len(x) == 4 and len(y) == 4)
+    romdata = lambda addr: (addr >> 4) * (addr & 0xf)
+    tbl = RomBlock(8, 8, romdata)
+    return tbl[concat(x,y)]
+```
+
+Question: how to convert a PyRTL code to verilog?
+Answer:
+Design your circuit using PyRTL: Before you can convert to Verilog, you must have a valid PyRTL design. PyRTL provides a high-level syntax to describe digital circuits, so you'll be using Python to define inputs, outputs, wires, and the connections between them.
+```
+import pyrtl
+
+# Define inputs
+a = pyrtl.Input(8, 'a')
+b = pyrtl.Input(8, 'b')
+
+# Output with the combined operations
+o = pyrtl.Output(8, 'o')
+
+# Define the required operation
+o <<= (a & b) ^ (a | b)
+```
+Convert the PyRTL design to Verilog: Once your PyRTL design is ready, you can use the output_to_verilog() function from PyRTL to generate the corresponding Verilog code.
+
+As per the error you previously encountered, you should provide a file object to the output_to_verilog() function. Here's how to do that:
+```
+# Convert to Verilog
+output_filename = 'output.v'
+with open(output_filename, 'w') as f:
+    pyrtl.output_to_verilog(f)
+```
+This code writes the Verilog translation of your PyRTL design to a file named output.v.;
+
+Question: If resets are implicit, then how do I specify an asyncronous reset?
+Answer: the .output_to_verilog() method has an optional parameter 'add_reset' where one can specify an asyncornous reset logic by passing in the string "asynchronous" as the argument: 'add_reset='asynchronous''.
+```
+with open(output_filename, 'w') as f:
+    pyrtl.output_to_verilog(f, add_reset='asynchronous')
+```

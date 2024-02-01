@@ -1,0 +1,115 @@
+compile_script: python3
+
+file_extension: .pyrtl
+
+error_check_function: resources.PyRTL.PyRTL_agent.custom_check_errors
+
+reformat_verilog_function: resources.PyRTL.PyRTL_agent.custom_reformat_verilog
+
+responses:
+  comb_give_instr_prefix: |
+    Can you implement the described function in PyRTL using purely combinational logic. Please use these lines EXACTLY
+    with open(verilog_outfile, 'w') as outfile:
+    pyrtl.output_to_verilog(outfile, add_reset=False)
+
+  pipe_give_instr_prefix: |
+    Can you implement the following description of a sequential circuit in PyRTL, it should have {pipe_stages} register stage(s). Be careful in PyRTL, clock and reset signals are implicit and are automatically handled by the system. Please use these lines EXACTLY to specify a synchronous reset:
+    with open(verilog_outfile, 'w') as outfile:
+    pyrtl.output_to_verilog(outfile)
+    UNLESS the circuit has an asynchronous reset, in which case you should do: 
+    pyrtl.output_to_verilog(outfile, add_reset='asynchronous')
+
+  give_instr_suffix: |
+    
+    I would like to convert to verilog file, please add the code that converts PyRTL to Verilog. Please respond with only valid program syntax. Please do not provide any additional English explanation, short comments in the code are allowed.
+    The name of the program should be {name}
+
+  compile_err_prefix: |
+    The previous code had a compiler warning/error. Please return the entire corrected program, not just the warning/erroring snippet. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
+    This is the compile warning/error:
+
+  comb_lec_fail_prefix: |
+    The PyRTL program you just wrote was tested for logical equivalence versus a golden model named 'gold'. Below is a truth table that shows where the gold models output differs from the module you just supplied, which has been named 'gate':
+
+  pipe_lec_fail_prefix: |
+    The PyRTL program you just wrote was tested for logical equivalence versus a golden model named 'gold'. Below are two truth tables that represent the input/output values of the ideal 'gold' model and the module you supplied, renamed 'gate'. These are the last two timesteps from the test before the 'gate' models output diverged from the 'gold'. Hence why in the top table, the in/out values are the same but the bottom table the values differ:
+
+  lec_fail_suffix: |
+    
+    Please rewrite the PyRTL program in its entirety to match the expected output values of the golden model. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
+
+
+initial_contexts:
+ - PyRTL_context_1.text
+ - PyRTL_context_2.text
+ - PyRTL_context_3.text
+ - PyRTL_context_4.text
+ - PyRTL_context_5.text
+ - PyRTL_context_6.text
+
+supplemental_contexts:
+  ' referenced before assignment': |
+    In PyRTL, wires and registers must be explicitly declared before use. Their bitwidth and names are set by their respctive method calls to the pyrtl module.
+    ```
+    a = pyrtl.Register(bitwidth=4, name='a') # declaring 4 bit wide register named 'a'
+    b = pyrtl.WireVector(bitwidth=4, name='b') # declaring a 4 bit wide wire named 'b'
+    ```
+  .next value should be set once and only once: |
+    ```
+    # Update logic
+    with pyrtl.conditional_assignment:
+        with reset == 0:  # Asynchronous active-low reset
+            counter_reg.next <<= 0
+        with enable & (up_down == 1):  # Increment if enabled and up_down is high
+            counter_reg.next <<= increment
+        with enable & (up_down == 0):  # Decrement if enabled and up_down is low
+            counter_reg.next <<= decrement
+    ```
+    This is my error:
+    ```
+    File "...", line 21, in <module>
+      counter_reg.next <<= increment
+    File ".../.local/lib/python3.10/site-packages/pyrtl/wire.py", line 772, in next
+      raise PyrtlError('error, .next value should be set once and only once')
+    pyrtl.pyrtlexceptions.PyrtlError: error, .next value should be set once and only once
+    ```
+
+    PyRTL relies on the .next method to represent a registers state being updated every clock cycle, determined by its surrounding logic. Multiplexors which act as 'if/else' statements are represented by 'with/pyrtl.otherwise', where 'with' is used as the true case examining the value of a signal. The 'pyrtl.otherwise' method represents the converse of the 'with' statement. As '.next' represents the signal the input of the register will recieve, it can only be set once. Therefore an intermediate value must be used to determine the state of the '.next' calls recipient.
+    Here is how I fixed my old program:
+    ```
+    # Update logic
+    with pyrtl.conditional_assignment:
+        with enable: # resets are implicit
+            with up_down:
+                next_value <<= a  # Set to a if enabled and up_down is high
+            with pyrtl.otherwise:
+                next_value <<= b  # Otherwise set to b
+        with pyrtl.otherwise:  # Hold the current value if not enabled or reset
+            next_value <<= counter_reg
+    ```
+  Clock signals should never be explicit: |-
+    ```
+    clock = pyrtl.Input(bitwidth=1, name='clock')
+    ```
+    In PyRTL, clock signals are implicit and are automatically handled by the system. Just remove the line(s) where you instantiate the clock(s)
+  Invalid add_reset option %s. Acceptable options are: |-
+    ```
+       pyrtl.OutputToVerilog(f)
+    ```
+    The error this line caused:
+    ```
+    pyrtl.pyrtlexceptions.PyrtlError: Invalid add_reset option %s. Acceptable options are False, True, and \'asynchronous\'
+    ```
+    The default way to convert PyRTL to Verilog is by a call to 'pyrtl.output_to_verilog(f)', this assumes that there exists a synchronous reset signal. UNLESS you have an asynchronous reset, in which case you must call it though 'pyrtl.output_to_verilog(f, add_reset='asynchronous')', ALWAYS assume synchronous reset and NEVER explicity declare it. Syncronous resets are implicit in PyRTL and must exist even in combinational logic programs, even when they are not used, as this is best practice.
+  Wires declared but not connected: In PyRTL, wires are not connected by the usual
+    '=' assignment operator. Since we are describing a circuit, not a Python program,
+    the '<<=' operator is used instead.
+  \'Output\' object has no attribute \'assign\': In PyRTL, wires are not connected
+    by an '.assign()' method. Since we are describing a circuit, not a Python program,
+    the '<<=' operator is used instead to form connections.
+  has no attribute \'Clock\'.: |-
+    ```
+    clock = pyrtl.Clock(name='clock')
+    ```
+    In PyRTL, clock signals are implicit and are automatically handled by the system. Just remove the line(s) where you instantiate the clock(s)
+

@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# Usage: ./lec gold_dir gate_dir
+
+fail_log="lec_mismatch_$$.log"
+log="yosys_lec_$$.log"
+tmplog="tmp.txt_$$"
+GOLD=$1
+GATE=$2
+
+if [[ -e $log ]]; then
+	rm $log
+fi
+
+if [[ -e $fail_log ]]; then
+	rm $fail_log
+fi
+
+lec() {
+	if [[ ! -e $GATE ]]; then
+		echo "Error: ${GATE} does not exist"
+		exit 1
+	fi
+	if [[ ! -e $GOLD ]]; then
+		echo "Error: ${GOLD} does not exist"
+		exit 1
+	fi
+
+	# Combinational equivalence check
+	yosys_read="read_verilog -sv ${GOLD}; hierarchy -auto-top; proc; flatten; rename -top gold; design -stash gold;
+            read_verilog -sv ${GATE}; hierarchy -auto-top; proc; flatten; rename -top gate; design -stash gate;
+            design -copy-from gold -as gold gold; design -copy-from gate -as gate gate;"
+	yosys_prep="miter -equiv -make_assert -make_outputs -flatten gold gate miter; sat -show-inputs -show-outputs -prove-asserts miter;"
+	#yosys_prep="proc; memory -nomap; write_verilog trace0.v ; equiv_make gold gate equiv; write_verilog trace0b.v ; prep -flatten -top equiv; hierarchy -top equiv; hierarchy -check; flatten; proc; opt_clean;"
+	yosy_equiv=""
+	#yosys_equiv="equiv_simple;"
+
+	yosys -p "${yosys_read}; ${yosys_prep}; ${yosys_equiv}; equiv_status -assert" \
+		&>$log
+
+	# Ideal case
+	grep "SUCCESS" $log*
+	if [[ $? -eq 0 ]]; then
+		echo "SUCCESS"
+		exit 0 # Combinational success!
+	fi
+
+	# i/o mismatch, gate verilog needs module declaration modified
+	grep "ERROR: No matching port in gate module was found for" $log*
+	if [[ $? -eq 0 ]]; then
+		exit 0
+	fi
+
+	# Isolate truth table for further iteration
+	raw_table=$(awk '/  \|_\|   \|_\|   \\___\/ \\___\/ \|_\|       \|_\|  \\_____\|_|_)_____\)\\____\|_\|/ {p=1} p' "$log")
+	echo "$raw_table" >$tmplog
+	table=$(sed '/11. Executing /,$d' $tmplog)
+	echo "$table" >$tmplog
+	sed -i '1,3d' $tmplog
+	sed -i '$ d' $tmplog
+	echo "$(<$tmplog)"
+	rm $tmplog
+
+	echo "Combinational mismatch between ${GATE} and ${GOLD}" >>$fail_log
+	echo "" >>$fail_log
+	cat $log >>$fail_log
+}
+
+lec $1 $2
+
+if [[ -e $log ]]; then
+	rm $log
+fi

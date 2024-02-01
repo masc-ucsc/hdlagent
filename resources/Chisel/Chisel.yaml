@@ -1,0 +1,82 @@
+compile_script: ./resources/Chisel/Chisel_generate_toplevel
+
+file_extension: .scala
+
+error_check_function: resources.Chisel.Chisel_agent.custom_check_errors
+
+reformat_verilog_function: resources.Chisel.Chisel_agent.custom_reformat_verilog
+
+responses:
+  comb_give_instr_prefix: |
+    Can you implement the described class in the hardware description language Chisel using purely combinational logic:
+
+  pipe_give_instr_prefix: |
+    Can you implement the following description of a sequential class in the hardware description language Chisel, it should have {pipe_stages} register pipeline stage(s).
+
+  give_instr_suffix: |
+    
+    Please respond with only valid program syntax. Please do not provide any additional English explanation, short comments in the code are allowed. Do not add any code relating to Verilog generation, I will handle that manually.
+    It is important that the exact name of the class is and should stay {name}
+
+  compile_err_prefix: |
+    The previous code had a compiler warning/error. Please return the entire corrected program, not just the warning/erroring snippet. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
+    This is the compile warning/error:
+
+  comb_lec_fail_prefix: |
+    The Chisel program you just wrote was tested for logical equivalence versus a golden model named 'gold'. Below is a truth table that shows where the gold models output differs from the code you just supplied, which has been named 'gate':
+
+  pipe_lec_fail_prefix: |
+    The Chisel program you just wrote was tested for logical equivalence versus a golden model named 'gold'. Below are two truth tables that represent the input/output values of the ideal 'gold' model and the code you supplied, renamed 'gate'. These are the last two timesteps from the test before the 'gate' models output diverged from the 'gold'. Hence why in the top table, the in/out values are the same but the bottom table the values differ:
+
+  lec_fail_suffix: |
+    
+    Please rewrite the Chisel program in its entirety to match the expected output values of the golden model. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
+
+
+initial_contexts:
+ - Chisel_context_1.text
+ - Chisel_context_2.text
+ - Chisel_context_3.text
+
+supplemental_contexts:
+  'no arguments allowed for ': |
+    ```
+    [error] no arguments allowed for nullary macro method unary_~: ()chisel3.Bits
+    0005:    io.out := (~io.in.xorR)(0)
+                                     ^
+    ```
+
+    Unary operators and methods return values are type Boolean, so one cannot perform bit indexing.
+    Here is how I fixed my old program:
+
+    ```
+    0005:    io.out := (~io.in.xorR)
+    ```
+  'not found: value ': |
+    ```
+    [error] not found: value Cat
+    0010:    io.result_o := Cat(io.a_i, io.b_i)
+                            ^
+    ```
+
+    Common utilities such as Cat(), switch(), Popcount(), Muxlookup(), etc.. in Chisel are dependent upon importing the standard library. It is best practice to always include the following line in all Chisel files written. ADD THIS LINE TO THE SECOND LINE OF THE FILE.
+    Here is how I fixed my old program:
+
+    ```
+    0002:    import chisel3.util._     //imports standard library
+    ```
+  type mismatch: |
+    ```
+    [error] type mismatch;
+    found   : Int
+    required: chisel3.UInt
+    when(io.a >= (io.b << (7.U - i))) {
+                                 ^
+    ```
+
+    Chisel is built on top of Scala, so oftentimes the two languages type systems may conflict. Issues arise when Scala types are assigned to Chisel values, which is a problem as Chisel datatypes are used to specify the type of values held in state elements or flowing on wires. A common place for such conflicts is in the case of for loops, where an iteration variable is by default a Scala Int, but may be used as a Chisel value, which needs to be a UInt or SInt. Values can be typecast to conform to Chisels typesystem.
+    Here is how I fixed my old program:
+
+    ```
+    when(io.a >= (io.b << (7.U - i.asUInt()))) {
+    ```

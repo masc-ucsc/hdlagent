@@ -1,0 +1,20 @@
+responses:
+  suggest_prefix: |
+    
+    I have seen this error message before for a previous program I wrote. This was the old error I had with the previous program:
+
+  spec_to_prompt: |
+    
+    {description}
+    Implement in accordance to this (Verilog style) interface: 
+    {interface}
+    
+  request_spec_description: |
+    
+    Rewrite the following RTL program description into a formal specification document, focusing on clarity and maintaining specific details. The format should be a bullet point list written in natural english, and should be as long as the description is complex. Do not response with ANYTHING BESIDES the bullet point list. Maintain the module and IO names exactly as they were stated in my original description:
+    {prompt}
+    
+  request_spec_interface: |
+    
+    Write a Verilog module interface for the previous program description. Respond with nothing else but a one-line code block that is the module interface declaration, without any comments or additional english explanation. Maintain the module and IO names exactly as they were stated in my original description and declare the port directions as input or output.
+    

@@ -1,0 +1,60 @@
+
+import openai
+import octoai
+import fire
+
+import agent
+from handler import Handler
+from importlib import resources
+
+help_string = """
+Usage: hdlagent --llm=xxx --lang=xxx --lec_source=xxx --json_path=xxx [options]
+
+Parameters:
+  --llm                 Large Language Model choice for code generation
+                        Supported Vendors: OpenAI, OctoAI
+                        See 'list_x_models' below to view the available options
+  --lang                Language choice for code generation
+                        Supported languages: [Verilog, Chisel, PyRTL, DSLX]
+  --lec_source <path>   File or directory where 'gold' Verilog files for Yosys' Logical
+                        Equivalence Check, generated files will be compared to them
+                        for equivalence. File(s) must be named the same as the 'name'
+                        stated in the target program specification.
+  --json_path <path>    Path for .json file where target programs are specified (in bulk).
+                        Each entry must appear under list named 'verilog_problems'
+                        Same field requirements as 'spec_path', see below
+
+Options:
+  --help                Print this message
+  --use_spec            Uses the *_spec.yaml file in the working directory that shares the
+                        same name as the lec_source source file. If one does not exist, then
+                        uses the selected LLM to generate one. The spec file includes entries
+                        for 'instruction' and 'interface'. The spec is meant to iterate over the
+                        raw prompt and formalize it, along with validate that the LLM understands
+                        the core design.
+  --w_dir <path>        Path for working directory, all resulting source code and log files
+                        will be left here.
+  --init_context        Allows the agent to append the language specific tutorial and context to
+                        provide the LLM with initial knowledge on the language syntax and grammar.
+  --supp_context        Allows the agent to access the 'supplemental context' database to provide
+                        the LLM with suggestions on compile errors and their fixes.
+  --openai_models_list  Prints a list of available OpenAI models to use for the LLM parameter
+  --octoai_models_list  Prints a list of available OctoAI models to use for the LLM parameter
+ """
+
+def main(llm: str = None, lang: str = None, lec_source: str = None, json_path: str = None, json_limit: int = -1, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, help: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False):
+    if (llm is not None) and (lang is not None) and (lec_source is not None) and (json_path is not None):
+        spath = resources.files('resources')
+        print("path:", spath)
+        my_handler = Handler()
+        my_handler.entrypoint(spath, llm, lang, lec_source, json_path, json_limit, w_dir, use_spec, init_context, supp_context)
+    elif openai_models_list:
+        print(list_openai_models())
+    elif octoai_models_list:
+        print(list_octoai_models())
+    else:
+        print(help_string)
+
+
+if __name__ == "__main__":
+    fire.Fire(main)

@@ -1,0 +1,13 @@
+#!/bin/bash
+f=$1
+yosys -p "logger -nowarn assigned; read_verilog -sv ${f};" &> tmp.yosys;
+
+grep "ERR" tmp.yosys* | grep -Eiv "Suppress";
+if [[ $? -ne 0 ]]; then
+    grep "Warning:" tmp.yosys* | grep -Eiv "Suppress";
+    if [[ $? -ne 0 ]]; then
+        echo "SUCCESS";
+    fi
+fi
+
+rm tmp.yosys;
