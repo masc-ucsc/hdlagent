@@ -1,0 +1,11 @@
+{
+  "verilog_problems": [
+    {
+      "instruction": "The _7seg_display module in Verilog controls a seven-segment display using a 4-bit input `val_i`, representing hexadecimal values (0-F). The module has seven single-bit outputs: `top_left_vert_o`, `top_right_vert_o`, `bot_left_vert_o`, `bot_right_vert_o` for the vertical segments, and `top_horizontal_o`, `mid_horizontal_o`, `bot_horizontal_o` for the horizontal segments. Internally, it uses conditional logic to activate these segments based on the input. For each hexadecimal value, the module sets the segments to display the corresponding character, with conditions ensuring correct representation, including specific handling for lowercase 'b' and 'd' to avoid confusion with similar-looking numbers. The design is purely combinational, with outputs directly and immediately responding to changes in the input value",
+      "response": "module _7seg_display (\n    input [3:0] val_i,\n    output top_left_vert_o,\n    output top_right_vert_o,\n    output bot_left_vert_o,\n        output bot_right_vert_o,\n    output top_horizontal_o,\n    output mid_horizontal_o,\n    output bot_horizontal_o\n);\n\n  wire zero, one, two, three, four, five, six, seven, eight, nine;\n  wire A, b, C, d, E, F;\n\n  assign zero = val_i == 4'b0000;\n  assign one = val_i == 4'b0001;\n  assign two = val_i == 4'b0010;\n  assign three = val_i == 4'b0011;\n  assign four = val_i == 4'b0100;\n  assign five = val_i == 4'b0101;\n  assign six = val_i == 4'b0110;\n  assign seven = val_i == 4'b0111;\n  assign eight = val_i == 4'b1000;\n  assign nine = val_i == 4'b1001;\n  assign A = val_i == 4'b1010;\n  assign b = val_i == 4'b1011;\n  assign C = val_i == 4'b1100;\n  assign d = val_i == 4'b1101;\n  assign E = val_i == 4'b1110;\n  assign F = val_i ==  4'b1111;\n\n  assign top_horizontal_o = !one && !four && !b && !d;\n  assign mid_horizontal_o = !zero && !one && !seven && !C;\n  assign bot_horizontal_o = !one && !four && !seven && !nine && !A && !F;\n  assign top_left_vert_o  = !one && !two && !three && !seven && !d;\n  assign bot_left_vert_o  = !one && !three && !four && !seven && !nine;\n  assign top_right_vert_o = !five && !six && !b && !C && !E && !F;\n  assign bot_right_vert_o = !two && !C && !E && !F;\n\nendmodule\n",
+      "name": "_7seg_display",
+      "pipeline_stages": "0",
+      "valid": " "
+    }
+  ]
+}
