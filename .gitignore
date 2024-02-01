@@ -1,4 +1,5 @@
 *.log
+*.swp
 __pycache__
 tmp
 dist
