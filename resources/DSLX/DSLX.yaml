@@ -1,0 +1,235 @@
+compile_script: ./resources/DSLX/DSLX_generate_toplevel
+
+file_extension: .x
+
+error_check_function: resources.DSLX.DSLX_agent.custom_check_errors
+
+reformat_verilog_function: resources.DSLX.DSLX_agent.custom_reformat_verilog
+
+responses:
+  comb_give_instr_prefix: |
+    Can you implement the described function in DSLX using combinational logic:
+
+  simple_give_instr_suffix: |
+
+    Please respond with only valid program syntax. Please do not provide any additional English explanation, short comments in the code are allowed.
+    The name of the module should be {name}
+
+  give_instr_suffix: |
+    
+    The name of the function should be {name} and the function should return a struct which bundles together all of the output signals of the module, keeping their CASE SENSITIVE names intact. Each individual output should correspond to one and only one equivalenty sized field in the output struct, so do NOT split up the outputs into their individual bits. The VARIABLE NAMES assigned to the output struct must also have the SAME EXACT NAME(S) as the STRUCT FIELD they are assigned to.
+    Please respond with only valid program syntax. Do not provide any additional english explanation, short comments in the code are allowed but kept to a minimum.
+
+  compile_err_prefix: |
+    The previous code had a compiler error. Please return the entire corrected program, not just the erroring snippet. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments. Make sure to preserve the same case sensitive input and outputs names, it is important the variable name assigned to the output struct is exactly the same as the struct field.
+    This is the compile error:
+
+  comb_lec_fail_prefix: |
+    The DSLX program you just wrote was tested for logical equivalence versus a golden model named 'gold'. Below is a truth table that shows where the gold models output differs from the code you just supplied, which has been named 'gate':
+
+  lec_fail_suffix: |
+    
+    Please rewrite the DSLX program in its entirety to match the expected output values of the golden model. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments. Be sure that the case sensitive variable name being assigned to the output struct is the same name as the field of the struct, it is important that the names are the same.
+
+  system_info: |
+    You are a Hardware description language code generator. Your responses are limited to ONLY code blocks, no english explanation.
+
+
+initial_contexts:
+ - DSLX_context_1.text
+ - DSLX_context_2.text
+ - DSLX_context_3.text
+ - DSLX_context_4.text
+
+supplemental_contexts:
+  Annotated type did not match inferred type of right hand side expression: |
+    ```
+    0006:    let  a: u4 = u4:1;
+    0007:    let a0: u1 = a & u4:1;
+    ~~~~~~~~~~~~~~~~~^^ XlsTypeError: uN[1] vs uN[4]: Annotated type did not match inferred type of right hand side expression.
+    ```
+
+    DSLX has a strict typechecking system which is engaged when a type is explicitly declared, such as 'let a: u4' declares variable 'a' to be a 4 bit long unsigned integer. Typecasting may be helpful when one needs to specify a type, despite the powerful implicit typesystem DSLX has to offer. It is done through the 'as' keyword, which allows one to specify the desired type of the expression.
+    Here is how I fixed my old program:
+
+    ```
+    0006:    let  a: u4 = u4:1;
+    0007:    let a0: u1 = (a & u4:1) as u1;  // convert to u1
+    ```
+  'Cannot find a definition for name: ''assert''': |
+    ```
+    0006: fn example_funct(a: u8, b: u4) -> ExampleOutput {
+    0007:   assert(b != u4:0);
+    ~~~~~~~~^----^ ParseError: Cannot find a definition for name: 'assert'
+    0008:   let x = u8:1;
+    ```
+    Asserts are only supported for DSLX testbenches, meaning they should not exist within the logical implementation of a DSLX function. For this reason it is best to avoid their use in this context. Do not use assert statements and if they exist, delete them.
+    Here is how I fixed my old program:
+
+    ```
+    0006: fn example_funct(a: u8, b: u4) -> ExampleOutput {
+    0007:   // deleted this line to avoid using assert statements
+    0008:   let x = u8:1;
+    ```
+  Could not deduce type: |
+    ```
+    0002:     let a: u3 = u3:1;
+    0003:     let b: u3 = u3:2;
+    0004:     let cin: u1 = u1:1;
+    0005:     let result = a + b + cin;
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^ XlsTypeError: uN[4] vs uN[1]: Could not deduce type for binary operation '+'
+    ```
+    All righthand side bitwidths and types must match when performing operations on variables. The lefthand side expects a 4 bit wide return value from adding a few 3 bit wide values, this expectation is not met due to the 1 bit wide value. In the case of a values type being inconvenient to change, a typecast may be called onto it when necessary.
+    Here is how I fixed my old program:
+
+    ```
+    0002:     let a: u3 = u3:1;
+    0003:     let b: u3 = u3:2;
+    0004:     let cin: u1 = u1:1;
+    0005:     let result = a + b + (cin as u3);
+    ```
+  Expected '(', got 'identifier': "```\n0008:   // Counts from zero to eight.\n0009:\
+    \   let count_to_eight = for i: u32 in range(u32:8) {\n~~~~~~~~~~~~~~~~~~~~~~~~~~~^\
+    \ ParseError: Expected '(', got 'identifier'\n0010:     sum + u32:1;\n0011:  \
+    \ }(sum)```\nFor loop declarations consist of three parts: an (index, accumulator)\
+    \ tuple where the index acts as the iterating variable, and the accumulators value\
+    \ is mutable and carries over from the previous iteration. The accumulator must\
+    \ be initialized before use in the for loop. If the iterator is not explicity\
+    \ used, it must be a throwaway '_' variable. Next the tuple type(s) must be specified,\
+    \ and finally an iterable range() to determine the indices of the loop. The final\
+    \ line within the for loop determines the value of the accumulator for the next\
+    \ iteration, and the variable parenthesized behind the closing bracket is the\
+    \ return value of loop statement. \nHere is how I fixed my old program:\n\n```\n\
+    0008:   // Counts from zero to eight.\n0009:   let sum: u32 = u32:0;\n0010:  \
+    \ let count_to_eight = for (_, sum): (u32, u32) in range(u32:0, u32:8) {\n0011:\
+    \      sum + u32:1\n0012:   }(sum);\n```\n"
+  Expected '=', got 'identifier': |
+    ```
+    0008:   let mut accumulator: u8 = u8:0;
+    ~~~~~~~~~~~~~~~~^---------^ ParseError: Expected '=', got 'identifier'
+    0009:   accumulator = accumulator + u8:1;
+    ```
+    DSLX is an immutable dataflow graph based hardware description language, therefore it does NOT have 'mut' as a keyword or have otherwise mutable variables. All combinational logic statements must be immutable 'let' assignments. Therefore it is best to create intermediate values and use those as a operands of the final assignment.
+    Here is how I fixed my old program:
+
+    ```
+    0008:    let accumulator0: u8 = u8:0;   // use of intermediate values allows for incremental change to a final value
+    0009:    let accumulator: u8 = accumulator0 + u8:1;
+    ```
+  Expected '}', got ';': |
+    ```
+    0001: struct ExampleStruct {
+    0002:   a: bits[1];
+    ~~~~~~~~~~~~~~~~~~^ ParseError: Expected '}', got ';'
+    0003:   b: bits[1];
+    0004: }
+    ```
+
+    DSLX struct declarations are a comma separated list in curly brackets. Do NOT use semicolons to end the lines.
+    Here is how I fixed my old program:
+
+    ```
+    0001: struct ExampleStruct {
+    0002:   a: bits[1],      // comma separated list, no semicolons
+    0003:   b: bits[1]
+    0004: }
+    ```
+  'Expected start of an expression; got: &': |
+    ```
+    0007:   let a = &(b[0:8]);
+    ~~~~~~~~~~~~~~~~^ ParseError: Expected start of an expression; got: &
+    ```
+    Unlike Verilog, DSLX does not have unary reduction operators. The only unary operators are '!' for bitwise inversion, and '-' for two's complement negation. If one wished to peform a reduction operator, it must be done on every bit of the bit array. But since many operators do not work on bit[N] type, we must typecast as well for each bit isolated.
+    Here is how I fixed my old program:
+
+    ```
+    0007:   let a = (b[0:1] as u1) & (b[1:2] as u1) & (b[2:3] as u1) & (b[3:4] as u1) & (b[4:5] as u1) & (b[5:6] as u1) & (b[6:7] as u1) & (b[7:8] as u1);
+    ```
+  'Expected start of an expression; got: ^': |
+    ```
+    0007:   let a = ^(b[0:8]);
+    ~~~~~~~~~~~~~~~~^ ParseError: Expected start of an expression; got: ^
+    ```
+    Unlike Verilog, DSLX does not have unary reduction operators. The only unary operators are '!' for bitwise inversion, and '-' for two's complement negation. If one wished to peform a reduction operator, it must be done on every bit of the bit array. But since many operators do not work on bit[N] type, we must typecast as well for each bit isolated.
+    Here is how I fixed my old program:
+
+    ```
+    0007:   let a = (b[0:1] as u1) ^ (b[1:2] as u1) ^ (b[2:3] as u1) ^ (b[3:4] as u1) ^ (b[4:5] as u1) ^ (b[5:6] as u1) ^ (b[6:7] as u1) ^ (b[7:8] as u1);
+    ```
+  'Expected start of an expression; got: |': |
+    ```
+    0007:   let a = |(b[0:8]);
+    ~~~~~~~~~~~~~~~~^ ParseError: Expected start of an expression; got: |
+    ```
+    Unlike Verilog, DSLX does not have unary reduction operators. The only unary operators are '!' for bitwise inversion, and '-' for two's complement negation. If one wished to peform a reduction operator, it must be done on every bit of the bit array. But since many operators do not work on bit[N] type, we must typecast as well for each bit isolated.
+    Here is how I fixed my old program:
+
+    ```
+    0007:   let a = (b[0:1] as u1) | (b[1:2] as u1) | (b[2:3] as u1) | (b[3:4] as u1) | (b[4:5] as u1) | (b[5:6] as u1) | (b[6:7] as u1) | (b[7:8] as u1);
+    ```
+  Mismatch between member and argument types: |
+    ```
+    0010: struct ExampleStruct { out_o: u1, }
+    0011:
+    0012: fn ExampleFunct(in_i: u8) -> ExampleStruct {
+    0013:    let out_o = in_i & u8:1;
+    0015:    ExampleStruct { out_o: out_o }
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^------^ XlsTypeError: uN[1] vs uN[8]: Mismatch between member and argument types.
+    0016: }
+    ```
+    Bitwidths and types must also match on both sides of an assignment statement, including struct field assignments. In this example, the struct field expects a u1 while a u8 is incorrectly assigned. It is best practice to name the value being assigned to the struct the same as a field, as well as to typecast the value being assigned to enforce type correctness.
+    Here is how I fixed my old program:
+
+    ```
+    0010: struct ExampleStruct { out_o: u1, }
+    0011:
+    0012: fn ExampleFunct(in_i: u8) -> ExampleStruct {
+    0013:    let out_o = in_i & u8:1;
+    0015:    ExampleStruct { out_o: out_o as u1}
+    0016: }
+    ```
+  'ScanError: Unrecognized character: ''?''': |
+    ```
+    0006:   let out_signal = (sel == u2:0) ? in0 :
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^ ScanError: Unrecognized character: '?' (0x3f)
+    0007:                    (sel == u2:1) ? in1 :
+    0008:                    (sel == u2:2) ? in2 :
+    0009:                                    in3;
+    ```
+
+    DSLX does not have the Verilog/C style ternary operator, so the '?' character is not a keyword. Instead of attempting nested 'if' statements, a case/switch may be emulated through DSLX pattern matching, done by its 'match' keyword. This is similiar to Rust in that it matches a given pattern, and returns a value mapped to said pattern.
+    Here is how I fixed my old program:
+
+    ```
+    0006:   let out_signal = match sel {
+    0007:              u2:0 => in0,
+    0008:              u2:1 => in1,
+    0009:              u2:2 => in2,
+    0010:              _ => in3
+    0011:            };
+    ```
+  'ScanError: Unrecognized character: ''~''': |
+    ```
+    0006:   let y = ~s & a;
+    ~~~~~~~~~~~~~~~~^ ScanError: Unrecognized character: '~' (0x7e)
+    ```
+    DSLX does not use the '~' character to perform bitwise inversions, that is instead performed by the '!' character.
+    Here is how I fixed my old program:
+
+    ```
+    0006:   let y = !s & a;
+    ```
+  Value to index is not an array: |
+    ```
+    0007:   let a0 = a[0];
+    ~~~~~~~~~~~~~~~~~~^-^ TypeInferenceError: uN[4] Value to index is not an array.
+    0008:   let a1 = a[1];
+    ```
+
+    DSLX does not use Verilog-style bit indexing, but rather Pythonic indexing. This means it is allowed to reverse index bits by using negative values, as well as specify ranges. In this case, if we want to index a single bit, we must specify a single bit range.
+    Here is how I fixed my old program:
+
+    ```
+    0007:   let a0 = a[0:1];        // bit 0 as type bit[N]
+    0008:   let a1 = a[1:2] as u1;  // bit 1 cast as 1 bit log uInt
+    ```

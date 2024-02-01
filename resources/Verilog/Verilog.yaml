@@ -1,0 +1,106 @@
+compile_script: check_verilog
+
+file_extension: .v
+
+error_check_function: resources.Verilog.Verilog_agent.custom_check_errors
+
+reformat_verilog_function: resources.Verilog.Verilog_agent.custom_reformat_verilog
+
+responses:
+  comb_give_instr_prefix: |
+    Can you implement the described Module in Verilog using purely combinational logic:
+
+  pipe_give_instr_prefix: |
+    Can you implement the following description of a sequential Module in Verilog, it should have ${pipe_stages} register stage(s). Meaning the initial result should be ready in ${pipe_stages} clock cycle(s) upon reset.
+
+  give_instr_suffix: |
+    
+    Please respond with only valid program syntax. Set input/output names exactly as stated, avoid abbreviation. Please do not provide any additional English explanation, short comments in the code are allowed.
+    The name of the module should be {name}
+
+  compile_err_prefix: |
+    The previous code had a compiler warning/error. Please return the entire corrected program, not just the warning/erroring snippet. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
+    This is the compile warning/error:
+
+  comb_lec_fail_prefix: |
+    The Verilog module you just wrote was tested for logical equivalence versus a golden model named 'gold'. Below is a truth table that shows where the gold models output differs from the module you just supplied, which has been named 'gate':
+
+  pipe_lec_fail_prefix: |
+    The Verilog module you just wrote was tested for logical equivalence versus a golden model named 'gold'. Below are two truth tables that represent the input/output values of the ideal 'gold' model and the module you supplied, renamed 'gate'. These are the last two timesteps from the test before the 'gate' models output diverged from the 'gold'. Hence why in the top table, the in/out values are the same but the bottom table the values differ:
+
+  lec_fail_suffix: |
+    
+    Please rewrite the Verilog module in its entirety to match the expected output values of the golden model. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
+
+  system_info: |
+    You are a Hardware description language code generator. Your responses are limited to ONLY code blocks, no english explanation.
+
+
+initial_contexts:
+ - Verilog_context_1.text
+ - Verilog_context_2.text
+ - Verilog_context_3.text
+ - Verilog_context_4.text
+
+supplemental_contexts:
+  ' is implicitly declared': |+
+    example_counter.v:7: Warning: Identifier `\temp' is implicitly declared.
+    ```
+    0006:   always @(posedge clock or posedge reset) begin
+    0007:     if (reset) temp <= 4'b0000;
+    0008:     else temp <= temp + 1;
+    0009:   end
+    0010:   assign out_o = temp;
+    ```
+
+    Wire and register signals must be explicitly declared in Verilog, otherwise their drivers will connect to a floating wire, which ultimately goes nowhere. This means the signal will be isolated from the logic. This is the equivalent of dead code. Explicitly declare the wire/register.
+    Here is how I fixed my old program:
+
+    ```
+    0005:   reg [3:0] temp;
+    0006:   always @(posedge clock or posedge reset) begin
+    0007:     if (reset) temp <= 4'b0000;
+    0008:     else temp <= temp + 1;
+    0009:   end
+    0010:   assign out_o = temp;
+    ```
+
+  'ERROR: syntax error, unexpected TOK_OUTPUT, expecting '','' or ''='' or '')''': |+
+    example.v:4:    ERROR: syntax error, unexpected TOK_OUTPUT, expecting ',' or '=' or ')'
+    ```
+    0001: module four_bit_sync_counter (
+    0002:     input clock,
+    0003:     input reset
+    0004:     output [3:0] out_o
+    0005: );
+    ```
+
+    Module declarations in verilog must be a comma separated list, where optionally a bitwidth is specified. No bitwidth specification implies a single bit wire. The problem is line 4 in this example is missing a comma.
+    Here is how I fixed my old program:
+
+    ```
+    0001: module four_bit_sync_counter (
+    0002:     input clock,
+    0003:     input reset,
+    0004:     output [3:0] out_o
+    0005: );
+    ```
+
+  unexpected TOK_END: |+
+    example.v:10: ERROR: syntax error, unexpected TOK_END
+    ```
+    0007:   always @(posedge clock or posedge reset)
+    0008:     if (reset) temp <= 4'b0000;
+    0009:     else temp <= temp + 1;
+    0010:   end
+    ```
+
+    Verilog program scope is set by 'begin' and 'end' keywords, just like how in C we use '{' and '}' to create and end a scope. Always blocks should be scoped as they have code blocks insides of them. In this example, the 'begin' is missing from the end of line 7, hence why line 10 throws an 'TOK_END' error, as it is an open 'end'.
+    Here is how I fixed my old program:
+
+    ```
+    0007:   always @(posedge clock or posedge reset) begin
+    0008:     if (reset) temp <= 4'b0000;
+    0009:     else temp <= temp + 1;
+    0010:   end
+    ```

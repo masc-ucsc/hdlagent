@@ -1,0 +1,21 @@
+#!/bin/bash
+
+script_pathname=$(dirname "$0")
+filename=$1
+modulename="${filename##*/}"
+modulename="${modulename/.scala/}"
+pathname="${filename%/*}"
+bootstrap_pathname="${pathname}/chisel_bootstrap"
+
+
+if [ ! -d "$bootstrap_pathname" ]; then
+    cp -r "${script_pathname}/chisel_bootstrap" "$bootstrap_pathname"
+fi
+
+cp "$filename" "$bootstrap_pathname/src/main/scala/"
+pushd "$bootstrap_pathname"
+sbt "runMain chisel3.stage.ChiselMain --module $modulename"
+if [ -e "$modulename.v" ]; then
+    mv "$modulename.v" ../
+fi
+popd

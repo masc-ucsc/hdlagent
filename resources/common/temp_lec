@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# Usage: ./lec gold_dir gate_dir
+
+fail_log="lec_mismatch_$$.log"
+log="yosys_lec_$$.log"
+tmplog="tmp.txt_$$"
+GOLD=$1
+GATE=$2
+
+if [[ -e $log ]]; then
+	rm $log
+fi
+
+if [[ -e $fail_log ]]; then
+	rm $fail_log
+fi
+
+lec() {
+	if [[ ! -e $GATE ]]; then
+		echo "Error: ${GATE} does not exist"
+		exit 1
+	fi
+	if [[ ! -e $GOLD ]]; then
+		echo "Error: ${GOLD} does not exist"
+		exit 1
+	fi
+
+	# First check for structural equivalence, easy way to prove two circuits are the same
+	yosys_read="read_verilog -sv ${GOLD}; hierarchy -auto-top; proc; flatten; rename -top gold; design -stash gold;
+                read_verilog -sv ${GATE}; hierarchy -auto-top; proc; flatten; rename -top gate; design -stash gate;
+                design -copy-from gold -as gold gold; design -copy-from gate -as gate gate;"
+
+	yosys_prep="proc; memory -nomap; equiv_make gold gate equiv; prep -flatten -top equiv; hierarchy -top equiv; hierarchy -check; flatten; proc; opt_clean;"
+
+	yosys -p "${yosys_read};
+    memory -nomap; opt_expr -full; opt -purge; proc; opt -purge;
+    opt_reduce -full; opt_expr -mux_undef; opt_reduce; opt_merge; opt_clean -purge; techmap -map +/adff2dff.v;
+    ${yosys_prep}; opt -purge; proc; opt -purge; equiv_induct -seq 32; equiv_status -assert" &>$log
+
+	cp $log sat.log
+
+	grep "Equivalence successfully proven!" $log*
+	if [[ $? -eq 0 ]]; then
+		echo "SUCCESS"
+		exit 0 # structural success!
+	fi
+
+	# Report compare error
+	#grep "ERROR: " $log*;
+	#if [[ $? -eq 0 ]]; then
+	#    exit 0;
+	#fi
+
+	# If it doesnt work, then do SAT solver
+	yosys -p "read_verilog -sv ${GOLD}; hierarchy -auto-top; proc; opt; flatten; rename -top gold; prep -top gold; design -stash gold;
+              read_verilog -sv ${GATE}; hierarchy -auto-top; proc; opt; flatten;
+              rename -top gate; prep -top gate; design -stash gate;
+              design -copy-from gold -as gold gold
+              design -copy-from gate -as gate gate
+              miter -equiv -flatten -make_outputs -ignore_gold_x gold gate miter
+              hierarchy -top miter
+              sat -tempinduct -prove trigger 0 ${RESET_STMT} -set-init-undef -enable_undef -set-def-inputs -ignore_unknown_cells -show-ports miter" &>$log
+
+	# Ideal case
+	grep "SUCCESS" $log*
+	if [[ $? -eq 0 ]]; then
+		echo "SUCCESS"
+		exit 0 # temporal success!
+	fi
+
+	# Report compare error
+	grep "ERROR: " $log*
+	if [[ $? -eq 0 ]]; then
+		exit 0
+	fi
+
+	# Isolate truth table for further iteration
+	raw_table=$(awk '/  \|_\|   \|_\|   \\___\/ \\___\/ \|_\|       \|_\|  \\_____\|_|_)_____\)\\____\|_\|/ {p=1} p' "$log")
+	echo "$raw_table" >$tmplog
+	table=$(sed '/11. Executing Verilog backend./,$d' $tmplog)
+	echo "$table" >$tmplog
+	sed -i '1,3d' $tmplog
+	sed -i '$ d' $tmplog
+	#echo "$(<$tmplog)"
+
+	# Removes the YOsys statistics
+	#sed -i '/Warnings/d' $tmplog
+
+	# Grab the header and init values
+	echo "$(awk '/----/{count++} count==2{exit} {print}' $tmplog)"
+
+	# Count the total number of lines
+	total_lines=$(cat $tmplog | wc -l)
+
+	# Calculate the line number from where to start extracting for the second-to-last table
+	start_line=$(grep -n "\-\-\-\-" $tmplog | tail -2 | head -1 | cut -d: -f1)
+	printed_lines="$((total_lines - start_line))"
+	echo "  ---- ------------------- ----------- --------- -------------"
+
+	# Extract from the start_line to the end of the file
+	echo "$(tail -n "$printed_lines" $tmplog | head -n -2)"
+
+	echo "Sequential (temporal) mismatch between ${GATE} and ${GOLD}" >>$fail_log
+	echo "" >>$fail_log
+	cat $log >>$fail_log
+}
+
+lec $1 $2
+
+if [[ -e $log ]]; then
+	rm $log
+fi

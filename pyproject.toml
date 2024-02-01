@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "hdlagent"
+version = "0.1.0"
+description = ""
+authors = ["Mark Zakharov <mzakharo@ucsc.edu>", "Jose Renau <renau@ucsc.edu>"]
+readme = "README.md"
+
+include = ["resources/common/common.yaml"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+openai = "^1.10.0"
+octoai-sdk = "^0.8.3"
+fire = "^0.5.0"
+markdown = "^3.5.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

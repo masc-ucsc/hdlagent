@@ -1,0 +1,82 @@
+#!/bin/bash
+dir=$1
+
+lint=$VERIBLE/verilog/tools/lint/verible-verilog-lint
+format=$VERIBLE/verilog/tools/formatter/verible-verilog-format
+
+yosys_log=yosys.err
+log=lint.out
+file_list=$(ls -1 $1)
+bad_files=bad_verilog
+
+if [[ $# -eq 0 ]]; then
+    echo "Specify the working directory";
+    exit 1;
+fi
+
+if [[ -z "${VERIBLE}" ]]; then
+    echo "\$VERIBLE env var needs to be set and added to PATH"
+    exit 1;
+fi
+
+if [[ -e $bad_files ]]; then
+    rm -r $bad_files;
+fi
+mkdir $bad_files;
+
+if [[ -e $log ]]; then
+    rm $log;
+fi
+
+for file in $file_list; do
+    f=$dir/$file
+
+    # check yosys for warnings or errors
+    # suppress warnings about wire assignments in always blocks
+    yosys -p "logger -nowarn assigned; read_verilog -sv ${f};" &> $yosys_log;
+    grep "ERR" yosys.err*;
+
+    if [[ $? -eq 0 ]]; then
+        echo "A verilog module failed yosys compilation!" >> $log;
+        echo $f >> $log;
+        cp $f $bad_files;
+        mv $yosys_log $bad_files/$file.yosys_err;
+        continue;
+        #exit 1;
+    fi
+
+    grep "Warnings" yosys.err*
+
+    if [[ $? -eq 0 ]]; then
+        echo "A verilog module got a warning from yosys compilation!" >> $log;
+        echo $f >> $log;
+        cp $f $bad_files;
+        mv $yosys_log $bad_files/$file.yosys_err;
+        continue;
+        #exit 1;
+    fi
+
+    # lint and formatting
+    #$lint $f;
+    #if [[ $? != 0 ]]; then
+    #    echo "A verilog module failed lint!" >> $log;
+    #    echo $f >> $log;
+    #    cp $f $bad_files;
+    #    continue;
+    #else
+    #    $format --inplace $f;
+    #fi
+done
+
+if [[ -e $yosys_log ]]; then
+    rm $yosys_log
+fi
+
+# we dont need this dir if there were no bad files
+if [[ -z "$(ls -A $bad_files)" ]]; then
+    rm -r $bad_files;
+    if [[ -e $log ]]; then
+        rm $log;
+    fi
+    echo "All files passed successfully!"
+fi
