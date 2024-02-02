@@ -8,7 +8,7 @@ from handler import Handler
 from importlib import resources
 
 help_string = """
-Usage: hdlagent --llm=xxx --lang=xxx --lec_source=xxx --json_path=xxx [options]
+Usage: hdlagent --llm=xxx --lang=xxx --json_path=xxx [options]
 
 Parameters:
   --llm                 Large Language Model choice for code generation
@@ -16,13 +16,8 @@ Parameters:
                         See 'list_x_models' below to view the available options
   --lang                Language choice for code generation
                         Supported languages: [Verilog, Chisel, PyRTL, DSLX]
-  --lec_source <path>   File or directory where 'gold' Verilog files for Yosys' Logical
-                        Equivalence Check, generated files will be compared to them
-                        for equivalence. File(s) must be named the same as the 'name'
-                        stated in the target program specification.
   --json_path <path>    Path for .json file where target programs are specified (in bulk).
                         Each entry must appear under list named 'verilog_problems'
-                        Same field requirements as 'spec_path', see below
 
 Options:
   --help                Print this message
@@ -42,12 +37,11 @@ Options:
   --octoai_models_list  Prints a list of available OctoAI models to use for the LLM parameter
  """
 
-def main(llm: str = None, lang: str = None, lec_source: str = None, json_path: str = None, json_limit: int = -1, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, help: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False):
-    if (llm is not None) and (lang is not None) and (lec_source is not None) and (json_path is not None):
-        spath = resources.files('resources')
-        print("path:", spath)
+def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: int = -1, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, help: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False):
+    if (llm is not None) and (lang is not None) and (json_path is not None):
+        spath      = resources.files('resources')
         my_handler = Handler()
-        my_handler.entrypoint(spath, llm, lang, lec_source, json_path, json_limit, w_dir, use_spec, init_context, supp_context)
+        my_handler.entrypoint(spath, llm, lang, json_path, json_limit, w_dir, use_spec, init_context, supp_context)
     elif openai_models_list:
         print(list_openai_models())
     elif octoai_models_list:

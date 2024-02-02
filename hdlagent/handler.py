@@ -43,7 +43,7 @@ class Handler:
             exit()
         self.tb_iter = n
 
-    def json_run(self, json_file: str, limit: int = -1, gold_dir: str = None, use_spec: bool = False):
+    def json_run(self, json_file: str, limit: int = -1, use_spec: bool = False):
         if json_file is None:
             print("Error: no json file registered, exiting...")
             exit()
@@ -55,10 +55,11 @@ class Handler:
             limit = len(data)
 
         for i in range(limit):
-            entry       = data[i]
-            name        = entry['name']
-            prompt      = entry['instruction']
-            pipe_stages = int(entry['pipeline_stages'])
+            entry        = data[i]
+            name         = entry['name']
+            prompt       = entry['instruction']
+            gold_verilog = entry['response']
+            pipe_stages  = int(entry['pipeline_stages'])
 
             self.agent.set_module_name(name)
             self.agent.set_pipeline_stages(pipe_stages)
@@ -68,14 +69,10 @@ class Handler:
                     self.agent.generate_spec(prompt)
                 prompt = self.agent.read_spec()
 
-            if gold_dir is None:
-                # TODO: testbench run
-                pass
-            else:
-                self.agent.set_gold_path(os.path.join(gold_dir, name + ".v"))
-                self.agent.lec_loop(prompt, self.lec_iter, self.comp_iter)
+            self.agent.dump_gold(gold_verilog)
+            self.agent.lec_loop(prompt, self.lec_iter, self.comp_iter)
             
-    def entrypoint(self, spath:str, llm: str, lang: str, lec_source: str = None, json_path: str = None, json_limit: int = -1, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False):
+    def entrypoint(self, spath: str, llm: str, lang: str, json_path: str = None, json_limit: int = -1, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False):
         self.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
         self.agent.set_w_dir(w_dir)
 
@@ -91,4 +88,4 @@ class Handler:
                 except json.JSONDecodeError:
                     print("Error: json_path supplied is not a valid .json file, exiting...")
                     exit()
-                self.json_run(json_path, json_limit, lec_source, use_spec)
+                self.json_run(json_path, json_limit, use_spec)

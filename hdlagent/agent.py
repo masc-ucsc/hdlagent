@@ -215,12 +215,21 @@ class Agent:
 
 
     # Registers the file path of the golden Verilog to be used for LEC
+    # and dumps the contents into the file.
     #
     # Intended use: at the beginning of a new initial prompt submission
-    def set_gold_path(self, gold: str):
-        gold = gold.strip()
-        self.check_gold(gold)
-        self.gold = gold
+    def dump_gold(self, contents: str):
+        verilog_lines = contents.split('\n')
+        gold_contents = ""
+        for line in verilog_lines:
+            gold_contents += line.rstrip()
+            gold_contents += "\n"
+        gold_contents += "\n"
+        self.gold      = os.path.join(self.w_dir, "tests", self.name + "_gold.v")
+        os.makedirs(os.path.dirname(self.gold), exist_ok=True)
+        with open (self.gold, "w") as file:
+            file.write(gold_contents)
+        self.check_gold(self.gold)
         
     # Helper function to prevent API charges in case gold Verilog
     # supplied is not valid or the file path is incorrect.
