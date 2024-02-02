@@ -41,7 +41,7 @@ def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: i
     if (llm is not None) and (lang is not None) and (json_path is not None):
         spath      = resources.files('resources')
         my_handler = Handler()
-        my_handler.entrypoint(spath, llm, lang, json_path, json_limit, w_dir, use_spec, init_context, supp_context)
+        my_handler.sequential_entrypoint(spath, llm, lang, json_path, json_limit, w_dir, use_spec, init_context, supp_context)
     elif openai_models_list:
         print(list_openai_models())
     elif octoai_models_list:

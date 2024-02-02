@@ -390,7 +390,7 @@ class Agent:
         description    = '\n'.join(indented_lines)
         spec_contents += description
         spec_contents += "\ninterface: |\n  \n  "
-        spec_contents += self.extract_codeblock(self.query_model(self.spec_conversation, interface_req))
+        spec_contents += (self.extract_codeblock(self.query_model(self.spec_conversation, interface_req))).replace('\n','\n    ')
         os.makedirs(os.path.dirname(self.spec), exist_ok=True)
         with open(self.spec, 'w') as file:
             file.write(spec_contents)
@@ -491,7 +491,7 @@ class Agent:
     def compilation_loop(self, prompt: str, iterations: int = 1):
         current_query = self.get_compile_initial_instruction(prompt)
         for _ in range(iterations):
-            self.dump_code(self.query_model(self.compile_conversation, current_query))
+            self.dump_code(self.query_model(self.compile_conversation, current_query, True))
             compile_out  = self.test_compile()
             print(compile_out)
             if compile_out != "":
@@ -546,7 +546,7 @@ class Agent:
         start_idx  = 0
         md_content = "# Compile Conversation\n\n"
         if self.used_init_context:
-            md_content += "**system:** Initial contexts were appended to this conversation\n\n"
+            md_content += "**System:** Initial contexts were appended to this conversation\n\n"
             start_idx   = len(self.initial_contexts) - 1
         md_content += self.format_conversation(self.compile_conversation, start_idx)
         if self.used_supp_context:
@@ -554,7 +554,6 @@ class Agent:
             with open(self.code, 'r') as f:
                 last_code = f.read()
             md_content += "**Assistant:**\n" + last_code + "\n\n"
-            print(last_code)
             f.close()
         md_content += self.report_statistics()
         os.makedirs(os.path.dirname(self.compile_log), exist_ok=True)

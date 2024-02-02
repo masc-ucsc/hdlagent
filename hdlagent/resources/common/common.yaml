@@ -16,5 +16,5 @@ responses:
     
   request_spec_interface: |
     
-    Write a Verilog module interface for the previous program description. Respond with nothing else but a one-line code block that is the module interface declaration, without any comments or additional english explanation. Maintain the module and IO names exactly as they were stated in my original description and declare the port directions as input or output.
+    Write a Verilog module interface for the previous program description. Respond with nothing else but a SINGLE LINE code block that is the module interface declaration, without any comments or additional english explanation. Maintain the module and IO names exactly as they were stated in my original description and declare the port directions as input or output, do NOT put 'endmodule'.
     
