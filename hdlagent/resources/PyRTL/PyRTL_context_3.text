@@ -1,66 +1,149 @@
-The classic ripple-carry adder -- this function generates a ripple carry adder of abitrary length including both carry in and carry out. The full adder ("fa") takes 1-bit inputs and produces 1-bit outputs. We iteratively generate full adders and link the carry in of each new adder to the carry out of the prior. A Python dictionary keeps track of the wires carrying the sum bits as we iterate through. The final sum is then just the concatenation of the wires in that dictionary.
+I have been writing some PyRTL code lately and I have come across a lot of syntax errors, let me show you what errors I have seen and how to avoid them.
+
 ***`Clock` signals should never be explicit in PyRTL
-```
-from pyrtl import *
-def fa(x, y, cin):
-    sum = x ^ y ^ cin
-    cout = x&y | y&cin | x&cin
-    return sum, cout
+***Remove the explicit clock definition.
+***Use the implicit clock for edge-triggered behavior.
+***Adjust the reset logic to be synchronous with the implicit clock.
+***To resolve this, we need to ensure that each register's `.next` property is assigned exactly once per cycle.
+***Use a temporary wire to hold the next value before assigning it to the register. This ensures that the `.next` property is assigned only once, avoiding the error.
 
-# An n-bit ripple carry adder with carry in and carry out
-def adder(a, b, cin):
-    a, b = match_bitwidth(a, b)
-    n = len(a)
-
-    sum = {}
-    for i in range(n):
-        sum[i], cout = fa(a[i], b[i], cin)
-        cin = cout
-    full_sum = concat_list([sum[i] for i in range(n)])
-    return full_sum, cout
-```
-
-Mul generates a small 4 x 4 multiplier with a simple table lookup. The first line simple checks that the inputs are each 4-bits wide. The next is a Python function that gives us the values we want stored in the ROM as a function of the address. The ROM is automatically initialized with that function. The final hardware generated simply concatenates the two 4-bit inputs into an single 8-bit address and returns the value at that ROM address.
-```
-from pyrtl import *
-
-def mul(x, y):
-    assert(len(x) == 4 and len(y) == 4)
-    romdata = lambda addr: (addr >> 4) * (addr & 0xf)
-    tbl = RomBlock(8, 8, romdata)
-    return tbl[concat(x,y)]
-```
-
-Question: how to convert a PyRTL code to verilog?
-Answer:
-Design your circuit using PyRTL: Before you can convert to Verilog, you must have a valid PyRTL design. PyRTL provides a high-level syntax to describe digital circuits, so you'll be using Python to define inputs, outputs, wires, and the connections between them.
+ERROR example1:
 ```
 import pyrtl
-
-# Define inputs
-a = pyrtl.Input(8, 'a')
-b = pyrtl.Input(8, 'b')
-
-# Output with the combined operations
-o = pyrtl.Output(8, 'o')
-
-# Define the required operation
-o <<= (a & b) ^ (a | b)
+# Define the input and output wires
+clock = pyrtl.Input(bitwidth=1, name='clock')
+~~~~~~~~
+This is the compile warning/error:
+    raise PyrtlError(\'Clock signals should never be explicit\')
+pyrtl.pyrtlexceptions.PyrtlError: Clock signals should never be explicit
 ```
-Convert the PyRTL design to Verilog: Once your PyRTL design is ready, you can use the output_to_verilog() function from PyRTL to generate the corresponding Verilog code.
+**In PyRTL, clock signals are implicit and are automatically handled by the system. Just remove the defenition of `Clock`
 
-As per the error you previously encountered, you should provide a file object to the output_to_verilog() function. Here's how to do that:
+ERROR example2:
 ```
-# Convert to Verilog
-output_filename = 'output.v'
-with open(output_filename, 'w') as f:
-    pyrtl.output_to_verilog(f)
+# Update logic
+with pyrtl.conditional_assignment:
+    with reset == 0:  # Asynchronous active-low reset
+        counter_reg.next <<= 0
+    with enable & (up_down == 1):  # Increment if enabled and up_down is high
+        counter_reg.next <<= increment
+    with enable & (up_down == 0):  # Decrement if enabled and up_down is low
+        counter_reg.next <<= decrement
 ```
-This code writes the Verilog translation of your PyRTL design to a file named output.v.;
+This is my error:
+```
+This is the compile warning/error:
+  File "...", line 21, in <module>
+    counter_reg.next <<= increment
+  File ".../.local/lib/python3.10/site-packages/pyrtl/wire.py", line 772, in next
+    raise PyrtlError('error, .next value should be set once and only once')
+pyrtl.pyrtlexceptions.PyrtlError: error, .next value should be set once and only once
+```
+Please help fix this issue by providing a diff.
+Answer:
+```
+with pyrtl.conditional_assignment:
+    with reset == 0:  # Asynchronous active-low reset
+-       counter_reg.next <<= 0
++       next_value <<= 0
+-   with enable & (up_down == 1):  # Increment if enabled and up_down is high
++   with enable:
++       with up_down:
+-           counter_reg.next <<= increment
++           next_value <<= increment  # Increment if enabled and up_down is high
++       with pyrtl.otherwise:
+-           counter_reg.next <<= decrement
++           next_value <<= decrement  # Decrement if enabled and up_down is low
++   with pyrtl.otherwise:
++       next_value <<= counter_reg  # Hold the current value if not enabled or reset
 
-Question: If resets are implicit, then how do I specify an asyncronous reset?
-Answer: the .output_to_verilog() method has an optional parameter 'add_reset' where one can specify an asyncornous reset logic by passing in the string "asynchronous" as the argument: 'add_reset='asynchronous''.
+# Assign the next value to the counter register
+-   # [No corresponding line in the original code]
++   counter_reg.next <<= next_value
 ```
-with open(output_filename, 'w') as f:
-    pyrtl.output_to_verilog(f, add_reset='asynchronous')
+
+ERROR example3:
+```
+# Update logic
+with pyrtl.conditional_assignment:
+    with reset == 0:  # Asynchronous active-low reset
+        counter_reg.next <<= 0
+    with enable:
+        with up_down:
+            counter_reg.next <<= increment  # Increment if enabled and up_down is high
+        with pyrtl.otherwise:
+            counter_reg.next <<= decrement  # Decrement if enabled and up_down is low
+    with pyrtl.otherwise:
+        counter_reg.next <<= counter_reg  # Hold the current value if not enabled or reset
+```
+This is my error:
+```
+This is the compile warning/error:
+    raise PyrtlError('error, .next value should be set once and only once')
+pyrtl.pyrtlexceptions.PyrtlError: error, .next value should be set once and only once
+```
+Question: Can you fix the error by providing a diff?
+Answer: 
+```
++ # Wire to hold the next value of the counter
++ next_value = pyrtl.WireVector(bitwidth=4)
+with pyrtl.conditional_assignment:
+    with reset == 0:  # Asynchronous active-low reset
+-       counter_reg.next <<= 0
++       next_value <<= 0
+    with enable:
+        with up_down:
+-           counter_reg.next <<= increment  # Increment if enabled and up_down is high
++           next_value <<= increment  # Increment if enabled and up_down is high
+        with pyrtl.otherwise:
+-           counter_reg.next <<= decrement  # Decrement if enabled and up_down is low
++           next_value <<= decrement  # Decrement if enabled and up_down is low
+    with pyrtl.otherwise:
+-       counter_reg.next <<= counter_reg  # Hold the current value if not enabled or reset
++       next_value <<= counter_reg  # Hold the current value if not enabled or reset
+
+# Assign the next value to the counter register
+-   # [No corresponding line in the original code]
++   counter_reg.next <<= next_value
+
+```
+
+ERROR example3:
+```
+# Increment process for count1
+with pyrtl.conditional_assignment:
+    with reset:
+        counter1_reg.next <<= 0
+    with pyrtl.otherwise:
+        counter1_reg.next <<= counter1_reg + 1
+
+# Decrement process for count2
+with pyrtl.conditional_assignment:
+    with reset:
+        counter2_reg.next <<= 0
+    with pyrtl.otherwise:
+        counter2_reg.next <<= pyrtl.Select(counter2_reg == 0, 15, counter2_reg - 1)
+~~~~~~~~
+This is the compile warning/error:
+ raise PyrtlError('error, .next value should be set once and only once')
+pyrtl.pyrtlexceptions.PyrtlError: error, .next value should be set once and only once
+```
+SOLUTION example3:
+```
+# Temporary wires to hold the next value for the counters
+next_count1 = pyrtl.WireVector(bitwidth=4)
+next_count2 = pyrtl.WireVector(bitwidth=4)
+
+# Logic to determine the next values
+with pyrtl.conditional_assignment:
+    with reset:
+        next_count1 <<= 0
+        next_count2 <<= 0
+    with pyrtl.otherwise:
+        next_count1 <<= pyrtl.corecircuits.mux(counter1_reg == 15, 0, counter1_reg + 1)
+        next_count2 <<= pyrtl.corecircuits.mux(counter2_reg == 0, 15, counter2_reg - 1)
+
+# Assign the next values to the counters
+counter1_reg.next <<= next_count1
+counter2_reg.next <<= next_count2
 ```

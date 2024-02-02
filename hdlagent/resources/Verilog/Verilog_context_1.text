@@ -1,34 +1,3 @@
-
-Title: Combinational Logic in Verilog
-
-- Logical Operators: Explanation and examples of logical operators like &&, ||, and !.
-  - Example 1: `assign out = (a && b) || c;` (Logical AND and OR)
-  - Example 2: `assign out = !a;` (Logical NOT)
-- Bitwise Operations: Detailed use of bitwise operators & , | , ^ , ~.
-  - Example 1: `assign out = a & b;` (Bitwise AND)
-  - Example 2: `assign out = a | b;` (Bitwise OR)
-- Conditional Expressions: Using the ternary operator ?: for conditional assignments.
-  - Example 1: `assign out = (a > b) ? a : b;` (Select larger of a or b)
-  - Example 2: `assign led = (error) ? red : green;` (Error indication)
-- Concatenation and Replication: Using {} for concatenating and replicating signals.
-  - Example 1: `assign bus = {a, b, c, d};` (Concatenation)
-  - Example 2: `assign bus = {4{a}};` (Replication)
-- Karnaugh Maps and Boolean Algebra: Basics of optimizing logic expressions.
-  - Example 1: Simplification of logic functions.
-  - Example 2: Implementing optimized logic circuits.
-
-- Basic Syntax:
-  - Statements and Terminators: Verilog uses semicolons to terminate statements.
-    - Example: `assign sum = a + b;`
-  - Comments: Single-line (`//`) and block comments (`/* ... */`).
-    - Example: `// This is a single-line comment`
-- Data Types:
-  - Primitive Types: Mainly `wire`, `reg`, `integer`, `real`.
-    - Example: `integer count;`
-  - Basic String Operations: Verilog has limited string capabilities.
-    - Example: `initial $display("The count is %d", count);`
-
-
 Nested Loops in Verilog:
 
 1. Purpose: 

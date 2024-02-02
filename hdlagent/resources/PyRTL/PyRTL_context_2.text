@@ -4,9 +4,6 @@ Clock Signals in PyRTL:
 
 Clock signals are implicitly handled and should not be explicitly defined.
 Registers:
-
-Registers are a type of WireVector.
-They can be read directly for the current cycle’s value.
 The value for the next cycle is set using the `next` property with the <<= operator.
 Registers default to a reset value of 0 and operate under an implicit clock signal.
 Example Usage:
@@ -16,10 +13,6 @@ r.next <<= r + 1  # Increment the register's value each clock cycle.
 ```
 
 Memories (MemBlock):
-
-MemBlock objects specify block memories.
-They support read and write operations similar to array indexing.
-Conditional writes automatically convert to enabled writes.
 Example Usage:
 ```
 memory = pyrtl.memory.MemBlock(bitwidth=8, addrwidth=8)
@@ -31,10 +24,6 @@ EnabledWrite: This feature allows conditional writing, where data is written onl
 `memory[addr] <<= pyrtl.memory.EnabledWrite(data, enable=we)`
 
 ROMs (Read-Only Memory):
-
-RomBlock is derived from MemBlock.
-Supports only reading operations; writing is not possible.
-Must be initialized with data at creation.
 Example Usage:
 ```
 rom_data = [0, 1, 2, 3]  # Example initialization data.
@@ -42,9 +31,7 @@ rom = pyrtl.memory.RomBlock(bitwidth=8, addrwidth=8, romdata=rom_data)
 data = rom[addr]  # Reading from ROM.
 ```
 General Notes:
-
 Both memories and registers operate with the concept of clock cycles.
 It's advisable to align memory operations with clock edges for efficient hardware synthesis.
 Asynchronous memories may offer flexibility but can be inefficient in hardware, especially in FPGAs.
 PyRTL limits memory port counts by default for efficient design, though this can be overridden with caution.
-This summary provides an overview of how Registers and Memories function in PyRTL. For more detailed information, the official PyRTL documentation and API reference are recommended.
