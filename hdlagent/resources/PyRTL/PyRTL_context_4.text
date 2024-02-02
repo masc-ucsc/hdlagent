@@ -1,149 +1,37 @@
-I have been writing some PyRTL code lately and I have come across a lot of syntax errors, let me show you what errors I have seen and how to avoid them.
+If you got this error: 
+```
+Traceback (most recent call last):
+  File "/home/farzaneh/llm4pld/scripts/PyRTL/sign_extend_int_to_double.py", line 10, in <module>
+    upper_bits = sign_bit.extend(32)
+AttributeError: \'WireVector\' object has no attribute \'extend\'
+```
 
-***`Clock` signals should never be explicit in PyRTL
-***Remove the explicit clock definition.
-***Use the implicit clock for edge-triggered behavior.
-***Adjust the reset logic to be synchronous with the implicit clock.
-***To resolve this, we need to ensure that each register's `.next` property is assigned exactly once per cycle.
-***Use a temporary wire to hold the next value before assigning it to the register. This ensures that the `.next` property is assigned only once, avoiding the error.
+The error message 'WireVector' object has no attribute 'extend' indicates that you're trying to use a method extend on a WireVector object in PyRTL, which does not exist. In PyRTL, WireVector objects do not have an extend method.
 
-ERROR example1:
+If your intention is to perform sign extension (i.e., extending a smaller bit-width WireVector to a larger bit-width while preserving the sign), you need to use a different approach in PyRTL. The typical way to achieve this is by concatenating the sign bit with the original wire vector the appropriate number of times.
+
+Here's a general approach to perform sign extension:
+
+Determine the number of bits you need to add.
+Replicate the sign bit (the most significant bit of your original wire) that many times.
+Concatenate this replicated sign bit with the original wire.
+Here's an example of how to do it:
 ```
 import pyrtl
-# Define the input and output wires
-clock = pyrtl.Input(bitwidth=1, name='clock')
-~~~~~~~~
-This is the compile warning/error:
-    raise PyrtlError(\'Clock signals should never be explicit\')
-pyrtl.pyrtlexceptions.PyrtlError: Clock signals should never be explicit
-```
-**In PyRTL, clock signals are implicit and are automatically handled by the system. Just remove the defenition of `Clock`
 
-ERROR example2:
-```
-# Update logic
-with pyrtl.conditional_assignment:
-    with reset == 0:  # Asynchronous active-low reset
-        counter_reg.next <<= 0
-    with enable & (up_down == 1):  # Increment if enabled and up_down is high
-        counter_reg.next <<= increment
-    with enable & (up_down == 0):  # Decrement if enabled and up_down is low
-        counter_reg.next <<= decrement
-```
-This is my error:
-```
-This is the compile warning/error:
-  File "...", line 21, in <module>
-    counter_reg.next <<= increment
-  File ".../.local/lib/python3.10/site-packages/pyrtl/wire.py", line 772, in next
-    raise PyrtlError('error, .next value should be set once and only once')
-pyrtl.pyrtlexceptions.PyrtlError: error, .next value should be set once and only once
-```
-Please help fix this issue by providing a diff.
-Answer:
-```
-with pyrtl.conditional_assignment:
-    with reset == 0:  # Asynchronous active-low reset
--       counter_reg.next <<= 0
-+       next_value <<= 0
--   with enable & (up_down == 1):  # Increment if enabled and up_down is high
-+   with enable:
-+       with up_down:
--           counter_reg.next <<= increment
-+           next_value <<= increment  # Increment if enabled and up_down is high
-+       with pyrtl.otherwise:
--           counter_reg.next <<= decrement
-+           next_value <<= decrement  # Decrement if enabled and up_down is low
-+   with pyrtl.otherwise:
-+       next_value <<= counter_reg  # Hold the current value if not enabled or reset
+# Assuming you have a wirevector 'input_wire' of length n and you want to sign-extend it to m bits
+input_wire = pyrtl.Input(n, 'input_wire')
+extended_length = m  # The desired length after sign extension
 
-# Assign the next value to the counter register
--   # [No corresponding line in the original code]
-+   counter_reg.next <<= next_value
-```
+# Extract the sign bit
+sign_bit = input_wire[-1]  # The most significant bit (sign bit)
 
-ERROR example3:
-```
-# Update logic
-with pyrtl.conditional_assignment:
-    with reset == 0:  # Asynchronous active-low reset
-        counter_reg.next <<= 0
-    with enable:
-        with up_down:
-            counter_reg.next <<= increment  # Increment if enabled and up_down is high
-        with pyrtl.otherwise:
-            counter_reg.next <<= decrement  # Decrement if enabled and up_down is low
-    with pyrtl.otherwise:
-        counter_reg.next <<= counter_reg  # Hold the current value if not enabled or reset
-```
-This is my error:
-```
-This is the compile warning/error:
-    raise PyrtlError('error, .next value should be set once and only once')
-pyrtl.pyrtlexceptions.PyrtlError: error, .next value should be set once and only once
-```
-Question: Can you fix the error by providing a diff?
-Answer: 
-```
-+ # Wire to hold the next value of the counter
-+ next_value = pyrtl.WireVector(bitwidth=4)
-with pyrtl.conditional_assignment:
-    with reset == 0:  # Asynchronous active-low reset
--       counter_reg.next <<= 0
-+       next_value <<= 0
-    with enable:
-        with up_down:
--           counter_reg.next <<= increment  # Increment if enabled and up_down is high
-+           next_value <<= increment  # Increment if enabled and up_down is high
-        with pyrtl.otherwise:
--           counter_reg.next <<= decrement  # Decrement if enabled and up_down is low
-+           next_value <<= decrement  # Decrement if enabled and up_down is low
-    with pyrtl.otherwise:
--       counter_reg.next <<= counter_reg  # Hold the current value if not enabled or reset
-+       next_value <<= counter_reg  # Hold the current value if not enabled or reset
+# Replicate the sign bit
+replicated_sign_bits = pyrtl.concat(*[sign_bit for _ in range(extended_length - n)])
 
-# Assign the next value to the counter register
--   # [No corresponding line in the original code]
-+   counter_reg.next <<= next_value
+# Concatenate the replicated sign bits with the original wire
+extended_wire = pyrtl.concat(replicated_sign_bits, input_wire)
 
+# Now 'extended_wire' is the sign-extended version of 'input_wire'
 ```
-
-ERROR example3:
-```
-# Increment process for count1
-with pyrtl.conditional_assignment:
-    with reset:
-        counter1_reg.next <<= 0
-    with pyrtl.otherwise:
-        counter1_reg.next <<= counter1_reg + 1
-
-# Decrement process for count2
-with pyrtl.conditional_assignment:
-    with reset:
-        counter2_reg.next <<= 0
-    with pyrtl.otherwise:
-        counter2_reg.next <<= pyrtl.Select(counter2_reg == 0, 15, counter2_reg - 1)
-~~~~~~~~
-This is the compile warning/error:
- raise PyrtlError('error, .next value should be set once and only once')
-pyrtl.pyrtlexceptions.PyrtlError: error, .next value should be set once and only once
-```
-SOLUTION example3:
-```
-# Temporary wires to hold the next value for the counters
-next_count1 = pyrtl.WireVector(bitwidth=4)
-next_count2 = pyrtl.WireVector(bitwidth=4)
-
-# Logic to determine the next values
-with pyrtl.conditional_assignment:
-    with reset:
-        next_count1 <<= 0
-        next_count2 <<= 0
-    with pyrtl.otherwise:
-        next_count1 <<= pyrtl.corecircuits.mux(counter1_reg == 15, 0, counter1_reg + 1)
-        next_count2 <<= pyrtl.corecircuits.mux(counter2_reg == 0, 15, counter2_reg - 1)
-
-# Assign the next values to the counters
-counter1_reg.next <<= next_count1
-counter2_reg.next <<= next_count2
-```
+In this example, replace n with the current bit-width of your wire and m with the desired bit-width after sign extension. This method ensures that the sign is correctly extended for the new bit-width.

@@ -1,37 +1,30 @@
-If you got this error: 
+When ever you got this ERROR:
 ```
-Traceback (most recent call last):
-  File "/home/farzaneh/llm4pld/scripts/PyRTL/sign_extend_int_to_double.py", line 10, in <module>
-    upper_bits = sign_bit.extend(32)
-AttributeError: \'WireVector\' object has no attribute \'extend\'
+ File "/.local/lib/python3.10/site-packages/pyrtl/wire.py", line 414, in __getitem__
+    raise PyrtlError(\'selection %s must have at least one selected wire\' % str(item))
+pyrtl.pyrtlexceptions.PyrtlError: selection slice(3, 0, None) must have at least one selected wire
 ```
+SOLUTION:
+The error message you're encountering in PyRTL, PyrtlError: selection slice(3, 0, None) must have at least one selected wire, typically occurs when you're trying to slice a wire or a register, but the slice is improperly defined.
 
-The error message 'WireVector' object has no attribute 'extend' indicates that you're trying to use a method extend on a WireVector object in PyRTL, which does not exist. In PyRTL, WireVector objects do not have an extend method.
+1. Check Slice Indices: Ensure that the start index is less than or equal to the end index. In PyRTL, unlike standard Python slicing, both the start and the end indices are inclusive. For example, some_wire[3:0] would be a valid slice if some_wire has at least 4 bits.
 
-If your intention is to perform sign extension (i.e., extending a smaller bit-width WireVector to a larger bit-width while preserving the sign), you need to use a different approach in PyRTL. The typical way to achieve this is by concatenating the sign bit with the original wire vector the appropriate number of times.
+2. Ensure Non-Empty Slice: Make sure your slice actually includes at least one bit. If the start index is greater than the end index, you'll end up with an empty slice, which is not valid. For instance, some_wire[0:3] is correct for a 4-bit wire, but some_wire[3:0] would be incorrect and lead to an empty slice.
+3. Check Bitwidth: Verify that the wire or register you are trying to slice has a sufficient number of bits to accommodate your slicing request. For example, if you try to slice the first four bits [3:0] of a 3-bit wire, you'll get an error.
+4. Use Individual Bit Selection: If slicing is still causing issues, consider accessing individual bits and concatenating them manually. For instance, instead of some_wire[3:0], you could use pyrtl.concat(some_wire[3], some_wire[2], some_wire[1], some_wire[0]).
 
-Here's a general approach to perform sign extension:
 
-Determine the number of bits you need to add.
-Replicate the sign bit (the most significant bit of your original wire) that many times.
-Concatenate this replicated sign bit with the original wire.
-Here's an example of how to do it:
+ERROR example:
 ```
-import pyrtl
-
-# Assuming you have a wirevector 'input_wire' of length n and you want to sign-extend it to m bits
-input_wire = pyrtl.Input(n, 'input_wire')
-extended_length = m  # The desired length after sign extension
-
-# Extract the sign bit
-sign_bit = input_wire[-1]  # The most significant bit (sign bit)
-
-# Replicate the sign bit
-replicated_sign_bits = pyrtl.concat(*[sign_bit for _ in range(extended_length - n)])
-
-# Concatenate the replicated sign bits with the original wire
-extended_wire = pyrtl.concat(replicated_sign_bits, input_wire)
-
-# Now 'extended_wire' is the sign-extended version of 'input_wire'
+data_i = pyrtl.Input(bitwidth=1, name='data_i')
+shift_reg = pyrtl.Register(bitwidth=5, name='shift_reg')
+# Describe the behavior of the shift register on clock edge
+next_val = pyrtl.concat(shift_reg[3:0], data_i)  # shifted left, new data on the right # **************This will cause an ERROR
 ```
-In this example, replace n with the current bit-width of your wire and m with the desired bit-width after sign extension. This method ensures that the sign is correctly extended for the new bit-width.
+Solution: Correcting the Code
+```
+data_i = pyrtl.Input(bitwidth=1, name='data_i')
+shift_reg = pyrtl.Register(bitwidth=5, name='shift_reg')
+# Describe the behavior of the shift register on clock edge
+next_val = pyrtl.concat(shift_reg[3], shift_reg[2], shift_reg[1], shift_reg[0], data_i) # SOLUTION
+```
