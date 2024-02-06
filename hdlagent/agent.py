@@ -101,6 +101,7 @@ class Agent:
         self.pipe_stages          = 0
         self.lec_script           = os.path.join(self.script_dir,"common/comb_lec")
         self.tb_script            = os.path.join(self.script_dir,"common/iverilog_tb")
+        self.tb_compile_script    = os.path.join(self.script_dir,"common/iverilog_tb_compile")
         self.comp_n               = 0
         self.comp_f               = 0
         self.lec_n                = 0
@@ -457,13 +458,16 @@ class Agent:
         return ""
 
     # Executes the iVerilog tb compile script specified in the common.yaml
-    # document, returning iVerilog feedback and error if any were detected.
+    # document, returning iVerilog errors if any were detected.
     #
     # Intended use: compile new tb response from LLM that was dumped to file
     def test_tb_compile(self):
-        script  = self.tb_compile_script + self.tb
+        script  = self.tb_compile_script + " " + self.tb + " " + self.verilog
         res     = subprocess.run([script], capture_output=True, shell=True)
-        if "sytax error" in res:
+        # This should probably be its own function chosen by yaml file, if we stop using iverilog
+        if "syntax error" in res:
+            return res.split('\n')[0]
+        elif "error" in res:
             return res
         return ""
 
@@ -554,6 +558,7 @@ class Agent:
         self.reset_perf_counters()
         for i in range(tb_iterations):
             if self.compilation_loop(prompt, compile_iterations):
+                pass
                 # Reformat is free to modify both the gold and the gate
 
     # Helper function that reads and formats an LLM conversation
