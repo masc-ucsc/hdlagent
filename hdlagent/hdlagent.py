@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import openai
 import octoai
 import fire
@@ -37,6 +36,28 @@ Options:
   --openai_models_list  Prints a list of available OpenAI models to use for the LLM parameter
   --octoai_models_list  Prints a list of available OctoAI models to use for the LLM parameter
  """
+
+# WARNING: FEATURES BELOW ARE EXPERIMENTAL - FURTHER VALIDATION AND TESTING REQUIRED
+def worker(shared_list, shared_index, lock, spath: str, llm: str, lang: str, json_limit: int, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool):
+    # Each worker has its own Handler instance.
+    handler = Handler()
+
+    while True:
+        with lock:
+            # Check if there are still entries left to process
+            if shared_index.value < len(shared_list):
+                entry = shared_list[shared_index.value]
+                shared_index.value += 1
+            else:
+                break
+
+        # Use the Handler instance to process the entry
+        handler.set_name(entry)
+        print(f"Processing by {multiprocessing.current_process().name}: {handler.name}")
+        # Here, you could add more logic to process the entry further.
+
+def parallel_run(spath: str, llm: str, lang: str, json_path: str, json_limit: int, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool):
+
 
 def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: int = -1, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, help: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False):
     if (llm is not None) and (lang is not None) and (json_path is not None):

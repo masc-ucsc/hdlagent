@@ -18,3 +18,8 @@ responses:
     
     Write a Verilog module interface for the previous program description. Respond with nothing else but a SINGLE LINE code block that is the module interface declaration, without any comments or additional english explanation. Maintain the module and IO names exactly as they were stated in my original description and declare the port directions as input or output, do NOT put 'endmodule'.
     
+  request_testbench: |
+  
+    I have a Verilog module that was implemented given the following requirements:
+    {prompt}
+    Write an assertion based testbench for this module. Assert statements should test both simple and corner cases of the implementation for functional correctness. Do not include additional english explanation, just the code block. Keep comments short and at a minimum.

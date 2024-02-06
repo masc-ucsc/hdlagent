@@ -96,6 +96,7 @@ class Agent:
         # Resources used as a part of conversational flow and performance counters
         self.spec_conversation    = []
         self.compile_conversation = []
+        self.tb_conversation      = []
         self.name                 = ""
         self.pipe_stages          = 0
         self.lec_script           = os.path.join(self.script_dir,"common/comb_lec")
@@ -113,6 +114,7 @@ class Agent:
         self.w_dir       = './'
         self.spec_log    = "./logs/spec_log.md"
         self.compile_log = "./logs/compile_log.md"
+        self.tb_log      = "./logs/tb_log.md"
         self.fail_log    = "./logs/fail.md"
         if use_spec:
             self.spec    = "spec.yaml"
@@ -201,7 +203,7 @@ class Agent:
     # after being exctracted in a linted order from Yosys 'write_verilog' cmd
     #
     # Intended use: to set self.io
-    def extract_io(self, wires: str):
+    def extract_io_gold(self, wires: str):
         lines = [line.strip() for line in wires.split('\n') if line.strip()]
 
         def format_line(line):
@@ -248,12 +250,11 @@ class Agent:
             print(res_string)
             print("exiting...")
             exit()
-        else:   # populate the io list
+        else:   # Default method to populate the io list
             lines = res_string.split('\n')
             # Remove the 'SUCCESS' line
             res_string = '\n'.join(lines[1:])
-            self.io = self.extract_io(res_string)
-            #print(self.io)
+            self.io = self.extract_io_gold(res_string)
 
     # Parses common.yaml file for the 'request_spec' strings to create the
     # contents of the 'spec initial instruction' tuple which are the 2 queries
@@ -317,6 +318,13 @@ class Agent:
             lec_fail_prefix = self.responses['pipe_lec_fail_prefix']
             lec_fail_suffix = self.responses['pipe_lec_fail_suffix']
         return lec_fail_prefix + lec_output + lec_fail_suffix
+
+    # Parses common.yaml file and returns formatted 'request_testbench' string
+    # which asks for an assertion based testbench given the implementation prompt.
+    #
+    # Intended use: querying LLM for testbench generation
+    def get_request_tb_instruction(self, prompt: str):
+        return (self.responses['request_testbench']).format(prompt=prompt)
 
     # Primary interface between supported LLM's API and the Agent. 
     # Send queries and returns their response(s), all while maintaining
@@ -414,7 +422,7 @@ class Agent:
     # document, returning the compiler feedback and error if any were detected.
     #
     # Intended use: compile new code response from LLM that was dumped to file
-    def test_compile(self):
+    def test_code_compile(self):
         script  = self.compile_script + self.code
         res     = subprocess.run([script], capture_output=True, shell=True)
         errors  = self.check_errors(res)
@@ -448,6 +456,17 @@ class Agent:
             return res_string
         return ""
 
+    # Executes the iVerilog tb compile script specified in the common.yaml
+    # document, returning iVerilog feedback and error if any were detected.
+    #
+    # Intended use: compile new tb response from LLM that was dumped to file
+    def test_tb_compile(self):
+        script  = self.tb_compile_script + self.tb
+        res     = subprocess.run([script], capture_output=True, shell=True)
+        if "sytax error" in res:
+            return res
+        return ""
+
     # Creates Icarus Verilog testbench then executes it, carrying through the output
     # from either Icarus compiler errors or testbench results and feedback
     #
@@ -457,7 +476,7 @@ class Agent:
         res        = subprocess.run([script], capture_output=True, shell=True)
         res_string = (str(res.stdout))[2:-1].replace("\\n","\n")
         self.lec_n += 1 # is this how we want to do it?
-        if "error" in res_string:   # iverilog compile error
+        if ("error" in res_string) or ("ERROR" in res_string):   # iverilog compile error
             self.lec_f += 1
             return res_string
         return ""   #TODO: how to deal with logic mismatch??
@@ -469,6 +488,7 @@ class Agent:
     def reset_conversations(self):
         self.compile_conversation = self.initial_contexts
         self.spec_conversation    = []
+        self.tb_conversation      = []
 
     # Clears all performance counters kept by Agent
     #
@@ -488,11 +508,11 @@ class Agent:
     # supplemental context if enabled
     #
     # Intended use: inside of the lec loop
-    def compilation_loop(self, prompt: str, iterations: int = 1):
+    def code_compilation_loop(self, prompt: str, iterations: int = 1):
         current_query = self.get_compile_initial_instruction(prompt)
         for _ in range(iterations):
-            self.dump_code(self.query_model(self.compile_conversation, current_query, True))
-            compile_out  = self.test_compile()
+            self.dump_codeblock(self.query_model(self.compile_conversation, current_query, True), self.code)
+            compile_out  = self.test_code_compile()
             print(compile_out)
             if compile_out != "":
                 current_query = self.get_compile_iteration_instruction(compile_out)
@@ -500,11 +520,15 @@ class Agent:
                 return True
         return False
 
+    # Main generation and validation loop for benchmarking. Inner loop attempts complations
+    # and outer loop checks generated RTL versus supplied 'gold' Verilog for logical equivalence
+    #
+    # Intended use: benchmarking effectiveness of the agent
     def lec_loop(self, prompt: str, lec_iterations: int = 1, compile_iterations: int = 1):
         self.reset_conversations()
         self.reset_perf_counters()
         for i in range(lec_iterations):
-            if self.compilation_loop(prompt, compile_iterations):
+            if self.code_compilation_loop(prompt, compile_iterations):
                 # Reformat is free to modify both the gold and the gate
                 gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
                 lec_out = self.test_lec(gold, gate)
@@ -518,9 +542,19 @@ class Agent:
                     return True
             else:
                 if i == (lec_iterations - 1):
-                    self.dump_failure("compile failure\n" + self.test_compile())
+                    self.dump_failure("compile failure\n" + self.test_code_compile())
         self.dump_compile_conversation()
         return False
+
+    # Main generation and verification loop for boostrapping the implementation of RTL blocks.
+    # Inner loop attemps compilations of the target language and the outer loop generates
+    # and runs testbenches from a separate context that verify the behavior of the resulting verilog.
+    def tb_loop(self, prompt: str, tb_iterations: int = 1, compile_iterations: int = 1):
+        self.reset_conversations()
+        self.reset_perf_counters()
+        for i in range(tb_iterations):
+            if self.compilation_loop(prompt, compile_iterations):
+                # Reformat is free to modify both the gold and the gate
 
     # Helper function that reads and formats an LLM conversation
     # into a Markdown string
@@ -584,9 +618,9 @@ class Agent:
         isolated_code = "\n".join(code_blocks)
         return isolated_code
 
-    def dump_code(self, text: str):
+    def dump_codeblock(self, text: str, filepath: str):
         isolated_code = self.extract_codeblock(text)
-        with open(self.code, 'w') as file:
+        with open(filepath, 'w') as file:
             file.write(isolated_code)
 
     def report_statistics(self):
