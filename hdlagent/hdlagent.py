@@ -57,7 +57,7 @@ def worker(shared_list, shared_index, lock, spath: str, llm: str, lang: str, jso
         # Here, you could add more logic to process the entry further.
 
 def parallel_run(spath: str, llm: str, lang: str, json_path: str, json_limit: int, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool):
-
+    pass
 
 def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: int = -1, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, help: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False):
     if (llm is not None) and (lang is not None) and (json_path is not None):
