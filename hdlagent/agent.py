@@ -424,7 +424,8 @@ class Agent:
     #
     # Intended use: compile new code response from LLM that was dumped to file
     def test_code_compile(self):
-        script  = self.compile_script + self.code
+        my_path = os.path.dirname(os.path.abspath(__file__))
+        script  = my_path + self.compile_script + self.code
         res     = subprocess.run([script], capture_output=True, shell=True)
         errors  = self.check_errors(res)
         self.comp_n += 1
@@ -464,6 +465,7 @@ class Agent:
     def test_tb_compile(self):
         script  = self.tb_compile_script + " " + self.tb + " " + self.verilog
         res     = subprocess.run([script], capture_output=True, shell=True)
+        print(res)
         # This should probably be its own function chosen by yaml file, if we stop using iverilog
         if "syntax error" in res:
             return res.split('\n')[0]
@@ -558,6 +560,7 @@ class Agent:
         self.reset_perf_counters()
         for i in range(tb_iterations):
             if self.compilation_loop(prompt, compile_iterations):
+                gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
                 pass
                 # Reformat is free to modify both the gold and the gate
 

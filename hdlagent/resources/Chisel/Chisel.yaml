@@ -1,4 +1,4 @@
-compile_script: ./resources/Chisel/Chisel_generate_toplevel
+compile_script: /resources/Chisel/Chisel_generate_toplevel
 
 file_extension: .scala
 
