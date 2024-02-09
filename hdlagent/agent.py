@@ -96,7 +96,10 @@ class Agent:
         elif model in list_openai_models(False):
             self.openai_model = True
         else:
-            print("Error: invalid model, please check --list_openai_models or --list_octoai_models for available LLM selection, exiting...")
+            if ("OPENAI_API_KEY" not in os.environ) and ("OCTOAI_TOKEN" not in os.environ):
+                print("Please set either OPENAI_API_KEY or OCTOAI_TOKEN environment variable(s) before continuing, exiting...")
+            else:
+                print("Error: invalid model, please check --list_openai_models or --list_octoai_models for available LLM selection, exiting...")
             exit()
         self.model = model
 
