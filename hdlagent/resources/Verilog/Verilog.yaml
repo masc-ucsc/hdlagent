@@ -23,14 +23,14 @@ responses:
     This is the compile warning/error:
 
   comb_lec_fail_prefix: |
-    The Verilog module you just wrote was tested for logical equivalence versus a golden model named 'gold'. Below is a truth table that shows where the gold models output differs from the module you just supplied, which has been named 'gate':
+    The previous module failed some test cases of the desired implementation, here are some of the results:
 
   pipe_lec_fail_prefix: |
     The Verilog module you just wrote was tested for logical equivalence versus a golden model named 'gold'. Below are two truth tables that represent the input/output values of the ideal 'gold' model and the module you supplied, renamed 'gate'. These are the last two timesteps from the test before the 'gate' models output diverged from the 'gold'. Hence why in the top table, the in/out values are the same but the bottom table the values differ:
 
   lec_fail_suffix: |
     
-    Please rewrite the Verilog module in its entirety to match the expected output values of the golden model. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
+    Please rewrite the Verilog module in its entirety to match the expected output values of the testbench. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
 
   system_info: |
     You are a Hardware description language code generator. Your responses are limited to ONLY code blocks, no english explanation.
