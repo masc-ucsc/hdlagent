@@ -1,3 +1,5 @@
+lec_filter_function: resources.common.filter_functions.comment_filter_function
+
 responses:
   suggest_prefix: |
     

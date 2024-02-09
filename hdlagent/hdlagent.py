@@ -29,6 +29,8 @@ Options:
                         the core design.
   --w_dir <path>        Path for working directory, all resulting source code and log files
                         will be left here.
+  --lec_limit <val>     Used only with json_path, sets how many iterations of LEC mismatches are 
+                        allowed and fixes are attempted until failure.
   --init_context        Allows the agent to append the language specific tutorial and context to
                         provide the LLM with initial knowledge on the language syntax and grammar.
   --supp_context        Allows the agent to access the 'supplemental context' database to provide
@@ -59,10 +61,11 @@ def worker(shared_list, shared_index, lock, spath: str, llm: str, lang: str, jso
 def parallel_run(spath: str, llm: str, lang: str, json_path: str, json_limit: int, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool):
     pass
 
-def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: int = -1, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, help: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False):
+def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: int = -1, lec_limit: int = 1, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, help: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False):
     if (llm is not None) and (lang is not None) and (json_path is not None):
         spath      = resources.files('resources')
         my_handler = Handler()
+        my_handler.set_lec_iter(lec_limit)
         my_handler.sequential_entrypoint(spath, llm, lang, json_path, json_limit, w_dir, use_spec, init_context, supp_context)
     elif openai_models_list:
         print(list_openai_models())

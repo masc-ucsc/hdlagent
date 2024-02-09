@@ -71,6 +71,7 @@ class Agent:
         current_script_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(current_script_dir)
         sys.path.append(project_root)
+
         # Error message check from compiler for target language
         module_name, func_name = config['error_check_function'].rsplit('.', 1)
         module = importlib.import_module(module_name)
@@ -80,6 +81,11 @@ class Agent:
         module_name, func_name = config['reformat_verilog_function'].rsplit('.', 1)
         module = importlib.import_module(module_name)
         self.reformat_verilog = getattr(module, func_name)
+
+        # Filters and reformats Yosys LEC feedback
+        module_name, func_name = common['lec_filter_function'].rsplit('.', 1)
+        module = importlib.import_module(module_name)
+        self.lec_filter_function = getattr(module, func_name)
 
         # Name to be specified in chat completion API of target LLM
         self.octoai_model = False
@@ -438,6 +444,7 @@ class Agent:
     # counter-examples to disprove equivalence. The output of the script
     # will be 'SUCCESS' if no counter-example is found, or will be a (time-step)
     # truth table dump of the golden vs gate output values.
+    # Note: lec_filter_function() is intended to reformat the output of Yosys LEC
     #
     # Intended use: for lec check after RTL has successfully compiled into Verilog
     def test_lec(self, gold: str = None, gate: str = None):
@@ -455,7 +462,7 @@ class Agent:
         self.lec_n += 1
         if "SUCCESS" not in res_string:
             self.lec_f += 1
-            return res_string
+            return self.lec_filter_function(res_string)
         return ""
 
     # Executes the iVerilog tb compile script specified in the common.yaml
