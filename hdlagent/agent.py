@@ -170,7 +170,6 @@ class Agent:
         if directory and not os.path.exists(directory):
             os.makedirs(directory)
         self.w_dir = directory
-        print(self.w_dir)
         self.update_paths()
 
     # Helper function to others that may change or set file names and paths.
@@ -323,10 +322,9 @@ class Agent:
     # Intended use: inside lec loop, after lec failure detected and more lec iterations available
     def get_lec_fail_instruction(self, lec_output: str):
         lec_fail_prefix = self.responses['comb_lec_fail_prefix']
-        lec_fail_suffix = self.responses['comb_lec_fail_suffix']
+        lec_fail_suffix = self.responses['lec_fail_suffix']
         if self.pipe_stages > 0:
             lec_fail_prefix = self.responses['pipe_lec_fail_prefix']
-            lec_fail_suffix = self.responses['pipe_lec_fail_suffix']
         return lec_fail_prefix + lec_output + lec_fail_suffix
 
     # Parses common.yaml file and returns formatted 'request_testbench' string
@@ -465,8 +463,10 @@ class Agent:
         self.lec_n += 1
         if "SUCCESS" not in res_string:
             self.lec_f += 1
+            print("raw lec:\n" + res_string)
+            print("filter lec:\n" + self.lec_filter_function(res_string))
             return self.lec_filter_function(res_string)
-        return ""
+        return None
 
     # Executes the iVerilog tb compile script specified in the common.yaml
     # document, returning iVerilog errors if any were detected.
@@ -548,18 +548,17 @@ class Agent:
                 # Reformat is free to modify both the gold and the gate
                 gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
                 lec_out = self.test_lec(gold, gate)
-                if lec_out != "":
-                    if i == (lec_iterations - 1):
-                        self.dump_failure("lec failure\n" + lec_out)
-                    else:
-                        prompt = self.get_lec_fail_instruction(lec_out)
+                print("made it here:\n" + lec_out)
+                failure_reason = lec_out
+                if lec_out is not None:
+                    prompt = self.get_lec_fail_instruction(lec_out)
                 else:
                     self.dump_compile_conversation()
                     return True
             else:
-                if i == (lec_iterations - 1):
-                    self.dump_failure("compile failure\n" + self.test_code_compile())
+                failure_reason = self.test_code_compile()
         self.dump_compile_conversation()
+        self.dump_failure("fail:\n" + failure_reason)
         return False
 
     # Main generation and verification loop for boostrapping the implementation of RTL blocks.
@@ -620,6 +619,8 @@ class Agent:
             md_file.write(reason)
 
     def extract_codeblock(self, text:str):
+        if ('```') not in text:
+            return text
         lines = text.split('\n')
         code_blocks = []
         capture = False
