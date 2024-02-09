@@ -27,6 +27,8 @@ Options:
                         for 'instruction' and 'interface'. The spec is meant to iterate over the
                         raw prompt and formalize it, along with validate that the LLM understands
                         the core design.
+  --start_from <name>   Allows the user to specify which entry in the supplied .json file to start
+                        the run from, effectively setting the starting index.
   --w_dir <path>        Path for working directory, all resulting source code and log files
                         will be left here.
   --lec_limit <val>     Used only with json_path, sets how many iterations of LEC mismatches are 
@@ -61,12 +63,12 @@ def worker(shared_list, shared_index, lock, spath: str, llm: str, lang: str, jso
 def parallel_run(spath: str, llm: str, lang: str, json_path: str, json_limit: int, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool):
     pass
 
-def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: int = -1, lec_limit: int = 1, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, help: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False):
+def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: int = -1, lec_limit: int = 1, start_from: str = None, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, help: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False):
     if (llm is not None) and (lang is not None) and (json_path is not None):
         spath      = resources.files('resources')
         my_handler = Handler()
         my_handler.set_lec_iter(lec_limit)
-        my_handler.sequential_entrypoint(spath, llm, lang, json_path, json_limit, w_dir, use_spec, init_context, supp_context)
+        my_handler.sequential_entrypoint(spath, llm, lang, json_path, json_limit, start_from, w_dir, use_spec, init_context, supp_context)
     elif openai_models_list:
         print(list_openai_models())
     elif octoai_models_list:
