@@ -3,6 +3,7 @@ import markdown
 import openai
 import os
 import octoai
+from pathlib import Path
 import re
 import subprocess
 import sys
@@ -165,9 +166,11 @@ class Agent:
     # Intended use: right after the beginning of a new Agent's instantiation
     def set_w_dir(self, path: str):
         # Now create the dir if it does not exist
-        directory = os.path.dirname(self.w_dir)
+        directory = Path(path) / ""
         if directory and not os.path.exists(directory):
             os.makedirs(directory)
+        self.w_dir = directory
+        print(self.w_dir)
         self.update_paths()
 
     # Helper function to others that may change or set file names and paths.

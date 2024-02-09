@@ -54,7 +54,8 @@ class Handler:
             exit()
         self.tb_iter = n
 
-    def single_json_run(self, entry):
+    def single_json_run(self, entry, base_w_dir):
+            self.agent.set_w_dir(os.path.join(base_w_dir, entry['name']))
             self.agent.set_module_name(entry['name'])
             self.agent.set_pipeline_stages(int(entry['pipeline_stages']))
 
@@ -68,19 +69,28 @@ class Handler:
             self.agent.lec_loop(prompt, self.lec_iter, self.comp_iter)
         
 
-    def json_run(self, json_data, limit: int = -1):
+    def json_run(self, json_data, limit: int = -1, start_from: str = None):
         if json_data is None:
             print("Error: no json file registered, exiting...")
             exit()
-
         data = json_data['verilog_problems']
-        if limit == -1 or limit > len(data):
+
+        start_idx = 0
+        if start_from is not None:
+            start_idx = next((i for i, entry in enumerate(data) if entry['name'] == start_from), None)
+            if start_idx is None:
+                print("Error: start_from .json entry was not found, exiting...")
+                exit()
+        limit += start_idx
+
+        if (limit < 1) or (limit > len(data)):
             limit = len(data)
 
-        for i in range(limit):
-            self.single_json_run(data[i])
+        base_w_dir = self.agent.w_dir
+        for i in range(start_idx, limit):
+            self.single_json_run(data[i], base_w_dir)
             
-    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_path: str = None, json_limit: int = -1, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False):
+    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_path: str = None, json_limit: int = -1, start_from: str = None, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False):
         self.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
         self.agent.set_w_dir(w_dir)
 
@@ -96,4 +106,4 @@ class Handler:
                 except json.JSONDecodeError:
                     print("Error: json_path supplied is not a valid .json file, exiting...")
                     exit()
-                self.json_run(data, json_limit)
+                self.json_run(data, json_limit, start_from)
