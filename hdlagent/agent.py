@@ -466,6 +466,8 @@ class Agent:
         self.lec_n += 1
         if "SUCCESS" not in res_string:
             self.lec_f += 1
+            if "ERROR" in res_string:
+                return res_string
             return self.lec_filter_function(res_string, lec_feedback_limit)
         return None
 
@@ -558,8 +560,8 @@ class Agent:
                     return True
             else:
                 failure_reason = self.test_code_compile()
+        self.dump_failure(failure_reason, self.compile_conversation)
         self.dump_compile_conversation()
-        self.dump_failure("fail:\n" + failure_reason)
         return False
 
     # Main generation and verification loop for boostrapping the implementation of RTL blocks.
@@ -612,12 +614,13 @@ class Agent:
         with open(self.compile_log, 'w') as md_file:
             md_file.write(md_content)
 
-    # Writes reason for *lec loop* failure to fail log
+    # Writes reason for failure to fail log
     #
-    # Intended use: when lec_loop fails, mainly for benchmarking
-    def dump_failure(self, reason: str):
+    # Intended use: when *_loop fails, mainly for benchmarking
+    def dump_failure(self, reason: str, conversation):
+        self.failure_message(conversation)
         with open(self.fail_log, "w") as md_file:
-            md_file.write(reason)
+            md_file.write("Reason for failure:\n" + reason)
 
     def extract_codeblock(self, text:str):
         if ('```') not in text:
@@ -642,6 +645,11 @@ class Agent:
         isolated_code = self.extract_codeblock(text)
         with open(filepath, 'w') as file:
             file.write(isolated_code)
+
+    def failure_message(self, conversation):
+        msg = f"Failure!\nAfter {self.comp_f} compilations failures and {self.lec_f} testing failures, your desired circuit could not be faithfully generated!\nSee {self.fail_log} for final failure reason."
+        print("**System:** "+ msg)
+        conversation.append({"role":"System", "content":msg})
 
     def success_message(self, conversation):
         msg = f"Success!\nAfter {self.comp_f} compilation failures and {self.lec_f} testing failures, your desired circuit was generated!"
