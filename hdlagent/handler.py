@@ -6,11 +6,12 @@ class Handler:
     def __init__(self, agent: Agent = None):
         self.agent = agent
 
-        self.comp_iter = 4
-        self.lec_iter  = 1
-        self.tb_iter   = 1
+        self.comp_iter          = 4
+        self.lec_iter           = 1
+        self.tb_iter            = 1
+        self.lec_feedback_limit = 1
 
-        self.id        = None
+        self.id                 = None
 
     # Assign one agent to handler
     #
@@ -54,6 +55,12 @@ class Handler:
             exit()
         self.tb_iter = n
 
+    # Limits how many testcases can be given back from Yosys LEC for iterative feedback
+    #
+    # Intended use: before a new run
+    def set_lec_feedback_limit(self, n: int):
+        self.lec_feedback_limit = n
+
     def single_json_run(self, entry, base_w_dir):
             self.agent.set_w_dir(os.path.join(base_w_dir, entry['name']))
             self.agent.set_module_name(entry['name'])
@@ -66,7 +73,7 @@ class Handler:
                 prompt = self.agent.read_spec()
 
             self.agent.dump_gold(entry['response'])
-            self.agent.lec_loop(prompt, self.lec_iter, self.comp_iter)
+            self.agent.lec_loop(prompt, self.lec_iter, self.lec_feedback_limit, self.comp_iter)
         
 
     def json_run(self, json_data, limit: int = -1, start_from: str = None):
