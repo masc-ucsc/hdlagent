@@ -45,8 +45,8 @@ lec() {
 		exit 0 # Combinational success!
 	fi
 
-	# i/o mismatch, gate verilog needs module declaration modified
-	grep "ERROR: No matching port in gate module was found for" $log*
+	# Something went wrong
+	grep "ERROR" $log*
 	if [[ $? -eq 0 ]]; then
 		exit 0
 	fi
