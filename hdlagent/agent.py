@@ -451,7 +451,7 @@ class Agent:
     # Note: lec_filter_function() is intended to reformat the output of Yosys LEC
     #
     # Intended use: for lec check after RTL has successfully compiled into Verilog
-    def test_lec(self, gold: str = None, gate: str = None):
+    def test_lec(self, gold: str = None, gate: str = None, lec_feedback_limit: int = -1):
         # ./*_lec <golden_verilog> <llm_verilog>
         if gold is None:
             if self.gold is None:
@@ -466,9 +466,7 @@ class Agent:
         self.lec_n += 1
         if "SUCCESS" not in res_string:
             self.lec_f += 1
-            print("raw lec:\n" + res_string)
-            print("filter lec:\n" + self.lec_filter_function(res_string))
-            return self.lec_filter_function(res_string)
+            return self.lec_filter_function(res_string, lec_feedback_limit)
         return None
 
     # Executes the iVerilog tb compile script specified in the common.yaml
@@ -543,19 +541,19 @@ class Agent:
     # and outer loop checks generated RTL versus supplied 'gold' Verilog for logical equivalence
     #
     # Intended use: benchmarking effectiveness of the agent
-    def lec_loop(self, prompt: str, lec_iterations: int = 1, compile_iterations: int = 1):
+    def lec_loop(self, prompt: str, lec_iterations: int = 1, lec_feedback_limit: int = -1, compile_iterations: int = 1):
         self.reset_conversations()
         self.reset_perf_counters()
         for i in range(lec_iterations):
             if self.code_compilation_loop(prompt, compile_iterations):
                 # Reformat is free to modify both the gold and the gate
                 gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
-                lec_out = self.test_lec(gold, gate)
-                print("made it here:\n" + lec_out)
+                lec_out = self.test_lec(gold, gate, lec_feedback_limit)
                 failure_reason = lec_out
                 if lec_out is not None:
                     prompt = self.get_lec_fail_instruction(lec_out)
                 else:
+                    self.success_message(self.compile_conversation)
                     self.dump_compile_conversation()
                     return True
             else:
@@ -644,6 +642,11 @@ class Agent:
         isolated_code = self.extract_codeblock(text)
         with open(filepath, 'w') as file:
             file.write(isolated_code)
+
+    def success_message(self, conversation):
+        msg = f"Success!\nAfter {self.comp_f} compilation failures and {self.lec_f} testing failures, your desired circuit was generated!"
+        print("**System:** "+ msg)
+        conversation.append({"role":"System", "content":msg})
 
     def report_statistics(self):
         self.world_clock_time = time.time() - self.world_clock_time
