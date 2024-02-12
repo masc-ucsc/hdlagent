@@ -35,7 +35,7 @@ lec() {
 	yosy_equiv=""
 	#yosys_equiv="equiv_simple;"
 
-	yosys -p "${yosys_read}; ${yosys_prep}; ${yosys_equiv}; equiv_status -assert" \
+	timeout 10 yosys -p "${yosys_read}; ${yosys_prep}; ${yosys_equiv}; equiv_status -assert" \
 		&>$log
 
 	# Ideal case
