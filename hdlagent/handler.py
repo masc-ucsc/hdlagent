@@ -90,7 +90,7 @@ class Handler:
                 exit()
         limit += start_idx
 
-        if (limit < 1) or (limit > len(data)):
+        if (limit < 1) or (limit > len(data)) or (limit < start_idx):
             limit = len(data)
 
         base_w_dir = self.agent.w_dir

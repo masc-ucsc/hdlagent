@@ -505,7 +505,7 @@ class Agent:
     #
     # Intended use: before starting a new Agent run
     def reset_conversations(self):
-        self.compile_conversation = self.initial_contexts
+        self.compile_conversation = self.initial_contexts.copy()
         self.spec_conversation    = []
         self.tb_conversation      = []
 
@@ -562,6 +562,7 @@ class Agent:
                 failure_reason = self.test_code_compile()
         self.dump_failure(failure_reason, self.compile_conversation)
         self.dump_compile_conversation()
+        self.reset_conversations()
         return False
 
     # Main generation and verification loop for boostrapping the implementation of RTL blocks.
@@ -619,6 +620,7 @@ class Agent:
     # Intended use: when *_loop fails, mainly for benchmarking
     def dump_failure(self, reason: str, conversation):
         self.failure_message(conversation)
+        os.makedirs(os.path.dirname(self.fail_log), exist_ok=True)
         with open(self.fail_log, "w") as md_file:
             md_file.write("Reason for failure:\n" + reason)
 
