@@ -300,9 +300,8 @@ class Agent:
             suffix = self.responses['give_instr_suffix']
         if pipe_stages > 0:
             prefix = self.responses['pipe_give_instr_prefix']
-        #if self.spec is not None:   # Spec run, read from *.yaml file
-        #    spec = self.read_spec()
-        #    prompt = spec['description'] + self.responses['spec_give_interface'] + spec['interface']
+        # Escape curly braces for string formatting
+        prompt = prompt.replace("{", "{{").replace("}", "}}")
         return (prefix + prompt + suffix).format(name=name, pipe_stages=pipe_stages)
 
     # Parses language-specific *.yaml file for the 'compile_err' strings
