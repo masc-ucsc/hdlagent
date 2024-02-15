@@ -1,6 +1,7 @@
 import importlib
 import markdown
 import openai
+from openai import OpenAI
 import os
 import octoai
 from pathlib import Path
@@ -14,9 +15,12 @@ from importlib import resources
 
 def list_openai_models(warn: bool = True):
     if "OPENAI_API_KEY" in os.environ:
+        response = openai.models.list()
         ret_list = []
-        for entry in openai.Model.list()['data']:
-            ret_list.append(entry['id'])
+        for entry in response.data:
+            ret_list.append(entry.id)
+
+        # FIXME: Return only models that work with client.chat E.g: gpt-3.5-turbo-instruct fails
         return ret_list
     else:
         if warn:
@@ -93,8 +97,10 @@ class Agent:
         self.openai_model = False
         if model in list_octoai_models(False):
             self.octoai_model = True
+            self.client = octoai.client.Client()
         elif model in list_openai_models(False):
             self.openai_model = True
+            self.client = OpenAI()
         else:
             if ("OPENAI_API_KEY" not in os.environ) and ("OCTOAI_TOKEN" not in os.environ):
                 print("Please set either OPENAI_API_KEY or OCTOAI_TOKEN environment variable(s) before continuing, exiting...")
@@ -361,11 +367,10 @@ class Agent:
         query_start_time = time.time()
 
         if self.octoai_model:
-            client = octoai.client.Client()
-            completion = client.chat.completions.create(
+            completion = self.client.chat.completions.create(
                 model=self.model,
                 messages=conversation,
-                max_tokens=8192,
+                max_tokens=8192,  # FIXME: automatic by model? 34B can do 16K, 70B only 4K
                 presence_penalty=0,
                 temperature=0.1,
                 top_p=0.9,
@@ -374,14 +379,13 @@ class Agent:
             self.prompt_tokens += completion.dict()['usage']['prompt_tokens']
             self.completion_tokens += completion.dict()['usage']['completion_tokens']
         elif self.openai_model:
-            # Use the OpenAI Completion API in a chat-based approach
-            completion = openai.ChatCompletion.create(
+            completion = self.client.chat.completions.create(
                 model=self.model,  # Use the model we want for research
                 messages=conversation,
             )
-            response = completion.choices[0].message['content']
-            self.prompt_tokens += completion['usage']['prompt_tokens']
-            self.completion_tokens += completion['usage']['completion_tokens']
+            response = completion.choices[0].message.content
+            self.prompt_tokens += completion.usage.prompt_tokens
+            self.completion_tokens += completion.usage.completion_tokens
         else:
             print("Error: Unsupported model requested")
             exit()

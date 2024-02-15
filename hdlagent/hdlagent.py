@@ -75,9 +75,9 @@ def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: i
         my_handler.set_lec_feedback_limit(lec_feedback_limit)
         my_handler.sequential_entrypoint(spath, llm, lang, json_path, json_limit, start_from, w_dir, use_spec, init_context, supp_context)
     elif openai_models_list:
-        print(list_openai_models())
+        print(agent.list_openai_models())
     elif octoai_models_list:
-        print(list_octoai_models())
+        print(agent.list_octoai_models())
     else:
         print(help_string)
 
