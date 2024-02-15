@@ -64,6 +64,7 @@ class Handler:
     def single_json_run(self, entry, base_w_dir):
             self.agent.set_w_dir(os.path.join(base_w_dir, entry['name']))
             self.agent.set_module_name(entry['name'])
+            self.agent.set_interface(entry['interface'])
             self.agent.set_pipeline_stages(int(entry['pipeline_stages']))
 
             prompt = entry['instruction']
