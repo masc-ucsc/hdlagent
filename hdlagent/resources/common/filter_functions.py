@@ -11,14 +11,15 @@ def comment_filter_function(lec_feedback: str, limit: int = -1):
         input_values = []
         for line in table_lines:
             parts = line.split()
-            signal_name = parts[0][1:]  # Remove leading backslash
-            bin_value = parts[-1]  # Binary representation
-            if signal_name.startswith("\\gate_"):
-                gate_values.append(f"{signal_name[6:]} = 'b{bin_value}")
-            elif signal_name.startswith("\\gold_"):
-                gold_values.append(f"{signal_name[6:]} = 'b{bin_value}")
-            else:
-                input_values.append(f"{signal_name[4:]} = 'b{bin_value}")
+            if parts:
+                signal_name = parts[0][1:]  # Remove leading backslash
+                bin_value = parts[-1]  # Binary representation
+                if signal_name.startswith("\\gate_"):
+                    gate_values.append(f"{signal_name[6:]} = 'b{bin_value}")
+                elif signal_name.startswith("\\gold_"):
+                    gold_values.append(f"{signal_name[6:]} = 'b{bin_value}")
+                else:
+                    input_values.append(f"{signal_name[4:]} = 'b{bin_value}")
         ret_string  = "Test input value(s):\n"
         ret_string += '\n'.join(input_values)
         ret_string += "\nDUT output value(s):\n"

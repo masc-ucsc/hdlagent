@@ -12,9 +12,18 @@ export OPENAI_API_KEY=.....
 export OCTOAI_TOKEN=....
 ```
 
-Sample execution:
+### List available models
+
+Running directly from the checkout repository
+```
+poetry run python ./hdlagent/hdlagent.py  --openai_models_list
+poetry run python ./hdlagent/hdlagent.py  --octoai_models_list
+```
+
+### Run a Simple test from json
+
 ```
 cd sample
-poetry run python ../hdlagent/hdlagent.py --llm=codellama-34b-instruct-fp16 --lang=Verilog --json_path=./sample-test.json --lec_source=../../llm4pld/RTL/Verilog/HDLEval-comb/
+poetry run python ../hdlagent/hdlagent.py  --llm=gpt-3.5-turbo-0613  --lang=Verilog --json_path ./sample-test.json
 ```
 
