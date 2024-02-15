@@ -108,6 +108,7 @@ class Agent:
         self.compile_conversation = []
         self.tb_conversation      = []
         self.name                 = ""
+        self.interface            = ""
         self.pipe_stages          = 0
         self.lec_script           = os.path.join(self.script_dir,"common/comb_lec")
         self.tb_script            = os.path.join(self.script_dir,"common/iverilog_tb")
@@ -154,13 +155,40 @@ class Agent:
     # desired for the prompted RTL design, this will modify the LEC
     # method and queries accordingly.
     #
-    # Intended use: at the beginning of a new initial propmt submission
+    # Intended use: at the beginning of a new initial prompt submission
     def set_pipeline_stages(self, pipe_stages: int):
         if (pipe_stages > 0):
             self.lec_script = os.path.join(self.script_dir,"common/temp_lec")
         else:
             self.lec_script = os.path.join(self.script_dir,"common/comb_lec")
         self.pipe_stages = pipe_stages
+
+    # The current run will assume this is the interface of the target module,
+    # styled in a Verilog-legal module declaration syntax.
+    #
+    # Intended use: at the beginning of a new initial prompt submission
+    def set_interface(self, interface: str):
+        # regex search for substring between '(' and ');'
+        pattern = r"\((.*?)\);"
+        match   = re.search(pattern, interface.replace('\n', ' '))
+        if match:
+            result = match.group(1)
+            ports  = result.split(',')
+            # io format is ['direction', 'signness', 'bitwidth', 'name']
+            for port in ports:
+                parts = port.split()
+                if not parts[1] == "signed":    # empty string for unsigned
+                    parts.insert(1, '')
+                if not parts[2].startswith('['): # explicitly add bit wire length
+                    parts.insert(2, '[0:0]')
+                self.io.append(parts)
+        else:
+            print("Error: 'interface' is not valid Verilog-style module declaration, exiting...")
+            exit()
+        # XXX - this is bad, name and interface can be out of sync, maybe get rid of name?
+        self.interface  = f"module {self.name}("
+        self.interface += ', '.join([' '.join(inner_list) for inner_list in self.io])
+        self.interface += ");"
 
     # Creates and registers the 'working directory' for the current run as
     # so all output from the run including logs and produced source code
@@ -210,23 +238,6 @@ class Agent:
         description = spec['description']
         interface   = spec['interface']
         return (self.responses['spec_to_prompt']).format(description=description,interface=interface)
-        
-    # Helper function to create a triplet list that defines a Verilog modules io
-    # after being exctracted in a linted order from Yosys 'write_verilog' cmd
-    #
-    # Intended use: to set self.io
-    def extract_io_gold(self, wires: str):
-        lines = [line.strip() for line in wires.split('\n') if line.strip()]
-
-        def format_line(line):
-            parts = line.split()
-            if not parts[1].startswith('['):
-                parts.insert(1, '[0:0]')
-            parts[-1] = parts[-1].replace(';', '')
-            return tuple(parts)
-
-        return [format_line(line) for line in lines]
-
 
     # Registers the file path of the golden Verilog to be used for LEC
     # and dumps the contents into the file.
@@ -266,7 +277,6 @@ class Agent:
             lines = res_string.split('\n')
             # Remove the 'SUCCESS' line
             res_string = '\n'.join(lines[1:])
-            self.io = self.extract_io_gold(res_string)
 
     # Parses common.yaml file for the 'request_spec' strings to create the
     # contents of the 'spec initial instruction' tuple which are the 2 queries
@@ -287,7 +297,6 @@ class Agent:
     #
     # Intended use: to begin the iterative part of the compilation conversation
     def get_compile_initial_instruction(self, prompt: str): 
-        name        = self.name
         pipe_stages = self.pipe_stages
         prefix = self.responses['comb_give_instr_prefix']
         output_count = 0    # XXX - fixme hacky, Special case for DSLX
@@ -302,7 +311,7 @@ class Agent:
             prefix = self.responses['pipe_give_instr_prefix']
         # Escape curly braces for string formatting
         prompt = prompt.replace("{", "{{").replace("}", "}}")
-        return (prefix + prompt + suffix).format(name=name, pipe_stages=pipe_stages)
+        return (prefix + prompt + suffix).format(interface=self.interface,name=self.name, pipe_stages=pipe_stages)
 
     # Parses language-specific *.yaml file for the 'compile_err' strings
     # to create the 'iteration instruction' which is the query sent to the
