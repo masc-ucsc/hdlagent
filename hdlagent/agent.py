@@ -127,6 +127,7 @@ class Agent:
         self.completion_tokens    = 0
         self.llm_query_time       = 0.0
         self.world_clock_time     = 0.0
+        self.prev_test_cases      = -1
 
         # Where the resulting source files and logs will be managed and left
         self.w_dir       = './'
@@ -174,6 +175,9 @@ class Agent:
     #
     # Intended use: at the beginning of a new initial prompt submission
     def set_interface(self, interface: str):
+        # Remove (legal) whitespaces from between brackets
+        interface =  re.sub(r'\[\s*(.*?)\s*\]', lambda match: f"[{match.group(1).replace(' ', '')}]", interface)
+        self.io = []
         # regex search for substring between '(' and ');'
         pattern = r"\((.*?)\);"
         match   = re.search(pattern, interface.replace('\n', ' '))
@@ -337,12 +341,15 @@ class Agent:
     # "Comparing your code to desired truth table here are mismatches: <lec_mesg>, fix it"
     #
     # Intended use: inside lec loop, after lec failure detected and more lec iterations available
-    def get_lec_fail_instruction(self, lec_output: str):
+    def get_lec_fail_instruction(self, test_cases: int, lec_output: str):
         lec_fail_prefix = self.responses['comb_lec_fail_prefix']
+        if (test_cases < self.prev_test_cases) and (self.prev_test_cases != -1):
+            lec_fail_prefix = self.responses['improve_comb_lec_fail_prefix']
         lec_fail_suffix = self.responses['lec_fail_suffix']
         if self.pipe_stages > 0:
             lec_fail_prefix = self.responses['pipe_lec_fail_prefix']
-        return lec_fail_prefix + lec_output + lec_fail_suffix
+        self.prev_test_cases = test_cases
+        return lec_fail_prefix.format(test_count=test_cases, feedback=lec_output) + lec_fail_suffix
 
     # Parses common.yaml file and returns formatted 'request_testbench' string
     # which asks for an assertion based testbench given the implementation prompt.
@@ -558,14 +565,15 @@ class Agent:
     def lec_loop(self, prompt: str, lec_iterations: int = 1, lec_feedback_limit: int = -1, compile_iterations: int = 1):
         self.reset_conversations()
         self.reset_perf_counters()
+        self.prev_test_cases = -1
         for i in range(lec_iterations):
             if self.code_compilation_loop(prompt, compile_iterations):
                 # Reformat is free to modify both the gold and the gate
                 gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
                 lec_out = self.test_lec(gold, gate, lec_feedback_limit)
-                failure_reason = lec_out
                 if lec_out is not None:
-                    prompt = self.get_lec_fail_instruction(lec_out)
+                    test_count, failure_reason = lec_out.split('\n', 1)
+                    prompt = self.get_lec_fail_instruction(int(test_count), failure_reason)
                 else:
                     self.success_message(self.compile_conversation)
                     self.dump_compile_conversation()
