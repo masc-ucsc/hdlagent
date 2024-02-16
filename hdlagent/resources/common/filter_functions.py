@@ -37,8 +37,10 @@ def comment_filter_function(lec_feedback: str, limit: int = -1):
     limited_list = ret_list[0:limit]
     res_string = ""
     i = 0
-    test_count = len(ret_list)
+    test_count = 0
+    if ret_list is not None:
+        test_count = len(ret_list)
     for entry in limited_list:
         i += 1
-        res_string += (f"Testcase {i}/{test_count} failed\n".format(i=i,test_count=test_count)) + entry + "\n"
-    return res_string
+        res_string += (f"Testcase failed:\n".format(i=i,test_count=test_count)) + entry + "\n\n"
+    return str(test_count) + "\n" + res_string
