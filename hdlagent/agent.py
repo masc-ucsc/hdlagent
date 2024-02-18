@@ -177,16 +177,28 @@ class Agent:
     def set_interface(self, interface: str):
         # Remove (legal) whitespaces from between brackets
         interface =  re.sub(r'\[\s*(.*?)\s*\]', lambda match: f"[{match.group(1).replace(' ', '')}]", interface)
+        interface = interface.replace('\n', ' ')
+        # regex search for module name
+        match     = re.search(r'module\s+([^\s]+)\s*\(', interface)
+        if match:
+            module_name = match.group(1).strip()
+            self.set_module_name(module_name)
+        else:
+            print("Error: 'interface' does not declare module name properly, exiting...")
+            exit()
         self.io = []
         # regex search for substring between '(' and ');'
         pattern = r"\((.*?)\);"
-        match   = re.search(pattern, interface.replace('\n', ' '))
+        match   = re.search(pattern, interface)
         if match:
             result = match.group(1)
             ports  = result.split(',')
             # io format is ['direction', 'signness', 'bitwidth', 'name']
             for port in ports:
                 parts = port.split()
+                if parts[0] not in ["input","output","inout"]:
+                    print("Error: 'interface' contains invalid port direction, exiting...")
+                    exit()
                 if not parts[1] == "signed":    # empty string for unsigned
                     parts.insert(1, '')
                 if not parts[2].startswith('['): # explicitly add bit wire length
@@ -195,7 +207,6 @@ class Agent:
         else:
             print("Error: 'interface' is not valid Verilog-style module declaration, exiting...")
             exit()
-        # XXX - this is bad, name and interface can be out of sync, maybe get rid of name?
         self.interface  = f"module {self.name}("
         self.interface += ', '.join([' '.join(inner_list) for inner_list in self.io])
         self.interface += ");"
