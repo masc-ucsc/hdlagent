@@ -9,6 +9,8 @@ import re
 import subprocess
 import sys
 import time
+import vertexai
+from vertexai.preview.generative_models import GenerativeModel
 import yaml
 
 from importlib import resources
@@ -34,6 +36,12 @@ def list_octoai_models(warn: bool = True):
         if warn:
             print("OCTOAI_TOKEN not set")
         return []
+
+# XXX - hacky until Vertex adds a list API
+vertexai_models = ["gemini-1.0-pro-001"]
+
+def list_vertexai_models():
+    return vertexai_models
 
 class Agent:
     def __init__(self, spath: str, model: str, lang: str, use_init_context:bool = False, use_supp_context: bool = False, use_spec: bool = False):
@@ -93,19 +101,23 @@ class Agent:
         self.lec_filter_function = getattr(module, func_name)
 
         # Name to be specified in chat completion API of target LLM
-        self.octoai_model = False
-        self.openai_model = False
+        self.octoai_model   = False
+        self.openai_model   = False
+        self.vertexai_model = False
         if model in list_octoai_models(False):
-            self.octoai_model = True
-            self.client = octoai.client.Client()
+            self.octoai_model   = True
+            self.client         = octoai.client.Client()
         elif model in list_openai_models(False):
-            self.openai_model = True
-            self.client = OpenAI()
+            self.openai_model   = True
+            self.client         = OpenAI()
+        elif model in list_vertexai_models(False):
+            self.vertexai_model = True
+            self.client         = GenerativeModel(model).start_chat()
         else:
             if ("OPENAI_API_KEY" not in os.environ) and ("OCTOAI_TOKEN" not in os.environ):
                 print("Please set either OPENAI_API_KEY or OCTOAI_TOKEN environment variable(s) before continuing, exiting...")
             else:
-                print("Error: invalid model, please check --list_openai_models or --list_octoai_models for available LLM selection, exiting...")
+                print("Error: invalid model, please check --list_openai_models or --list_octoai_models or --list_vertexai_models for available LLM selection, exiting...")
             exit()
         self.model = model
 
@@ -115,6 +127,7 @@ class Agent:
         self.tb_conversation      = []
         self.name                 = ""
         self.interface            = ""
+        self.io                   = []
         self.pipe_stages          = 0
         self.lec_script           = os.path.join(self.script_dir,"common/comb_lec")
         self.tb_script            = os.path.join(self.script_dir,"common/iverilog_tb")
@@ -142,13 +155,8 @@ class Agent:
         self.code        = "out" + self.file_ext
         self.verilog     = "out.v"
         self.tb          = "./tests/tb.v"
+        self.gold        = None
 
-        # File path to golden verilog module used for Logical Equivalence Check
-        self.gold = None
-
-        # List of required inputs and outputs for module declaration
-        self.io = []
-        
 
     # The current run will assume this is the name of the target module
     # and will name files, perform queries, and define modules accordingly.
@@ -208,7 +216,7 @@ class Agent:
             print("Error: 'interface' is not valid Verilog-style module declaration, exiting...")
             exit()
         self.interface  = f"module {self.name}("
-        self.interface += ', '.join([' '.join(inner_list) for inner_list in self.io])
+        self.interface += ','.join([' '.join(inner_list) for inner_list in self.io])
         self.interface += ");"
 
     # Creates and registers the 'working directory' for the current run as
@@ -384,7 +392,19 @@ class Agent:
         print("**User:**\n" + clarification)
         query_start_time = time.time()
 
-        if self.octoai_model:
+        if self.vertexai_model:
+            # Bootstrap chat with initial context + initial query
+            if compile_convo and len(conversation) == 0:
+                chat_start = []
+                for entry in self.initial_contexts:
+                    chat_start.append(entry['content'])
+                chat_start.append(clarification)
+                clarification = chat_start
+            completion              = self.client.send_message(clarification)
+            response                = completion['candidates'][0]['content']['parts'][0]['text']
+            self.prompt_tokens     += completion['usage_metadata'][0]['prompt_token_count']
+            self.completion_tokens += completion['usage_metadata'][0]['candidates_token_count']
+        elif self.octoai_model:
             completion = self.client.chat.completions.create(
                 model=self.model,
                 messages=conversation,
@@ -393,16 +413,16 @@ class Agent:
                 temperature=0.1,
                 top_p=0.9,
             )
-            response = completion.dict()['choices'][0]['message']['content']
-            self.prompt_tokens += completion.dict()['usage']['prompt_tokens']
+            response                = completion.dict()['choices'][0]['message']['content']
+            self.prompt_tokens     += completion.dict()['usage']['prompt_tokens']
             self.completion_tokens += completion.dict()['usage']['completion_tokens']
         elif self.openai_model:
             completion = self.client.chat.completions.create(
                 model=self.model,  # Use the model we want for research
                 messages=conversation,
             )
-            response = completion.choices[0].message.content
-            self.prompt_tokens += completion.usage.prompt_tokens
+            response                = completion.choices[0].message.content
+            self.prompt_tokens     += completion.usage.prompt_tokens
             self.completion_tokens += completion.usage.completion_tokens
         else:
             print("Error: Unsupported model requested")
@@ -412,7 +432,7 @@ class Agent:
 
         # Add the model's response to the messages list to keep the conversation context
         if not compile_convo or not self.used_supp_context:   # Explains it as user wrote the code
-            print("**Assistant**\n" + response)
+            print("**Assistant:**\n" + response)
             conversation.append({
                 'role': 'assistant',
                 'content': response
