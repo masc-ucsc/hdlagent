@@ -7,7 +7,7 @@ def custom_check_errors(compiler_output):
     if "Error:" in res_string:
         return res_string
     else:
-        return ""
+        return None
 
 
 def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
