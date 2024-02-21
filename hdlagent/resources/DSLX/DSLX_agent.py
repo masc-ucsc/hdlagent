@@ -5,7 +5,7 @@ import subprocess
 def custom_check_errors(compiler_output):
     res_string = (str(compiler_output.stderr))[2:-1].replace("\\n", "\n")
     if ("Error:" not in res_string) and ("failure" not in res_string):
-        return ""
+        return None
     return res_string
 
 def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):

@@ -489,7 +489,7 @@ class Agent:
         res     = subprocess.run([script], capture_output=True, shell=True)
         errors  = self.check_errors(res)
         self.comp_n += 1
-        if errors != "":
+        if errors is not None:
             self.comp_f += 1
         return errors
 
@@ -583,7 +583,7 @@ class Agent:
             self.dump_codeblock(self.query_model(self.compile_conversation, current_query, True), self.code)
             compile_out  = self.test_code_compile()
             print(compile_out)
-            if compile_out != "":
+            if compile_out is not None:
                 current_query = self.get_compile_iteration_instruction(compile_out)
             else:
                 return True
