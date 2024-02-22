@@ -33,6 +33,9 @@ responses:
   pipe_lec_fail_prefix: |
     The Verilog module you just wrote was tested for logical equivalence versus a golden model named 'gold'. Below are two truth tables that represent the input/output values of the ideal 'gold' model and the module you supplied, renamed 'gate'. These are the last two timesteps from the test before the 'gate' models output diverged from the 'gold'. Hence why in the top table, the in/out values are the same but the bottom table the values differ:
 
+  bad_port_lec_fail_prefix: |
+    The Verilog module you just wrote does not comply with the desired interface, as it is missing a port named {feedback}. Please ensure you did not misspell any port names.
+  
   lec_fail_suffix: |
     
     Please rewrite the Verilog module in its entirety to match the 'Expected output values' of the testbench. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
