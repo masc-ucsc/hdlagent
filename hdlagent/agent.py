@@ -136,6 +136,7 @@ class Agent:
         self.comp_f               = 0
         self.lec_n                = 0
         self.lec_f                = 0
+        self.top_k                = 1
         self.prompt_tokens        = 0
         self.completion_tokens    = 0
         self.llm_query_time       = 0.0
@@ -157,6 +158,19 @@ class Agent:
         self.tb          = "./tests/tb.v"
         self.gold        = None
 
+    # Top K count is set back to default of 1, only necessary when looping
+    # over batch specs.
+    #
+    # Intended use: at the beginning of a new spec process
+    def reset_k(self):
+        self.top_k = 1
+
+    # Top K count is incremented by 1, only necessary when looping
+    # over batch specs.
+    #
+    # Intended use: if another k is going to start a conversation
+    def incr_k(self):
+        self.top_k += 1
 
     # The current run will assume this is the name of the target module
     # and will name files, perform queries, and define modules accordingly.
@@ -711,5 +725,5 @@ class Agent:
 
     def report_statistics(self):
         self.world_clock_time = time.time() - self.world_clock_time
-        stats = f"\nRESULTS : {self.name} : {self.comp_n} : {self.comp_f} : {self.lec_n} : {self.lec_f} : {self.prompt_tokens} : {self.completion_tokens} : {self.world_clock_time} : {self.llm_query_time}"
+        stats = f"\nRESULTS : {self.name} : {self.comp_n} : {self.comp_f} : {self.lec_n} : {self.lec_f} : {self.top_k} : {self.prompt_tokens} : {self.completion_tokens} : {self.world_clock_time} : {self.llm_query_time}"
         return stats
