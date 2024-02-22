@@ -10,6 +10,7 @@ class Handler:
         self.lec_iter           = 1
         self.tb_iter            = 1
         self.lec_feedback_limit = 1
+        self.top_k              = 1
 
         self.id                 = None
 
@@ -55,6 +56,15 @@ class Handler:
             exit()
         self.tb_iter = n
 
+    # Sets the amount of top k results are retreived from the LLM.
+    #
+    # Intended use: before a new run
+    def set_k(self, n: int):
+        if n < 1:
+            print("Error: cannot set top k iterations to less than 1, exiting...")
+            exit()
+        self.top_k = n
+
     # Limits how many testcases can be given back from Yosys LEC for iterative feedback
     #
     # Intended use: before a new run
@@ -62,6 +72,7 @@ class Handler:
         self.lec_feedback_limit = n
 
     def single_json_run(self, entry, base_w_dir):
+            self.agent.reset_k()
             self.agent.set_interface(entry['interface'])
             self.agent.set_pipeline_stages(int(entry['pipeline_stages']))
             self.agent.set_w_dir(os.path.join(base_w_dir, self.agent.name))
@@ -73,7 +84,10 @@ class Handler:
                 prompt = self.agent.read_spec()
 
             self.agent.dump_gold(entry['response'])
-            self.agent.lec_loop(prompt, self.lec_iter, self.lec_feedback_limit, self.comp_iter)
+            for _ in range(self.top_k):
+                if self.agent.lec_loop(prompt, self.lec_iter, self.lec_feedback_limit, self.comp_iter):
+                    break
+                self.agent.incr_k()
         
 
     def json_run(self, json_data, limit: int = -1, start_from: str = None):
