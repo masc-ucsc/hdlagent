@@ -376,7 +376,9 @@ class Agent:
     # Intended use: inside lec loop, after lec failure detected and more lec iterations available
     def get_lec_fail_instruction(self, test_cases: int, lec_output: str):
         lec_fail_prefix = self.responses['comb_lec_fail_prefix']
-        if (test_cases < self.prev_test_cases) and (self.prev_test_cases != -1):
+        if test_cases == -1:
+            lec_fail_prefix = self.responses['bad_port_lec_fail_prefix']
+        elif (test_cases < self.prev_test_cases) and (self.prev_test_cases != -1):
             lec_fail_prefix = self.responses['improve_comb_lec_fail_prefix']
         lec_fail_suffix = self.responses['lec_fail_suffix']
         if self.pipe_stages > 0:
@@ -530,8 +532,6 @@ class Agent:
         self.lec_n += 1
         if "SUCCESS" not in res_string:
             self.lec_f += 1
-            if "ERROR" in res_string:
-                return res_string
             return self.lec_filter_function(res_string, lec_feedback_limit)
         return None
 
@@ -591,8 +591,11 @@ class Agent:
     # supplemental context if enabled
     #
     # Intended use: inside of the lec loop
-    def code_compilation_loop(self, prompt: str, iterations: int = 1):
-        current_query = self.get_compile_initial_instruction(prompt)
+    def code_compilation_loop(self, prompt: str, lec_iteration: int, iterations: int = 1):
+        if lec_iteration == 0:
+            current_query = self.get_compile_initial_instruction(prompt)
+        else:
+            current_query = prompt
         for _ in range(iterations):
             self.dump_codeblock(self.query_model(self.compile_conversation, current_query, True), self.code)
             compile_out  = self.test_code_compile()
@@ -612,7 +615,7 @@ class Agent:
         self.reset_perf_counters()
         self.prev_test_cases = -1
         for i in range(lec_iterations):
-            if self.code_compilation_loop(prompt, compile_iterations):
+            if self.code_compilation_loop(prompt, i, compile_iterations):
                 # Reformat is free to modify both the gold and the gate
                 gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
                 lec_out = self.test_lec(gold, gate, lec_feedback_limit)
