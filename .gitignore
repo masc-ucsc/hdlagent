@@ -7,3 +7,5 @@ poetry.lock
 hdlagent/logs
 hdlagent/tests
 hdlagent/*.yaml
+hdlagent/*.md
+hdlagent/out
