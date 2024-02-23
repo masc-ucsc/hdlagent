@@ -8,132 +8,73 @@ The module declaration is: module neuron_block(input  [7:0] voltage_potential_i,
 
 
 **Assistant:**
-```verilog
+```Verilog
 module neuron_block(
-    input  [7:0] voltage_potential_i,
-    input  [7:0] pos_threshold_i,
-    input  [7:0] neg_threshold_i,
-    input  [7:0] leak_value_i,
-    input  [7:0] weight_type1_i,
-    input  [7:0] weight_type2_i,
-    input  [7:0] weight_type3_i,
-    input  [7:0] weight_type4_i,
-    input  [7:0] weight_select_i,
-    input  [7:0] pos_reset_i,
-    input  [7:0] neg_reset_i,
-    input  [0:0] enable_i,
-    output reg [7:0] new_potential_o,
-    output reg spike_o
+  input [7:0] voltage_potential_i, pos_threshold_i, neg_threshold_i, leak_value_i, 
+  weight_type1_i, weight_type2_i, weight_type3_i, weight_type4_i, 
+  weight_select_i, pos_reset_i, neg_reset_i, 
+  input enable_i,
+  output reg [7:0] new_potential_o,
+  output reg spike_o
 );
-    
-    // Logic to select the weight based on weight_select_i
-    assign weight = (weight_select_i == 1) ? weight_type1_i : (weight_select_i == 2) ? weight_type2_i : (weight_select_i == 3) ? weight_type3_i : weight_type4_i;
 
-    // Logic to calculate the new potential using the selected weight.
-    assign new_potential = voltage_potential_i + weight - leak_value_i;
+  wire [7:0] selected_weight;
+  reg [7:0] temp_potential;
 
-    // Overflow and underflow protection
-    assign new_potential_o = (new_potential > 255) ? 255 : (new_potential < 0) ? 0 : new_potential;
+  // Select weight based on weight_select_i
+  always @* begin
+    case (weight_select_i)
+      8'd0: selected_weight = weight_type1_i;
+      8'd1: selected_weight = weight_type2_i;
+      8'd2: selected_weight = weight_type3_i;
+      8'd3: selected_weight = weight_type4_i;
+      default: selected_weight = 8'd0;
+    endcase	
+  end
 
-    // Check for positive threshold crossing
-    assign pos_spike = (new_potential_o >= pos_threshold_i);
+  // Calculate the updated potential using selected weight, taking care of overflow and underflow
+  always @* begin
+    temp_potential = voltage_potential_i + selected_weight;
+    if(temp_potential < voltage_potential_i)
+      temp_potential = 8'd255; // overflow case
+	  
+    temp_potential = temp_potential - leak_value_i;
+    if(temp_potential > voltage_potential_i)
+      temp_potential = 8'd0; // underflow case
+  end
 
-    // Check for negative threshold crossing
-    assign neg_spike = (new_potential_o <= neg_threshold_i);
+  // Determine spiking behavior based on the threshold values and potential resets.
+  always @* begin
+    if(temp_potential >= pos_threshold_i)
+      begin
+        spike_o = 1;
+        new_potential_o = pos_reset_i;
+      end
+    else if(temp_potential <= neg_threshold_i)
+      begin
+        spike_o = 0;
+        new_potential_o = neg_reset_i;
+      end
+    else
+      begin
+        spike_o = 0;
+        new_potential_o = temp_potential;
+      end   
+  end
 
-    // Update spike_o based on threshold crossings
-    assign spike_o = pos_spike | neg_spike;
-   
-    // Reset behaviour for enable signal  
-    always @(enable_i)
-    begin
-        if(enable_i == 1)
-        begin
-            spike_o <= pos_spike | neg_spike;
-            new_potential_o <= (pos_spike) ? pos_reset_i : (neg_spike) ? neg_reset_i : new_potential_o;
-        end
-        else
-        begin
-            spike_o <= 0;
-            new_potential_o <= 0;
-        end
-    end
-endmodule
-```
-
-**User:**
-The previous code had a compiler warning/error. Please return the entire corrected program, not just the warning/erroring snippet. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
-This is the compile warning/error:
-out/neuron_block/neuron_block.v:19: Warning: Identifier `\\weight' is implicitly declared.
-out/neuron_block/neuron_block.v:22: Warning: Identifier `\
-ew_potential' is implicitly declared.
-out/neuron_block/neuron_block.v:28: Warning: Identifier `\\pos_spike' is implicitly declared.
-out/neuron_block/neuron_block.v:31: Warning: Identifier `\
-eg_spike' is implicitly declared.
-
-
-**Assistant:**
-```verilog
-module neuron_block(
-    input  [7:0] voltage_potential_i,
-    input  [7:0] pos_threshold_i,
-    input  [7:0] neg_threshold_i,
-    input  [7:0] leak_value_i,
-    input  [7:0] weight_type1_i,
-    input  [7:0] weight_type2_i,
-    input  [7:0] weight_type3_i,
-    input  [7:0] weight_type4_i,
-    input  [7:0] weight_select_i,
-    input  [7:0] pos_reset_i,
-    input  [7:0] neg_reset_i,
-    input  [0:0] enable_i,
-    output reg [7:0] new_potential_o,
-    output reg spike_o
-);
-    wire [7:0] weight;
-    wire [7:0] new_potential;
-    wire pos_spike;
-    wire neg_spike;
-    
-    // Logic to select the weight based on weight_select_i
-    assign weight = (weight_select_i == 1) ? weight_type1_i : (weight_select_i == 2) ? weight_type2_i : (weight_select_i == 3) ? weight_type3_i : weight_type4_i;
-
-    // Logic to calculate the new potential using the selected weight.
-    assign new_potential = voltage_potential_i + weight - leak_value_i;
-
-    // Overflow and underflow protection
-    assign new_potential_o = (new_potential > 255) ? 255 : (new_potential < 0) ? 0 : new_potential;
-
-    // Check for positive threshold crossing
-    assign pos_spike = (new_potential_o >= pos_threshold_i);
-
-    // Check for negative threshold crossing
-    assign neg_spike = (new_potential_o <= neg_threshold_i);
-
-    // Update spike_o based on threshold crossings
-    assign spike_o = pos_spike | neg_spike;
-   
-    // Reset behaviour for enable signal  
-    always @(enable_i)
-    begin
-        if(enable_i == 1)
-        begin
-            spike_o <= pos_spike | neg_spike;
-            new_potential_o <= (pos_spike) ? pos_reset_i : (neg_spike) ? neg_reset_i : new_potential_o;
-        end
-        else
-        begin
-            spike_o <= 0;
-            new_potential_o <= 0;
-        end
-    end
+  // If not enabled, reset outputs
+  always @(negedge enable_i) begin
+    new_potential_o = 8'd0;
+    spike_o = 1'b0;
+  end  
+  
 endmodule
 ```
 
 **System:**
 Failure!
-After 1 compilations failures and 1 testing failures, your desired circuit could not be faithfully generated!
+After 0 compilations failures and 1 testing failures, your desired circuit could not be faithfully generated!
 See out/neuron_block/logs/neuron_block_fail.md for final failure reason.
 
 
-RESULTS : neuron_block : 2 : 1 : 1 : 1 : 1 : 1946 : 1016 : 63.05071043968201 : 62.956074237823486
+RESULTS : neuron_block : 1 : 0 : 1 : 1 : 1 : 649 : 480 : 21.216506242752075 : 21.144381761550903

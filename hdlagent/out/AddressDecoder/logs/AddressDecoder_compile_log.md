@@ -16,30 +16,20 @@ module AddressDecoder(
     output reg neuron_spike_out,
     output reg param
 );
-  
-  //  Define position of the address bits used for decoding
-  localparam phase_decoder = 2'b00, 
-             param_decoder = 2'b01, 
-             neuron_decoder = 2'b10;
 
-  //  Use segments of the address bits to determine major blocks
-  assign synap_matrix = (addr[14:13] == phase_decoder) ? 1 : 0;          //  Synap Matrix
-  assign param = (addr[14:13] == param_decoder) ? 1 : 0;                 //  Param Modules
-  assign neuron_spike_out = (addr[14:13] == neuron_decoder) ? 1 : 0;    //  Neuron Spike Out
-
-  //  Use segments of the address bits to determine specific param
-  always@*
-  begin
-    if (param) // If param block
-    begin
-      param_num = addr[8:4]; // Get specific param index
+    // Bit 14:13 used for Block Decoding
+    always @* begin
+        synap_matrix = (addr[14:13] == 2'b00);       // synap_matrix block
+        param = (addr[14:13] == 2'b01);              // param block
+        neuron_spike_out = (addr[14:13] == 2'b10);   // neuron_spike_out block 
     end
-    else
-    begin
-      param_num = 5'b0; //  Set to 0 as default
-    end
-  end
 
+    always @* begin
+        if(param)                             // If Block is param
+            param_num = addr[8:4];          // Take Bit 8:4 for param module number
+        else
+            param_num = 0;                  // Else output 0
+    end
 endmodule
 ```
 
@@ -48,4 +38,4 @@ Success!
 After 0 compilation failures and 0 testing failures, your desired circuit was generated!
 
 
-RESULTS : AddressDecoder : 1 : 0 : 1 : 0 : 1 : 553 : 288 : 7.624261140823364 : 7.581974744796753
+RESULTS : AddressDecoder : 1 : 0 : 1 : 0 : 1 : 553 : 209 : 8.919456481933594 : 8.863435745239258
