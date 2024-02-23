@@ -621,7 +621,8 @@ class Agent:
                 lec_out = self.test_lec(gold, gate, lec_feedback_limit)
                 if lec_out is not None:
                     test_count, failure_reason = lec_out.split('\n', 1)
-                    prompt = self.get_lec_fail_instruction(int(test_count), failure_reason)
+                    if i != lec_iterations - 1:
+                        prompt = self.get_lec_fail_instruction(int(test_count), failure_reason)
                 else:
                     self.success_message(self.compile_conversation)
                     self.dump_compile_conversation()
@@ -633,7 +634,7 @@ class Agent:
         self.reset_conversations()
         return False
 
-    # Main generation and verification loop for boostrapping the implementation of RTL blocks.
+    # Main generation and verification loop for bootstrapping the implementation of RTL blocks.
     # Inner loop attemps compilations of the target language and the outer loop generates
     # and runs testbenches from a separate context that verify the behavior of the resulting verilog.
     def tb_loop(self, prompt: str, tb_iterations: int = 1, compile_iterations: int = 1):
