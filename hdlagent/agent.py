@@ -197,6 +197,8 @@ class Agent:
     #
     # Intended use: at the beginning of a new initial prompt submission
     def set_interface(self, interface: str):
+        # Remove unnecessary reg type
+        interface = interface.replace(' reg ', ' ').replace(' reg[', ' [')
         # Remove (legal) whitespaces from between brackets
         interface =  re.sub(r'\[\s*(.*?)\s*\]', lambda match: f"[{match.group(1).replace(' ', '')}]", interface)
         interface = interface.replace('\n', ' ')
@@ -206,7 +208,7 @@ class Agent:
             module_name = match.group(1).strip()
             self.set_module_name(module_name)
         else:
-            print("Error: 'interface' does not declare module name properly, exiting...")
+            print(f"Error: 'interface' {interface} does not declare module name properly, exiting...")
             exit()
         self.io = []
         # regex search for substring between '(' and ');'
@@ -219,7 +221,7 @@ class Agent:
             for port in ports:
                 parts = port.split()
                 if parts[0] not in ["input","output","inout"]:
-                    print("Error: 'interface' contains invalid port direction, exiting...")
+                    print(f"Error: 'interface' {interface} contains invalid port direction, exiting...")
                     exit()
                 if not parts[1] == "signed":    # empty string for unsigned
                     parts.insert(1, '')
@@ -227,7 +229,7 @@ class Agent:
                     parts.insert(2, '[0:0]')
                 self.io.append(parts)
         else:
-            print("Error: 'interface' is not valid Verilog-style module declaration, exiting...")
+            print(f"Error: 'interface' {interface} is not valid Verilog-style module declaration, exiting...")
             exit()
         self.interface  = f"module {self.name}("
         self.interface += ','.join([' '.join(inner_list) for inner_list in self.io])
