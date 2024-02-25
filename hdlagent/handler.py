@@ -90,7 +90,7 @@ class Handler:
                 self.agent.incr_k()
         
 
-    def json_run(self, json_data, limit: int = -1, start_from: str = None):
+    def json_run(self, json_data, limit: int = -1, start_from: str = None, skip_completed: bool = False):
         if json_data is None:
             print("Error: no json file registered, exiting...")
             exit()
@@ -109,9 +109,21 @@ class Handler:
 
         base_w_dir = self.agent.w_dir
         for i in range(start_idx, limit):
+            if skip_completed:
+                skip_run = False
+                # If the test was already completed in the w_dir, it is skipped instead of being re-done
+                # This is proven by the existence of a log dump being done in its w_dir
+                log_path = os.path.join(base_w_dir, data[i]['name'], "logs")
+                if os.path.exists(log_path) and os.path.isdir(log_path):
+                    for file_name in os.listdir(log_path):
+                        if file_name.endswith('.md'):
+                            skip_run = True
+                            break
+            if skip_run:
+                continue
             self.single_json_run(data[i], base_w_dir)
             
-    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_path: str = None, json_limit: int = -1, start_from: str = None, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False):
+    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_path: str = None, json_limit: int = -1, start_from: str = None, skip_completed: bool = False, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False):
         self.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
         self.agent.set_w_dir(w_dir)
 
@@ -127,4 +139,4 @@ class Handler:
                 except json.JSONDecodeError:
                     print("Error: json_path supplied is not a valid .json file, exiting...")
                     exit()
-                self.json_run(data, json_limit, start_from)
+                self.json_run(data, json_limit, start_from, skip_completed)
