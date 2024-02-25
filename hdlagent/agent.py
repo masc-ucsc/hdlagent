@@ -669,7 +669,7 @@ class Agent:
         md_content = "# Compile Conversation\n\n"
         if self.used_init_context:
             md_content += "**System:** Initial contexts were appended to this conversation\n\n"
-            start_idx   = len(self.initial_contexts) - 1
+            start_idx   = len(self.initial_contexts)
         md_content += self.format_conversation(self.compile_conversation, start_idx)
         if self.used_supp_context:
             # Manually 'tack on' the passing file
