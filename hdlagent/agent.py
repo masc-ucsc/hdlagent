@@ -598,13 +598,12 @@ class Agent:
             current_query = prompt
         for _ in range(iterations):
             self.dump_codeblock(self.query_model(self.compile_conversation, current_query, True), self.code)
-            compile_out  = self.test_code_compile()
-            print(compile_out)
+            compile_out = self.test_code_compile()
             if compile_out is not None:
                 current_query = self.get_compile_iteration_instruction(compile_out)
             else:
-                return True
-        return False
+                return True, ""
+        return False, compile_out
 
     # Main generation and validation loop for benchmarking. Inner loop attempts complations
     # and outer loop checks generated RTL versus supplied 'gold' Verilog for logical equivalence
@@ -615,7 +614,8 @@ class Agent:
         self.reset_perf_counters()
         self.prev_test_cases = -1
         for i in range(lec_iterations):
-            if self.code_compilation_loop(prompt, i, compile_iterations):
+            compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
+            if compiled:
                 # Reformat is free to modify both the gold and the gate
                 gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
                 lec_out = self.test_lec(gold, gate, lec_feedback_limit)
@@ -627,8 +627,6 @@ class Agent:
                     self.success_message(self.compile_conversation)
                     self.dump_compile_conversation()
                     return True
-            else:
-                failure_reason = self.test_code_compile()
         self.dump_failure(failure_reason, self.compile_conversation)
         self.dump_compile_conversation()
         self.reset_conversations()

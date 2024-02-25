@@ -16,7 +16,7 @@ responses:
   give_instr_suffix: |
     
     Please respond with only valid program syntax. Please do not provide any additional English explanation, short comments in the code are allowed. Do not add any code relating to Verilog generation, I will handle that manually.
-    The naming of the class and its I/O should EXACTLY match that of this Verilog-style declaration: {interface}
+    The interface in Verilog would be: {interface}
 
   compile_err_prefix: |
     The previous code had a compiler warning/error. Please return the entire corrected program, not just the warning/erroring snippet. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.

@@ -17,7 +17,7 @@ responses:
 
   give_instr_suffix: |
     
-    The interface of the function should follow the Verilog-style declaration {interface} and the function should return a struct which bundles together all of the output signals of the module, keeping their CASE SENSITIVE names intact. Each individual output should correspond to one and only one equivalenty sized field in the output struct, so do NOT split up the outputs into their individual bits. The VARIABLE NAMES assigned to the output struct must also have the SAME EXACT NAME(S) as the STRUCT FIELD they are assigned to.
+    The top-level function declaration in Verilog would be {interface} and the function should return a struct which bundles together all of the output signals of the module, keeping their CASE SENSITIVE names intact. Each individual output should correspond to one and only one equivalenty sized field in the output struct, so do NOT split up the outputs into their individual bits. The VARIABLE NAMES assigned to the output struct must also have the SAME EXACT NAME(S) as the STRUCT FIELD they are assigned to.
     Please respond with only valid program syntax. Do not provide any additional english explanation, short comments in the code are allowed but kept to a minimum.
 
   compile_err_prefix: |
@@ -36,10 +36,15 @@ responses:
 
 
 initial_contexts:
- - DSLX_context_1.text
- - DSLX_context_2.text
- - DSLX_context_3.text
- - DSLX_context_4.text
+ - DSLX_For_enum.txt
+ - DSLX_Params.txt
+ - DSLX_Procs.txt
+ - DSLX_Statement.txt
+ - DSLX_TypeAliases.txt
+ - DSLX_Types.txt
+ - DSLX_blueprint.txt
+ - DSLX_builtins.txt
+ - DSLX_builtins_part2.txt
 
 supplemental_contexts:
   Annotated type did not match inferred type of right hand side expression: |
