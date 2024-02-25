@@ -24,7 +24,6 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
     
     with open(in_file, 'r') as file:
         in_file_content = file.read()
-    file.close()
 
     if len(outputs) == 1:
         output_name = outputs[0][3]
@@ -51,8 +50,8 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
             if 'assign out = tuple_' in in_file_lines[-2]:
                 in_file_lines[-3] = ""
             in_file_lines[-2] = ""
+        in_file_content = '\n'.join(in_file_lines)
+
     with open(in_file, 'w') as file:
-        for line in in_file_lines:
-            file.write(line + '\n')
-    file.close()
+        file.write(in_file_content)
     return (ref_file, in_file)
