@@ -2,7 +2,7 @@ import re
 
 def comment_filter_function(lec_feedback: str, limit: int = -1):
     # Deal with port mismatches
-    if "No matching port in gate module" or "Can't match gold port" in lec_feedback:
+    if ("No matching port in gate module" in lec_feedback) or ("Can't match gold port" in lec_feedback):
         # Just return the name of the missing port, extract between '\\' and '!'
         pattern = r"\\(.*?)!"
         match = re.search(pattern, lec_feedback)
