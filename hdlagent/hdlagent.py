@@ -69,9 +69,12 @@ Options:
  """
 
 # WARNING: FEATURES BELOW ARE EXPERIMENTAL - FURTHER VALIDATION AND TESTING REQUIRED
-def worker(shared_list, shared_index, lock, spath, llm, lang,  w_dir, use_spec, init_context, supp_context):
+def worker(shared_list, shared_index, lock, spath, llm, lang, skip_completed, w_dir, use_spec, init_context, supp_context):
     # Each worker has its own Handler instance.
     handler = Handler()
+    handler.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
+    handler.agent.set_w_dir(w_dir)
+    handler.set_id(multiprocessing.current_process().name)
 
     while True:
         with lock:
@@ -81,14 +84,11 @@ def worker(shared_list, shared_index, lock, spath, llm, lang,  w_dir, use_spec, 
                 shared_index.value += 1
             else:
                 break
+        print(f"\nProcessing by {handler.id}: {handler.agent.name}\n")
+        if not (skip_completed and handler.check_completion(entry, w_dir)):
+            handler.single_json_run(entry, w_dir)
 
-        print(f"Processing by {multiprocessing.current_process().name}: {entry}")
-        handler.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
-        handler.agent.set_w_dir(w_dir)
-        handler.single_json_run(entry, w_dir)
-
-def parallel_run(spath: str, llm: str, lang: str, json_path: str,  w_dir: str, use_spec: bool, init_context: bool, supp_context: bool):
-    print(json_path)
+def parallel_run(spath: str, llm: str, lang: str, json_path: str, skip_completed: bool, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool):
     if (json_path is not None):
             if not os.path.exists(json_path):
                 print("Error: json_path supplied does not exist, exiting...")
@@ -101,20 +101,19 @@ def parallel_run(spath: str, llm: str, lang: str, json_path: str,  w_dir: str, u
                     print("Error: json_path supplied is not a valid .json file, exiting...")
                     exit()
 
-
                 # Create a multiprocessing manager to manage shared state
-                manager = multiprocessing.Manager()
-                #shared list will need to change based on json formatting
-                shared_list = manager.list(data["verilog_problems"])  
+                manager      = multiprocessing.Manager()
 
+                #shared list will need to change based on json formatting
+                shared_list  = manager.list(data["verilog_problems"])
                 shared_index = manager.Value('i', 0)  # Shared json index initialized to 0
-                lock = manager.Lock()  # Lock for synchronizing access to the shared index
+                lock         = manager.Lock()  # Lock for synchronizing access to the shared index
 
                 # List to keep track of processes
-                processes = []
+                processes    = []
                 # Create and start multiprocessing workers
                 for _ in range(multiprocessing.cpu_count()):
-                    p = multiprocessing.Process(target=worker, args=(shared_list, shared_index, lock, spath, llm, lang, w_dir, use_spec, init_context, supp_context))
+                    p = multiprocessing.Process(target=worker, args=(shared_list, shared_index, lock, spath, llm, lang, skip_completed, w_dir, use_spec, init_context, supp_context))
                     processes.append(p)
                     p.start()
 
@@ -125,8 +124,8 @@ def parallel_run(spath: str, llm: str, lang: str, json_path: str,  w_dir: str, u
 def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: int = -1, comp_limit: int = 4, lec_limit: int = 1, lec_feedback_limit: int = -1, top_k: int = 1, start_from: str = None, w_dir: str = './', skip_completed: bool = False, use_spec: bool = False, init_context: bool = False, supp_context: bool = False, help: bool = False, parallel: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False, vertexai_models_list: bool = False):
     if (llm is not None) and (lang is not None) and (json_path is not None):
         spath = resources.files('resources')
-        if(parallel):
-            parallel_run(spath, llm, lang, json_path, w_dir, use_spec, init_context, supp_context)
+        if (parallel):
+            parallel_run(spath, llm, lang, json_path, skip_completed, w_dir, use_spec, init_context, supp_context)
         else:
             my_handler = Handler()
             my_handler.set_comp_iter(comp_limit)
