@@ -23,8 +23,8 @@ class Handler:
     # Parallel processing Handler enumeration
     #
     # Intended use: testing
-    def set_id(self, num: int):
-        self.id = num
+    def set_id(self, proc_id: str):
+        self.id = proc_id
 
     # Sets the amount of allowed iterations for a compile loop, which can be
     # nested within a LEC loop or a testbench loop. The maximum amount of queries
@@ -119,9 +119,8 @@ class Handler:
 
         base_w_dir = self.agent.w_dir
         for i in range(start_idx, limit):
-            if skip_completed and self.check_completion(data[i], base_w_dir):
-                continue
-            self.single_json_run(data[i], base_w_dir)
+            if not (skip_completed and self.check_completion(data[i], base_w_dir)):
+                self.single_json_run(data[i], base_w_dir)
             
     def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_path: str = None, json_limit: int = -1, start_from: str = None, skip_completed: bool = False, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False):
         self.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
