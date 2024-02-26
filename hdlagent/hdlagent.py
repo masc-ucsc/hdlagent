@@ -6,6 +6,10 @@ import fire
 import agent
 from handler import Handler
 from importlib import resources
+import multiprocessing
+import json
+import os
+from agent import Agent
 
 help_string = """
 Usage: hdlagent --llm=xxx --lang=xxx --json_path=xxx [options]
@@ -30,6 +34,8 @@ Options:
                                 for 'instruction' and 'interface'. The spec is meant to iterate over the
                                 raw prompt and formalize it, along with validate that the LLM understands
                                 the core design.
+
+  --parallel                    Parallelize hdlagent
 
   --start_from <name>           Allows the user to specify which entry in the supplied .json file to start
                                 the run from, effectively setting the starting index.
@@ -63,7 +69,7 @@ Options:
  """
 
 # WARNING: FEATURES BELOW ARE EXPERIMENTAL - FURTHER VALIDATION AND TESTING REQUIRED
-def worker(shared_list, shared_index, lock, spath: str, llm: str, lang: str, json_limit: int, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool):
+def worker(shared_list, shared_index, lock, spath, llm, lang,  w_dir, use_spec, init_context, supp_context):
     # Each worker has its own Handler instance.
     handler = Handler()
 
@@ -76,23 +82,58 @@ def worker(shared_list, shared_index, lock, spath: str, llm: str, lang: str, jso
             else:
                 break
 
-        # Use the Handler instance to process the entry
-        handler.set_name(entry)
-        print(f"Processing by {multiprocessing.current_process().name}: {handler.name}")
-        # Here, you could add more logic to process the entry further.
+        print(f"Processing by {multiprocessing.current_process().name}: {entry}")
+        handler.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
+        handler.agent.set_w_dir(w_dir)
+        handler.single_json_run(entry, w_dir)
 
-def parallel_run(spath: str, llm: str, lang: str, json_path: str, json_limit: int, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool):
-    pass
+def parallel_run(spath: str, llm: str, lang: str, json_path: str,  w_dir: str, use_spec: bool, init_context: bool, supp_context: bool):
+    print(json_path)
+    if (json_path is not None):
+            if not os.path.exists(json_path):
+                print("Error: json_path supplied does not exist, exiting...")
+                exit()
+            else:
+                try:
+                    with open(json_path, 'r') as file:
+                        data = json.load(file)
+                except json.JSONDecodeError:
+                    print("Error: json_path supplied is not a valid .json file, exiting...")
+                    exit()
 
-def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: int = -1, comp_limit: int = 4, lec_limit: int = 1, lec_feedback_limit: int = -1, top_k: int = 1, start_from: str = None, w_dir: str = './', skip_completed: bool = False, use_spec: bool = False, init_context: bool = False, supp_context: bool = False, help: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False, vertexai_models_list: bool = False):
+
+                # Create a multiprocessing manager to manage shared state
+                manager = multiprocessing.Manager()
+                #shared list will need to change based on json formatting
+                shared_list = manager.list(data["verilog_problems"])  
+
+                shared_index = manager.Value('i', 0)  # Shared json index initialized to 0
+                lock = manager.Lock()  # Lock for synchronizing access to the shared index
+
+                # List to keep track of processes
+                processes = []
+                # Create and start multiprocessing workers
+                for _ in range(multiprocessing.cpu_count()):
+                    p = multiprocessing.Process(target=worker, args=(shared_list, shared_index, lock, spath, llm, lang, w_dir, use_spec, init_context, supp_context))
+                    processes.append(p)
+                    p.start()
+
+                # Wait for all processes to finish
+                for p in processes:
+                    p.join()
+
+def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: int = -1, comp_limit: int = 4, lec_limit: int = 1, lec_feedback_limit: int = -1, top_k: int = 1, start_from: str = None, w_dir: str = './', skip_completed: bool = False, use_spec: bool = False, init_context: bool = False, supp_context: bool = False, help: bool = False, parallel: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False, vertexai_models_list: bool = False):
     if (llm is not None) and (lang is not None) and (json_path is not None):
-        spath      = resources.files('resources')
-        my_handler = Handler()
-        my_handler.set_comp_iter(comp_limit)
-        my_handler.set_lec_iter(lec_limit)
-        my_handler.set_lec_feedback_limit(lec_feedback_limit)
-        my_handler.set_k(top_k)
-        my_handler.sequential_entrypoint(spath, llm, lang, json_path, json_limit, start_from, skip_completed, w_dir, use_spec, init_context, supp_context)
+        spath = resources.files('resources')
+        if(parallel):
+            parallel_run(spath, llm, lang, json_path, w_dir, use_spec, init_context, supp_context)
+        else:
+            my_handler = Handler()
+            my_handler.set_comp_iter(comp_limit)
+            my_handler.set_lec_iter(lec_limit)
+            my_handler.set_lec_feedback_limit(lec_feedback_limit)
+            my_handler.set_k(top_k)
+            my_handler.sequential_entrypoint(spath, llm, lang, json_path, json_limit, start_from, skip_completed, w_dir, use_spec, init_context, supp_context)
     elif openai_models_list:
         print(agent.list_openai_models())
     elif octoai_models_list:
