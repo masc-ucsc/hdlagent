@@ -109,8 +109,8 @@ class Handler:
 
         base_w_dir = self.agent.w_dir
         for i in range(start_idx, limit):
+            skip_run = False
             if skip_completed:
-                skip_run = False
                 # If the test was already completed in the w_dir, it is skipped instead of being re-done
                 # This is proven by the existence of a log dump being done in its w_dir
                 log_path = os.path.join(base_w_dir, data[i]['name'], "logs")
