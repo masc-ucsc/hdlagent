@@ -47,7 +47,6 @@ class Agent:
     def __init__(self, spath: str, model: str, lang: str, use_init_context:bool = False, use_supp_context: bool = False, use_spec: bool = False):
 
         self.script_dir = spath
-        # self.script_dir = os.path.dirname(os.path.abspath(__file__))
         # Common responses
         with open(os.path.join(self.script_dir,"common/common.yaml"), 'r') as file:
             common = yaml.safe_load(file)
@@ -101,25 +100,24 @@ class Agent:
         self.lec_filter_function = getattr(module, func_name)
 
         # Name to be specified in chat completion API of target LLM
-        self.octoai_model   = False
-        self.openai_model   = False
-        self.vertexai_model = False
+        self.chat_completion = None
         if model in list_octoai_models(False):
-            self.octoai_model   = True
-            self.client         = octoai.client.Client()
+            self.chat_completion = self.octoai_chat_completion
+            self.client          = octoai.client.Client()
         elif model in list_openai_models(False):
-            self.openai_model   = True
-            self.client         = OpenAI()
+            self.chat_completion = self.openai_chat_completion
+            self.client          = OpenAI()
         elif model in list_vertexai_models(False):
-            self.vertexai_model = True
-            self.client         = GenerativeModel(model).start_chat()
-        else:
-            if ("OPENAI_API_KEY" not in os.environ) and ("OCTOAI_TOKEN" not in os.environ):
-                print("Please set either OPENAI_API_KEY or OCTOAI_TOKEN environment variable(s) before continuing, exiting...")
-            else:
-                print("Error: invalid model, please check --list_openai_models or --list_octoai_models or --list_vertexai_models for available LLM selection, exiting...")
+            self.chat_completion = self.vertexai_chat_completion
+            self.client          = GenerativeModel(model).start_chat()
+        elif ("OPENAI_API_KEY" not in os.environ) and ("OCTOAI_TOKEN" not in os.environ) and ("PROJECT_ID" not in os.environ):
+            print("Please set either OPENAI_API_KEY or OCTOAI_TOKEN or PROJECT_ID environment variable(s) before continuing, exiting...")
+            exit()
+        if self.chat_completion is None:
+            print("Error: invalid model, please check --list_openai_models or --list_octoai_models or --list_vertexai_models for available LLM selection, exiting...")
             exit()
         self.model = model
+        self.temp  = None
 
         # Resources used as a part of conversational flow and performance counters
         self.spec_conversation    = []
@@ -171,6 +169,13 @@ class Agent:
     # Intended use: if another k is going to start a conversation
     def incr_k(self):
         self.top_k += 1
+
+    # Sets the API query param 'temp' for the LLM, if such a param is 
+    # exposed in the API chat completion call
+    #
+    # Intended use: Whenever temperature of chat completions needs changing
+    def set_model_temp(self, temp: int):
+        self.temp = temp
 
     # The current run will assume this is the name of the target module
     # and will name files, perform queries, and define modules accordingly.
@@ -395,6 +400,57 @@ class Agent:
     def get_request_tb_instruction(self, prompt: str):
         return (self.responses['request_testbench']).format(prompt=prompt)
 
+    def vertexai_chat_completion(self, conversation, compile_convo: bool = False):
+        if compile_convo and len(conversation) == 0:
+            chat_start = []
+            for entry in self.initial_contexts:
+                chat_start.append(entry['content'])
+            chat_start.append(clarification)
+            clarification = chat_start
+        completion              = self.client.send_message(clarification)
+        self.prompt_tokens     += completion['usage_metadata'][0]['prompt_token_count']
+        self.completion_tokens += completion['usage_metadata'][0]['candidates_token_count']
+        return completion['candidates'][0]['content']['parts'][0]['text']
+
+    def octoai_chat_completion(self, conversation, compile_convo: bool = False):
+        if self.temp is None:
+            completion = self.client.chat.completions.create(
+                model=self.model,
+                messages=conversation,
+                max_tokens=8192,
+                presence_penalty=0,
+                temperature=0.1,
+                top_p=0.9,
+            )
+        else:
+            completion = self.client.chat.completions.create(
+                model=self.model,
+                messages=conversation,
+                max_tokens=8192,  # FIXME: automatic by model? 34B can do 16K, 70B only 4K
+                presence_penalty=0,
+                temperature=self.temp,
+                top_p=0.9,
+            )
+        self.prompt_tokens     += completion.dict()['usage']['prompt_tokens']
+        self.completion_tokens += completion.dict()['usage']['completion_tokens']
+        return completion.dict()['choices'][0]['message']['content']
+
+    def openai_chat_completion(self, conversation, compile_convo: bool = False):
+        if self.temp is None:
+            completion = self.client.chat.completions.create(
+                model=self.model,
+                messages=conversation,
+            )
+        else:
+            completion = self.client.chat.completions.create(
+                model=self.model,
+                messages=conversation,
+                temperature=self.temp,
+            )
+        self.prompt_tokens     += completion.usage.prompt_tokens
+        self.completion_tokens += completion.usage.completion_tokens
+        return completion.choices[0].message.content
+
     # Primary interface between supported LLM's API and the Agent. 
     # Send queries and returns their response(s), all while maintaining
     # the context by appending both query and response to the context history,
@@ -408,44 +464,9 @@ class Agent:
             'content': clarification
         })
         print("**User:**\n" + clarification)
-        query_start_time = time.time()
 
-        if self.vertexai_model:
-            # Bootstrap chat with initial context + initial query
-            if compile_convo and len(conversation) == 0:
-                chat_start = []
-                for entry in self.initial_contexts:
-                    chat_start.append(entry['content'])
-                chat_start.append(clarification)
-                clarification = chat_start
-            completion              = self.client.send_message(clarification)
-            response                = completion['candidates'][0]['content']['parts'][0]['text']
-            self.prompt_tokens     += completion['usage_metadata'][0]['prompt_token_count']
-            self.completion_tokens += completion['usage_metadata'][0]['candidates_token_count']
-        elif self.octoai_model:
-            completion = self.client.chat.completions.create(
-                model=self.model,
-                messages=conversation,
-                max_tokens=8192,  # FIXME: automatic by model? 34B can do 16K, 70B only 4K
-                presence_penalty=0,
-                temperature=0.1,
-                top_p=0.9,
-            )
-            response                = completion.dict()['choices'][0]['message']['content']
-            self.prompt_tokens     += completion.dict()['usage']['prompt_tokens']
-            self.completion_tokens += completion.dict()['usage']['completion_tokens']
-        elif self.openai_model:
-            completion = self.client.chat.completions.create(
-                model=self.model,  # Use the model we want for research
-                messages=conversation,
-            )
-            response                = completion.choices[0].message.content
-            self.prompt_tokens     += completion.usage.prompt_tokens
-            self.completion_tokens += completion.usage.completion_tokens
-        else:
-            print("Error: Unsupported model requested")
-            exit()
-
+        query_start_time     = time.time()
+        response             = self.chat_completion(conversation, compile_convo)    
         self.llm_query_time += (time.time() - query_start_time)
 
         # Add the model's response to the messages list to keep the conversation context
