@@ -69,12 +69,16 @@ Options:
  """
 
 # WARNING: FEATURES BELOW ARE EXPERIMENTAL - FURTHER VALIDATION AND TESTING REQUIRED
-def worker(shared_list, shared_index, lock, spath, llm, lang, skip_completed, w_dir, use_spec, init_context, supp_context, temperature):
+def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_feedback_limit, top_k, skip_completed, w_dir, use_spec, init_context, supp_context, temperature):
     # Each worker has its own Handler instance.
     handler = Handler()
     handler.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
+    handler.set_comp_iter(comp_limit)
+    handler.set_lec_iter(lec_limit)
+    handler.set_lec_feedback_limit(lec_feedback_limit)
+    handler.set_k(top_k)
     handler.agent.set_w_dir(w_dir)
-    handler.agent.set_temp(temperature)
+    handler.agent.set_model_temp(temperature)
     handler.set_id(multiprocessing.current_process().name)
 
     while True:
@@ -89,7 +93,7 @@ def worker(shared_list, shared_index, lock, spath, llm, lang, skip_completed, w_
         if not (skip_completed and handler.check_completion(entry, w_dir)):
             handler.single_json_run(entry, w_dir)
 
-def parallel_run(spath: str, llm: str, lang: str, json_path: str, skip_completed: bool, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool, temperature: int):
+def parallel_run(spath: str, llm: str, lang: str, json_path: str, comp_limit: int, lec_limit: int, lec_feedback_limit: int, top_k: int, skip_completed: bool, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool, temperature: int):
     if (json_path is not None):
             if not os.path.exists(json_path):
                 print("Error: json_path supplied does not exist, exiting...")
@@ -114,7 +118,7 @@ def parallel_run(spath: str, llm: str, lang: str, json_path: str, skip_completed
                 processes    = []
                 # Create and start multiprocessing workers
                 for _ in range(multiprocessing.cpu_count()):
-                    p = multiprocessing.Process(target=worker, args=(shared_list, shared_index, lock, spath, llm, lang, skip_completed, w_dir, use_spec, init_context, supp_context, temperature))
+                    p = multiprocessing.Process(target=worker, args=(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_feedback_limit, top_k, skip_completed, w_dir, use_spec, init_context, supp_context, temperature))
                     processes.append(p)
                     p.start()
 
@@ -126,7 +130,7 @@ def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: i
     if (llm is not None) and (lang is not None) and (json_path is not None):
         spath = resources.files('resources')
         if (parallel):
-            parallel_run(spath, llm, lang, json_path, skip_completed, w_dir, use_spec, init_context, supp_context, temperature)
+            parallel_run(spath, llm, lang, json_path, comp_limit, lec_limit, lec_feedback_limit, top_k, skip_completed, w_dir, use_spec, init_context, supp_context, temperature)
         else:
             my_handler = Handler()
             my_handler.set_comp_iter(comp_limit)
