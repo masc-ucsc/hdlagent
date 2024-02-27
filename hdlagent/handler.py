@@ -122,9 +122,10 @@ class Handler:
             if not (skip_completed and self.check_completion(data[i], base_w_dir)):
                 self.single_json_run(data[i], base_w_dir)
             
-    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_path: str = None, json_limit: int = -1, start_from: str = None, skip_completed: bool = False, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False):
+    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_path: str = None, json_limit: int = -1, start_from: str = None, skip_completed: bool = False, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, temperature: int = None):
         self.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
         self.agent.set_w_dir(w_dir)
+        self.agent.set_temp(temperature)
 
         # Sanity test json file before starting anything
         if (json_path is not None):
