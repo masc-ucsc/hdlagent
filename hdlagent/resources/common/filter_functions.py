@@ -36,6 +36,8 @@ def comment_filter_function(lec_feedback: str, limit: int = -1):
         input_values = []
         for line in table_lines:
             parts = line.split()
+            if len(parts) == 0 or parts[0] == 'Signal' or parts[0] == ('-'*len(parts[0])):
+                continue
             if parts:
                 signal_name = parts[0][1:]  # Remove leading backslash
                 bin_value = parts[-1]  # Binary representation
