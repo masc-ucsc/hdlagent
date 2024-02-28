@@ -174,7 +174,8 @@ class Agent:
     # exposed in the API chat completion call
     #
     # Intended use: Whenever temperature of chat completions needs changing
-    def set_model_temp(self, temp: int):
+    def set_model_temp(self, temp: float):
+        print(f"set temp: {temp}")
         self.temp = temp
 
     # The current run will assume this is the name of the target module
