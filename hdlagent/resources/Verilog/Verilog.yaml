@@ -35,7 +35,11 @@ responses:
 
   bad_port_lec_fail_prefix: |
     The Verilog module you just wrote does not comply with the desired interface, as it is missing a port named {feedback}. Please ensure you did not misspell any port names.
-  
+
+  latch_lec_fail_prefix: |
+    {feedback}
+    Remove implicit latches from the design, make sure all 'switch' statements have a 'default' 'case'.
+
   lec_fail_suffix: |
     
     Please rewrite the Verilog module in its entirety to match the 'Expected output values' of the testbench. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
