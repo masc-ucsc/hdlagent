@@ -386,6 +386,8 @@ class Agent:
         lec_fail_prefix = self.responses['comb_lec_fail_prefix']
         if test_cases == -1:
             lec_fail_prefix = self.responses['bad_port_lec_fail_prefix']
+        elif test_cases == -2:
+            lec_fail_prefix = self.responses['latch_lec_fail_prefix']
         elif (test_cases < self.prev_test_cases) and (self.prev_test_cases != -1):
             lec_fail_prefix = self.responses['improve_comb_lec_fail_prefix']
         lec_fail_suffix = self.responses['lec_fail_suffix']

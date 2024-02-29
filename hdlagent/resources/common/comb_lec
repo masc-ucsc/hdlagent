@@ -46,10 +46,15 @@ lec() {
 	fi
 
 	# Something went wrong
+	grep "Latch" $log*
+	if [[ $? -eq 0 ]]; then
+		exit 0
+	fi
 	grep "ERROR" $log*
 	if [[ $? -eq 0 ]]; then
 		exit 0
 	fi
+
 
 	# Isolate truth table for further iteration
 	raw_table=$(awk '/  \|_\|   \|_\|   \\___\/ \\___\/ \|_\|       \|_\|  \\_____\|_|_)_____\)\\____\|_\|/ {p=1} p' "$log")

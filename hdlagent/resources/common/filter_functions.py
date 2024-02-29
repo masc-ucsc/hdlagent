@@ -14,15 +14,18 @@ def comment_filter_function(lec_feedback: str, limit: int = -1):
         return str(-1) + "\n" + res_string
     # SAT Solver doesn't like latches
     if "Latch inferred for signal" in lec_feedback:
-        # Return the line that idenfiies the latch
-        pattern = r"(Latch inferred for signal `[^']+)"
-        match = re.search(pattern, text)
-        if match:
-            extracted  = match.group(1)
-            res_string = extracted.replace('`','')
-        else:
-            res_string = lec_feedback
-        return str(-1) + "\n" + res_string
+        res_string = ""
+        lines      = lec_feedback.split('\n')
+        for line in lines:
+            # Return the line that idenfiies the latch
+            pattern = r"^(.*?) from process"
+            match   = re.search(pattern, line)
+            if match:
+                extracted   = match.group(1)
+                res_string += extracted.replace('`','').replace('\'','')
+            else:
+                res_string += line
+        return str(-2) + "\n" + res_string
 
     # Split the string into separate sections for each table
     tables = lec_feedback.split(lec_feedback.split('\n')[0] + "\n")
