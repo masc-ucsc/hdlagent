@@ -1,4 +1,4 @@
-This PyRTL tutorial provides an in-depth overview of how to use Python for register-transfer level (RTL) design, simulation, tracing, and testing, focusing on simplicity and usability for teaching and research purposes. Here's a summary of the key concepts:
+**User:** This PyRTL tutorial provides an in-depth overview of how to use Python for register-transfer level (RTL) design, simulation, tracing, and testing, focusing on simplicity and usability for teaching and research purposes. Here's a summary of the key concepts:
 
 Overview of PyRTL: PyRTL is designed to leverage Python's full power for synthesizing digital designs, allowing for simulation, testing, and exporting to Verilog.
 

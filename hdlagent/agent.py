@@ -43,6 +43,35 @@ vertexai_models = ["gemini-1.0-pro-001"]
 def list_vertexai_models():
     return vertexai_models
 
+def md_to_convo(md_file):
+    with open(md_file, 'r') as f:
+        lines = f.readlines()
+
+    conversation    = []
+    current_content = ""
+    current_role    = ""
+    for line in lines:
+        line = line.rstrip()
+        if '**User:**' in line or '**Assistant:**' in line:
+            if current_content:
+                conversation.append({"role": current_role, "content": current_content.rstrip('\n')})
+                current_content = ""
+
+            if '**User:**' in line:
+                current_role = "user"
+            elif '**Assistant:**' in line:
+                current_role = "assistant"
+            line_content = re.sub(r'\*\*(User:|Assistant:)\*\*\s*', '', line)
+            if line_content:
+                current_content += line_content + "\n"
+        else:
+            current_content += line + "\n"
+
+    if current_content:
+        conversation.append({"role": current_role, "content": current_content.rstrip('\n')})
+    return conversation
+
+
 class Agent:
     def __init__(self, spath: str, model: str, lang: str, use_init_context:bool = False, use_supp_context: bool = False, use_spec: bool = False):
 
@@ -64,8 +93,8 @@ class Agent:
         self.initial_contexts  = []
         if use_init_context:
             for context in config['initial_contexts']:
-                with open(os.path.join(self.script_dir, lang, context), 'r') as file:
-                    self.initial_contexts.append({'role': 'user','content': file.read()})
+                file = os.path.join(self.script_dir, lang, context)
+                self.initial_contexts.extend(md_to_convo(file))
         
         # Supplemental contexts are loaded from yaml file, dictionary of {error: suggestion} pairs
         self.used_supp_context     = use_supp_context
@@ -596,6 +625,7 @@ class Agent:
     # Intended use: before starting a new Agent run
     def reset_conversations(self):
         self.compile_conversation = self.initial_contexts.copy()
+        print(self.compile_conversation)
         self.spec_conversation    = []
         self.tb_conversation      = []
 

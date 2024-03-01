@@ -88,12 +88,8 @@ class Handler:
     #
     # Intended use: Save tokens while benchmarking
     def check_success(self, entry, base_w_dir: str):
-        log_path = os.path.join(base_w_dir, entry['name'], "logs")
-        if os.path.exists(log_path) and os.path.isdir(log_path):
-            for file_name in os.listdir(log_path):
-                if file_name.endswith('.md'):
-                    return True
-        return False
+        fail_log_path = os.path.join(base_w_dir, entry['name'], "logs", f"{entry['name']}_fail.md")
+        return os.path.exists(fail_log_path)
 
     def single_json_run(self, entry, base_w_dir):
             self.agent.reset_k()

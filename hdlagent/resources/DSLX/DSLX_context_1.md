@@ -1,4 +1,4 @@
-Introduction to DSLX
+**User:** Introduction to DSLX
 Welcome to the world of `DSLX`, a modern hardware description language tailored for precision and ease of use. In this tutorial, we'll cover the basics of the language, key features, and best practices to ensure you can effectively describe digital circuits without the usual pitfalls.
 
 1. Understanding Basic Data Types
