@@ -1,4 +1,4 @@
-If you got this error: 
+**User:** If you got this error: 
 ```
 Traceback (most recent call last):
   File "/home/farzaneh/llm4pld/scripts/PyRTL/sign_extend_int_to_double.py", line 10, in <module>

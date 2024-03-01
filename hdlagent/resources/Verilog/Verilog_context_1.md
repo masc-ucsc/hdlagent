@@ -1,4 +1,4 @@
-Nested Loops in Verilog:
+**User:** Nested Loops in Verilog:
 
 1. Purpose: 
    - Nested loops are used in testbenches, hardware generation, and initializing structures in simulation.

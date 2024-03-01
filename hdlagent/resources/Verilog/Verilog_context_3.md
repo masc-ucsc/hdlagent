@@ -1,4 +1,4 @@
-- Modules:
+**User:** - Modules:
   - Example 1: Simple Adder Module
     ```
     module adder(input a, input b, output sum);

@@ -1,4 +1,4 @@
-I have been writing some PyRTL code lately and I have come across a lot of syntax errors, let me show you what errors I have seen and how to avoid them.
+**User:** I have been writing some PyRTL code lately and I have come across a lot of syntax errors, let me show you what errors I have seen and how to avoid them.
 
 ***`Clock` signals should never be explicit in PyRTL
 ***Remove the explicit clock definition.

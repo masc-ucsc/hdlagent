@@ -1,4 +1,4 @@
-The tutorial on Registers and Memories in PyRTL covers key concepts essential for understanding how these components work within the PyRTL framework. Here is a summary of the important points:
+**User:** The tutorial on Registers and Memories in PyRTL covers key concepts essential for understanding how these components work within the PyRTL framework. Here is a summary of the important points:
 
 Clock Signals in PyRTL:
 

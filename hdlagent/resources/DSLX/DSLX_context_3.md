@@ -1,4 +1,4 @@
-Here is a `tiny_adder` function in DSLX which gets 2 one-bit inputs and returns the add result, widened to reflect the carry bit. and also a test for it:  ```
+**User:** Here is a `tiny_adder` function in DSLX which gets 2 one-bit inputs and returns the add result, widened to reflect the carry bit. and also a test for it:  ```
 
 // Returns the add result, widened to reflect the carry bit.
 fn tiny_adder(x: u1, y: u1) -> u2 {

@@ -1,4 +1,4 @@
-When ever you got this ERROR:
+**User:** When ever you got this ERROR:
 ```
  File "/.local/lib/python3.10/site-packages/pyrtl/wire.py", line 414, in __getitem__
     raise PyrtlError(\'selection %s must have at least one selected wire\' % str(item))

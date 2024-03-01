@@ -1,4 +1,4 @@
-I have a new HDL programming language called DSLX that resembles a modern language like **rust** but it has the following key differences:
+**User:** I have a new HDL programming language called DSLX that resembles a modern language like **rust** but it has the following key differences:
 
 * Support multiple bit sizes `fn call(a:bits[3])` is the same as `fn call(a:u3)`
 

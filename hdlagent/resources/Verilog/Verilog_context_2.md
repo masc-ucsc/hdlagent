@@ -1,4 +1,4 @@
-
+**User:**
 Title: Sequential Logic in Verilog
 
 - Edge Detection: Implementing detectors for signal edges.
