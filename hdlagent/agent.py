@@ -45,6 +45,12 @@ def list_vertexai_models():
 
 def md_to_convo(md_file):
     with open(md_file, 'r') as f:
+        content = f.read()
+        # When not Markdown conversation style, default to single user entry
+        if ('**User:**' not in content) and ('**Assistant:**' not in content):
+            return [{"role": "user", "content": content}]
+
+    with open(md_file, 'r') as f:
         lines = f.readlines()
 
     conversation    = []
@@ -204,7 +210,6 @@ class Agent:
     #
     # Intended use: Whenever temperature of chat completions needs changing
     def set_model_temp(self, temp: float):
-        print(f"set temp: {temp}")
         self.temp = temp
 
     # The current run will assume this is the name of the target module
@@ -625,7 +630,6 @@ class Agent:
     # Intended use: before starting a new Agent run
     def reset_conversations(self):
         self.compile_conversation = self.initial_contexts.copy()
-        print(self.compile_conversation)
         self.spec_conversation    = []
         self.tb_conversation      = []
 
