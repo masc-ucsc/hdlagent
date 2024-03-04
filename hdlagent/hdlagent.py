@@ -4,6 +4,7 @@ import octoai
 import fire
 
 import agent
+import handler
 from handler import Handler
 from importlib import resources
 import multiprocessing
@@ -93,51 +94,41 @@ def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_li
         if not (skip_completed and handler.check_completion(entry, w_dir)):
             handler.single_json_run(entry, w_dir)
 
-def parallel_run(spath: str, llm: str, lang: str, json_path: str, comp_limit: int, lec_limit: int, lec_feedback_limit: int, top_k: int, skip_completed: bool, skip_successful: bool, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool, temperature: float):
-    if (json_path is not None):
-            if not os.path.exists(json_path):
-                print("Error: json_path supplied does not exist, exiting...")
-                exit()
-            else:
-                try:
-                    with open(json_path, 'r') as file:
-                        data = json.load(file)
-                except json.JSONDecodeError:
-                    print("Error: json_path supplied is not a valid .json file, exiting...")
-                    exit()
+def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, lec_limit: int, lec_feedback_limit: int, top_k: int, skip_completed: bool, skip_successful: bool, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool, temperature: float):
+    # Create a multiprocessing manager to manage shared state
+    manager      = multiprocessing.Manager()
 
-                # Create a multiprocessing manager to manage shared state
-                manager      = multiprocessing.Manager()
+    #shared list will need to change based on json formatting
+    shared_list  = manager.list(json_data)
+    shared_index = manager.Value('i', 0)  # Shared json index initialized to 0
+    lock         = manager.Lock()  # Lock for synchronizing access to the shared index
 
-                #shared list will need to change based on json formatting
-                shared_list  = manager.list(data["verilog_problems"])
-                shared_index = manager.Value('i', 0)  # Shared json index initialized to 0
-                lock         = manager.Lock()  # Lock for synchronizing access to the shared index
+    # List to keep track of processes
+    processes    = []
+    # Create and start multiprocessing workers
+    for _ in range(multiprocessing.cpu_count()):
+        p = multiprocessing.Process(target=worker, args=(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_feedback_limit, top_k, skip_completed, skip_successful, w_dir, use_spec, init_context, supp_context, temperature))
+        processes.append(p)
+        p.start()
 
-                # List to keep track of processes
-                processes    = []
-                # Create and start multiprocessing workers
-                for _ in range(multiprocessing.cpu_count()):
-                    p = multiprocessing.Process(target=worker, args=(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_feedback_limit, top_k, skip_completed, skip_successful, w_dir, use_spec, init_context, supp_context, temperature))
-                    processes.append(p)
-                    p.start()
-
-                # Wait for all processes to finish
-                for p in processes:
-                    p.join()
+    # Wait for all processes to finish
+    for p in processes:
+        p.join()
 
 def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: int = -1, comp_limit: int = 4, lec_limit: int = 1, lec_feedback_limit: int = -1, top_k: int = 1, start_from: str = None, w_dir: str = './', skip_completed: bool = False, skip_successful: bool = False, use_spec: bool = False, init_context: bool = False, supp_context: bool = False,  temperature: float = None, help: bool = False, parallel: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False, vertexai_models_list: bool = False):
     if (llm is not None) and (lang is not None) and (json_path is not None):
-        spath = resources.files('resources')
+        spath      = resources.files('resources')
+        json_data  = handler.set_json_bounds(handler.check_json(json_path), json_limit, start_from)
+
         if (parallel):
-            parallel_run(spath, llm, lang, json_path, comp_limit, lec_limit, lec_feedback_limit, top_k, skip_completed, skip_successful, w_dir, use_spec, init_context, supp_context, temperature)
+            parallel_run(spath, llm, lang, json_data, comp_limit, lec_limit, lec_feedback_limit, top_k, skip_completed, skip_successful, w_dir, use_spec, init_context, supp_context, temperature)
         else:
             my_handler = Handler()
             my_handler.set_comp_iter(comp_limit)
             my_handler.set_lec_iter(lec_limit)
             my_handler.set_lec_feedback_limit(lec_feedback_limit)
             my_handler.set_k(top_k)
-            my_handler.sequential_entrypoint(spath, llm, lang, json_path, json_limit, start_from, skip_completed, skip_successful, w_dir, use_spec, init_context, supp_context, temperature)
+            my_handler.sequential_entrypoint(spath, llm, lang, json_data, skip_completed, skip_successful, w_dir, use_spec, init_context, supp_context, temperature)
     elif openai_models_list:
         print(agent.list_openai_models())
     elif octoai_models_list:
