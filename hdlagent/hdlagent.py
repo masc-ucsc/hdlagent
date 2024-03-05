@@ -41,6 +41,10 @@ Options:
   --start_from <name>           Allows the user to specify which entry in the supplied .json file to start
                                 the run from, effectively setting the starting index.
 
+  --json_limit <val>            Used only with json_path, limits how many entries from the .json file
+                                will be attempted. Used with start_from to select a subset from .json
+                                file that does not begin with the first entry.
+
   --w_dir <path>                Path for working directory, all resulting source code and log files
                                 will be left here.
 
@@ -61,6 +65,9 @@ Options:
 
   --supp_context                Allows the agent to access the 'supplemental context' database to provide
                                 the LLM with suggestions on compile errors and their fixes.
+
+  --skip_completed              If the w_dir is pointing to a directory which had previous HDLAgent runs done,
+                                this option skips those which already have already completed generation.
 
   --openai_models_list          Prints a list of available OpenAI models to use for the LLM parameter
 
