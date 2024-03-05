@@ -665,6 +665,21 @@ class Agent:
                 return True, ""
         return False, compile_out
 
+    # Rolls back the conversation to the LLM codeblock response which failed the least amount of 
+    # testcases. This is to avoid regression and save on context token usage. 
+    #
+    # Intended use: experimental LLM LEC steering
+    def lec_regression_filter(self, failed_tests: int):
+        if failed_tests >= self.prev_test_cases:
+            # Remove current answer and query from conversation history
+            self.compile_conversation.pop()
+            last_query = self.compile_conversation[-1]["content"]
+            self.compile_conversation.pop()
+            # Writeback previous codeblock
+            self.dump_codeblock(self.compile_conversation[-1]["content"], self.verilog)
+            return last_query
+        return None
+
     # Main generation and validation loop for benchmarking. Inner loop attempts complations
     # and outer loop checks generated RTL versus supplied 'gold' Verilog for logical equivalence
     #
@@ -672,7 +687,7 @@ class Agent:
     def lec_loop(self, prompt: str, lec_iterations: int = 1, lec_feedback_limit: int = -1, compile_iterations: int = 1):
         self.reset_conversations()
         self.reset_perf_counters()
-        self.prev_test_cases = -1
+        self.prev_test_cases = float('inf')
         for i in range(lec_iterations):
             compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
             if compiled:
@@ -681,7 +696,9 @@ class Agent:
                 lec_out = self.test_lec(gold, gate, lec_feedback_limit)
                 if lec_out is not None:
                     test_count, failure_reason = lec_out.split('\n', 1)
-                    if i != lec_iterations - 1:
+                    # Avoid regression, try again
+                    prompt = self.lec_regression_filter(int(test_count))
+                    if (i != lec_iterations - 1) and (prompt is None):
                         prompt = self.get_lec_fail_instruction(int(test_count), failure_reason)
                 else:
                     self.success_message(self.compile_conversation)
