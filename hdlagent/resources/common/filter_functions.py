@@ -26,6 +26,9 @@ def comment_filter_function(lec_feedback: str, limit: int = -1):
             else:
                 res_string += line
         return str(-2) + "\n" + res_string
+    # Pipe misc. errors through directly
+    if "ERROR:" in lec_feedback:
+        return str(-3) + "\n" + lec_feedback
 
     # Split the string into separate sections for each table
     tables = lec_feedback.split(lec_feedback.split('\n')[0] + "\n")

@@ -670,14 +670,14 @@ class Agent:
     #
     # Intended use: experimental LLM LEC steering
     def lec_regression_filter(self, failed_tests: int):
-        if failed_tests >= self.prev_test_cases:
+        #if failed_tests >= self.prev_test_cases:
             # Remove current answer and query from conversation history
-            self.compile_conversation.pop()
-            last_query = self.compile_conversation[-1]["content"]
-            self.compile_conversation.pop()
+        #    self.compile_conversation.pop()
+        #    last_query = self.compile_conversation[-1]["content"]
+        #    self.compile_conversation.pop()
             # Writeback previous codeblock
-            self.dump_codeblock(self.compile_conversation[-1]["content"], self.verilog)
-            return last_query
+        #    self.dump_codeblock(self.compile_conversation[-1]["content"], self.verilog)
+        #    return last_query
         return None
 
     # Main generation and validation loop for benchmarking. Inner loop attempts complations
