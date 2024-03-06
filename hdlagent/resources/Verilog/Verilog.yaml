@@ -23,11 +23,11 @@ responses:
     This is the compile warning/error:
 
   comb_lec_fail_prefix: |
-    The previous module failed {test_count} test cases of the desired implementation, here are some of the results, where the 'DUT output values' are the results of the previous code:
+    The previous module failed {test_count} test cases of the desired implementation. Remember that all other possible input combinations are implemented correctly, and that only the output(s) mentioned in the test case need modification. Unmentioned outputs should not be touched. Here are {self.lec_feedback_limit} results of the {test_count} failed test cases:
     {feedback}
     
   improve_comb_lec_fail_prefix: |
-    This looks better, that last program only failed {test_count} test cases. Here are the updated results, where the 'DUT output values' are the results of the previous code:
+    This looks better, that last program only failed {test_count} test cases. Remember that all other possible input combinations are implemented correctly, and that only the output(s) mentioned in the test case need modification. Unmentioned outputs should not be touched. Here are {self.lec_feedback_limit} results of the {test_count} failed test cases:
     {feedback}
     
   pipe_lec_fail_prefix: |
@@ -49,10 +49,7 @@ responses:
 
 
 initial_contexts:
- - Verilog_context_1.text
- - Verilog_context_2.text
- - Verilog_context_3.text
- - Verilog_context_4.text
+ - LEC_fix_example_1.md
 
 supplemental_contexts:
   ' is implicitly declared': |+
