@@ -25,6 +25,13 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
     with open(in_file, 'r') as file:
         in_file_content = file.read()
 
+    #if len(inputs) == 1:
+    #    input_name = inputs[0][3]
+        # Get name of single input
+    #    in_file_input_name = in_file_content.splitlines()[1].replace('\t','').replace(',','')
+    #    if input_name != in_file_input_name:
+    #        in_file_content = in_file_content.replace()
+
     if len(outputs) == 1:
         output_name = outputs[0][3]
         # Rename all lines that may have the output_name as a local wire
@@ -56,9 +63,21 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
         # Remove last 2 lines past the assignments of the outputs
         if 'assign out ' in in_file_lines[-2]:
             if 'assign out = tuple_' in in_file_lines[-2]:
-                in_file_lines[-3] = ""
-            in_file_lines[-2] = ""
+                del in_file_lines[-3]
+            del in_file_lines[-2]
         in_file_content = '\n'.join(in_file_lines)
+        # Check if last remaining lines are superstrings of the outputs names
+        last_assigns = in_file_lines[-2: -(2 + len(outputs)): -1]
+        for assign in last_assigns:
+            pattern = r'assign\s+(\w+)\s+='
+            match = re.search(pattern, assign)
+            if match:
+                assign_name = match.group(1)
+                for output in outputs:
+                    output_name = output[3]
+                    if output_name in assign_name:  # Output names as substrings are replaced
+                        new_assign      = assign.replace(assign_name, output_name)
+                        in_file_content = in_file_content.replace(assign, new_assign)
 
     with open(in_file, 'w') as file:
         file.write(in_file_content)
@@ -93,8 +112,8 @@ def get_interface(interface: str):
 def main():
     name = ""
     ref_file = ""
-    in_file = "../../init_context_tests/gpt-4-1106_o2_context4_hdleval/ABBA_bus/ABBA_bus.v"
-    io_list = get_interface("module ABBA_bus(input  [7:0] a_i,input  [7:0] b_i,output  [31:0] result_o);")
+    in_file = "../../init_context_tests/gpt-4-1106_o2_context4_hdleval/ripple_carry_adder_8bit/ripple_carry_adder_8bit.v"
+    io_list = get_interface("module ripple_carry_adder_8bit(input  [7:0] a,input  [7:0] b,input  [0:0] cin,output  [7:0] sum,output  [0:0] cout);")
     custom_reformat_verilog(name, ref_file, in_file, io_list)
 
 if __name__ == "__main__":
