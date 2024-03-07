@@ -416,7 +416,7 @@ class Agent:
     # "Comparing your code to desired truth table here are mismatches: <lec_mesg>, fix it"
     #
     # Intended use: inside lec loop, after lec failure detected and more lec iterations available
-    def get_lec_fail_instruction(self, test_cases: int, lec_output: str):
+    def get_lec_fail_instruction(self, test_cases: int, lec_output: str, lec_feedback_limit: str):
         lec_fail_prefix = self.responses['comb_lec_fail_prefix']
         if test_cases == -1:
             lec_fail_prefix = self.responses['bad_port_lec_fail_prefix']
@@ -428,7 +428,7 @@ class Agent:
         if self.pipe_stages > 0:
             lec_fail_prefix = self.responses['pipe_lec_fail_prefix']
         self.prev_test_cases = test_cases
-        return lec_fail_prefix.format(test_count=test_cases, feedback=lec_output) + lec_fail_suffix
+        return lec_fail_prefix.format(test_count=test_cases, feedback=lec_output, lec_feedback_limit=lec_feedback_limit) + lec_fail_suffix
 
     # Parses common.yaml file and returns formatted 'request_testbench' string
     # which asks for an assertion based testbench given the implementation prompt.
@@ -699,7 +699,7 @@ class Agent:
                     # Avoid regression, try again
                     prompt = self.lec_regression_filter(int(test_count))
                     if (i != lec_iterations - 1) and (prompt is None):
-                        prompt = self.get_lec_fail_instruction(int(test_count), failure_reason)
+                        prompt = self.get_lec_fail_instruction(int(test_count), failure_reason, str(lec_feedback_limit))
                 else:
                     self.success_message(self.compile_conversation)
                     self.dump_compile_conversation()
