@@ -12,8 +12,8 @@ responses:
 
   simple_give_instr_suffix: |
 
-    Please respond with only valid program syntax. Please do not provide any additional English explanation, short comments in the code are allowed.
-    The interface of the module should follow this Verilog-style declaration: {interface}
+    Please respond with only valid program syntax, return the program in a markdown codeblock. Please do not provide any additional English explanation, short comments in the code are allowed.
+    The interface of the function should be the DSLX equivalent of this Verilog-style declaration: {interface}
 
   give_instr_suffix: |
     
@@ -21,7 +21,7 @@ responses:
     Please respond with only valid program syntax. Do not provide any additional english explanation, short comments in the code are allowed but kept to a minimum.
 
   compile_err_prefix: |
-    The previous code had a compiler error. Please return the entire corrected program, not just the erroring snippet. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments. Make sure to preserve the same case sensitive input and outputs names, it is important the variable name assigned to the output struct is exactly the same as the struct field.
+    The previous code had a compiler error. Please return the entire corrected program in a codeblock, not just the erroring snippet. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments. Make sure to preserve the same case sensitive input and outputs names, it is important the variable name assigned to the output struct is exactly the same as the struct field.
     This is the compile error:
 
   comb_lec_fail_prefix: |
@@ -36,15 +36,7 @@ responses:
 
 
 initial_contexts:
- - DSLX_For_enum.txt
- - DSLX_Params.txt
- - DSLX_Procs.txt
- - DSLX_Statement.txt
- - DSLX_TypeAliases.txt
- - DSLX_Types.txt
- - DSLX_blueprint.txt
- - DSLX_builtins.txt
- - DSLX_builtins_part2.txt
+ - dslx_reference_sum2_gemini.md
 
 supplemental_contexts:
   Annotated type did not match inferred type of right hand side expression: |

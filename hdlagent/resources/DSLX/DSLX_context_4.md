@@ -25,7 +25,7 @@ ERROR example 2:
 ```
 
 SOLUTION example 2:
-DSLX has a strict typechecking system which is engaged when a type is explicitly declared, such as "let a: u4" declares variable "a" to be a 4 bit long unsigned integer. Typecasting may be helpful when one needs to specify a type, despite the powerful implicit typesystem DSLX has to offer. It is done through the "as" keyword, which allows one to specify the desired type of the expression.
+oSLX has a strict typechecking system which is engaged when a type is explicitly declared, such as "let a: u4" declares variable "a" to be a 4 bit long unsigned integer. Typecasting may be helpful when one needs to specify a type, despite the powerful implicit typesystem DSLX has to offer. It is done through the "as" keyword, which allows one to specify the desired type of the expression.
 Fix:
 ```
 0006:    let  a: u4 = u4:1;

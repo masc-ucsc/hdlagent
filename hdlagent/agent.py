@@ -30,8 +30,10 @@ def list_openai_models(warn: bool = True):
         return []
 
 def list_octoai_models(warn: bool = True):
+    # Experimental list:
+    exp_list = ['smaug-72b-chat']
     if "OCTOAI_TOKEN" in os.environ:
-        return octoai.chat.get_model_list()
+        return octoai.chat.get_model_list() + exp_list
     else:
         if warn:
             print("OCTOAI_TOKEN not set")
@@ -454,7 +456,7 @@ class Agent:
             completion = self.client.chat.completions.create(
                 model=self.model,
                 messages=conversation,
-                max_tokens=8192,
+                max_tokens=4096,
                 presence_penalty=0,
                 temperature=0.1,
                 top_p=0.9,
@@ -463,7 +465,7 @@ class Agent:
             completion = self.client.chat.completions.create(
                 model=self.model,
                 messages=conversation,
-                max_tokens=8192,  # FIXME: automatic by model? 34B can do 16K, 70B only 4K
+                max_tokens=4096,  # FIXME: automatic by model? 34B can do 16K, 70B only 4K
                 presence_penalty=0,
                 temperature=self.temp,
                 top_p=0.9,
@@ -669,16 +671,18 @@ class Agent:
     # testcases. This is to avoid regression and save on context token usage. 
     #
     # Intended use: experimental LLM LEC steering
-    def lec_regression_filter(self, failed_tests: int):
+    def lec_regression_filter(self, failed_tests: int, lec_feedback_limit: int):
         #if failed_tests >= self.prev_test_cases:
             # Remove current answer and query from conversation history
         #    self.compile_conversation.pop()
-        #    last_query = self.compile_conversation[-1]["content"]
+            #last_query = self.compile_conversation[-1]["content"]
         #    self.compile_conversation.pop()
             # Writeback previous codeblock
         #    self.dump_codeblock(self.compile_conversation[-1]["content"], self.verilog)
-        #    return last_query
-        return None
+        #    if lec_feedback_limit > 1:
+        #        return lec_feedback_limit - 1
+        #    return lec_feedback_limit + 1
+        return lec_feedback_limit
 
     # Main generation and validation loop for benchmarking. Inner loop attempts complations
     # and outer loop checks generated RTL versus supplied 'gold' Verilog for logical equivalence
@@ -688,18 +692,19 @@ class Agent:
         self.reset_conversations()
         self.reset_perf_counters()
         self.prev_test_cases = float('inf')
+        cur_lec_feedback_limit = lec_feedback_limit
         for i in range(lec_iterations):
             compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
             if compiled:
                 # Reformat is free to modify both the gold and the gate
                 gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
-                lec_out = self.test_lec(gold, gate, lec_feedback_limit)
+                lec_out    = self.test_lec(gold, gate, cur_lec_feedback_limit)
                 if lec_out is not None:
                     test_count, failure_reason = lec_out.split('\n', 1)
                     # Avoid regression, try again
-                    prompt = self.lec_regression_filter(int(test_count))
-                    if (i != lec_iterations - 1) and (prompt is None):
-                        prompt = self.get_lec_fail_instruction(int(test_count), failure_reason, str(lec_feedback_limit))
+                    cur_lec_feedback_limit = self.lec_regression_filter(int(test_count), cur_lec_feedback_limit)
+                    if i != lec_iterations - 1:
+                        prompt = self.get_lec_fail_instruction(int(test_count), failure_reason, str(cur_lec_feedback_limit))
                 else:
                     self.success_message(self.compile_conversation)
                     self.dump_compile_conversation()
@@ -768,24 +773,23 @@ class Agent:
         with open(self.fail_log, "w") as md_file:
             md_file.write("Reason for failure:\n" + reason)
 
+    # Returns the first markdown style codeblock in a string
+    #
+    # Intended use: extracting code from LLM response
     def extract_codeblock(self, text:str):
         if ('```') not in text:
             return text
-        lines = text.split('\n')
-        code_blocks = []
+        lines   = text.split('\n')
         capture = False
-        block = []
+        block   = []
         for line in lines:
             if line.strip().startswith('```'):
                 if capture:
-                    code_blocks.append('\n'.join(block))
-                    block = []
-                capture = not capture
+                    return '\n'.join(block)
+                capture = True
                 continue
             if capture:
                 block.append(line)
-        isolated_code = "\n".join(code_blocks)
-        return isolated_code
 
     def dump_codeblock(self, text: str, filepath: str):
         isolated_code = self.extract_codeblock(text)
