@@ -704,8 +704,9 @@ class Agent:
                     test_count, failure_reason = lec_out.split('\n', 1)
                     # Avoid regression, try again
                     if i != lec_iterations - 1:
-                        #prev_lec_feedback_limit = cur_lec_feedback_limit
+                        prev_lec_feedback_limit = cur_lec_feedback_limit
                         #cur_lec_feedback_limit  = self.lec_regression_filter(int(test_count), cur_lec_feedback_limit)
+                        self.prev_test_cases = int(test_count)
                         #prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, str(prev_lec_feedback_limit))
                         prompt = self.get_lec_fail_instruction(int(test_count), failure_reason, str(prev_lec_feedback_limit))
                 else:
