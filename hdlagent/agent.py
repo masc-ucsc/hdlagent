@@ -429,8 +429,7 @@ class Agent:
         lec_fail_suffix = self.responses['lec_fail_suffix']
         if self.pipe_stages > 0:
             lec_fail_prefix = self.responses['pipe_lec_fail_prefix']
-        self.prev_test_cases = test_cases
-        return lec_fail_prefix.format(test_count=test_cases, feedback=lec_output, lec_feedback_limit=lec_feedback_limit) + lec_fail_suffix
+        return lec_fail_prefix.format(test_count=test_cases, feedback=lec_output, lec_feedback_limit=min(int(lec_feedback_limit),test_cases)) + lec_fail_suffix
 
     # Parses common.yaml file and returns formatted 'request_testbench' string
     # which asks for an assertion based testbench given the implementation prompt.
@@ -672,17 +671,19 @@ class Agent:
     #
     # Intended use: experimental LLM LEC steering
     def lec_regression_filter(self, failed_tests: int, lec_feedback_limit: int):
-        #if failed_tests >= self.prev_test_cases:
+        if failed_tests >= self.prev_test_cases:
             # Remove current answer and query from conversation history
-        #    self.compile_conversation.pop()
-            #last_query = self.compile_conversation[-1]["content"]
-        #    self.compile_conversation.pop()
+            self.compile_conversation.pop()
+            self.compile_conversation.pop()
             # Writeback previous codeblock
-        #    self.dump_codeblock(self.compile_conversation[-1]["content"], self.verilog)
-        #    if lec_feedback_limit > 1:
-        #        return lec_feedback_limit - 1
-        #    return lec_feedback_limit + 1
-        return lec_feedback_limit
+            self.dump_codeblock(self.compile_conversation[-1]["content"], self.verilog)
+            next_limit = 8 # sets LFL default upper range
+            if lec_feedback_limit > 1:
+                next_limit = lec_feedback_limit - 1
+        else:
+            self.prev_test_cases = int(test_count)
+            next_limit           = lec_feedback_limit
+        return next_limit
 
     # Main generation and validation loop for benchmarking. Inner loop attempts complations
     # and outer loop checks generated RTL versus supplied 'gold' Verilog for logical equivalence
@@ -691,7 +692,7 @@ class Agent:
     def lec_loop(self, prompt: str, lec_iterations: int = 1, lec_feedback_limit: int = -1, compile_iterations: int = 1):
         self.reset_conversations()
         self.reset_perf_counters()
-        self.prev_test_cases = float('inf')
+        self.prev_test_cases = 1000000#float('inf')
         cur_lec_feedback_limit = lec_feedback_limit
         for i in range(lec_iterations):
             compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
@@ -702,9 +703,11 @@ class Agent:
                 if lec_out is not None:
                     test_count, failure_reason = lec_out.split('\n', 1)
                     # Avoid regression, try again
-                    cur_lec_feedback_limit = self.lec_regression_filter(int(test_count), cur_lec_feedback_limit)
                     if i != lec_iterations - 1:
-                        prompt = self.get_lec_fail_instruction(int(test_count), failure_reason, str(cur_lec_feedback_limit))
+                        #prev_lec_feedback_limit = cur_lec_feedback_limit
+                        #cur_lec_feedback_limit  = self.lec_regression_filter(int(test_count), cur_lec_feedback_limit)
+                        #prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, str(prev_lec_feedback_limit))
+                        prompt = self.get_lec_fail_instruction(int(test_count), failure_reason, str(prev_lec_feedback_limit))
                 else:
                     self.success_message(self.compile_conversation)
                     self.dump_compile_conversation()
