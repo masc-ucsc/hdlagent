@@ -53,12 +53,18 @@ def comment_filter_function(lec_feedback: str, limit: int = -1):
                     gold_values.append(f"{signal_name[6:]} = 'b{bin_value}")
                 else:
                     input_values.append(f"{signal_name[4:]} = 'b{bin_value}")
+        reduced_gold = []
+        reduced_gate = []
+        for i in range(len(gold_values)):
+            if gold_values[i] != gate_values[i]:
+                reduced_gold.append(gold_values[i])
+                reduced_gate.append(gate_values[i])
         ret_string  = "Test input value(s):\n"
         ret_string += '\n'.join(input_values)
         ret_string += "\nDUT output value(s):\n"
-        ret_string += '\n'.join(gate_values)
+        ret_string += '\n'.join(reduced_gate)
         ret_string += "\nExpected output value(s):\n"
-        ret_string += '\n'.join(gold_values)
+        ret_string += '\n'.join(reduced_gold)
         return ret_string
     # Process each table
     ret_list = []
