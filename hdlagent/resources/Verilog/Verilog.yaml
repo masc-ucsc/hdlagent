@@ -11,7 +11,7 @@ responses:
     Can you implement the described Module in Verilog using purely combinational logic:
 
   pipe_give_instr_prefix: |
-    Can you implement the following description of a sequential Module in Verilog, it should have ${pipe_stages} register stage(s). Meaning the initial result should be ready in ${pipe_stages} clock cycle(s) upon reset.
+    Can you implement the following description of a sequential Module in Verilog, it should have {pipe_stages} register stage(s). Meaning the initial result should be ready in {pipe_stages} clock cycle(s) upon reset.
 
   give_instr_suffix: |
     
@@ -22,8 +22,21 @@ responses:
     The previous code had a compiler warning/error. Please return the entire corrected program, not just the warning/erroring snippet. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
     This is the compile warning/error:
 
+  comb_lec_fail_bootstrap: |
+    Below I have an incorrectly implemented piece of Verilog code that I need you to fix. The desired behavior is: {prompt}
+    ```verilog
+    {gold_verilog}
+    ```
+    
+    {test_count} failed test results were found. The feedback from the compiler shows the values that were tested as well as the output value(s) that were seen, called the 'DUT', and the desired output value(s) are labeled 'Expected'. Here are {lec_feedback_limit} results of the {test_count} failed test cases:
+
+    {feedback}
+    
+    Just return the corrected code, I dont care about your reasoning or any sort of documentation or comments.
+
   comb_lec_fail_prefix: |
     The previous module failed {test_count} test cases of the desired implementation. Remember that all other possible input combinations are implemented correctly, and that only the output(s) mentioned in the test case need modification. Unmentioned outputs should not be touched. Here are {lec_feedback_limit} results of the {test_count} failed test cases:
+    
     {feedback}
     
   improve_comb_lec_fail_prefix: |
