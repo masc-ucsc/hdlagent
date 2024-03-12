@@ -431,6 +431,14 @@ class Agent:
             lec_fail_prefix = self.responses['pipe_lec_fail_prefix']
         return lec_fail_prefix.format(test_count=test_cases, feedback=lec_output, lec_feedback_limit=min(int(lec_feedback_limit),test_cases)) + lec_fail_suffix
 
+    def get_lec_bootstrap_instruction(self, prompt, gold_verilog, test_count, lec_feedback_limit, feedback):
+        form = self.responses['comb_lec_fail_bootstrap']
+        if test_count == -1:
+            form = self.responses['bad_port_lec_fail_prefix']
+        elif test_count == -2:
+            form = self.responses['latch_lec_fail_prefix']
+        return form.format(prompt=prompt, gold_verilog=gold_verilog, test_count=test_count, feedback=feedback, lec_feedback_limit=min(int(lec_feedback_limit),test_count))
+
     # Parses common.yaml file and returns formatted 'request_testbench' string
     # which asks for an assertion based testbench given the implementation prompt.
     #
@@ -508,7 +516,7 @@ class Agent:
         self.llm_query_time += (time.time() - query_start_time)
 
         # Add the model's response to the messages list to keep the conversation context
-        if not compile_convo or not self.used_supp_context:   # Explains it as user wrote the code
+        if (not compile_convo) or (not self.used_supp_context):   # Explains it as user wrote the code
             print("**Assistant:**\n" + response)
             conversation.append({
                 'role': 'assistant',
@@ -670,8 +678,8 @@ class Agent:
     # testcases. This is to avoid regression and save on context token usage. 
     #
     # Intended use: experimental LLM LEC steering
-    def lec_regression_filter(self, failed_tests: int, lec_feedback_limit: int):
-        if failed_tests >= self.prev_test_cases:
+    def lec_regression_filter(self, test_count: int, lec_feedback_limit: int):
+        if test_count >= self.prev_test_cases:
             # Remove current answer and query from conversation history
             self.compile_conversation.pop()
             self.compile_conversation.pop()
@@ -703,6 +711,11 @@ class Agent:
                 if lec_out is not None:
                     test_count, failure_reason = lec_out.split('\n', 1)
                     # Avoid regression, try again
+                    #if i == 0:
+                    #    prev_lec_feedback_limit = cur_lec_feedback_limit
+                    #    self.prev_test_cases = int(test_count)
+                    #    self.reset_conversations()
+                    #    prompt = self.get_lec_bootstrap_instruction(prompt, open(self.verilog,'r').read(), int(test_count), str(lec_feedback_limit), failure_reason)
                     if i != lec_iterations - 1:
                         prev_lec_feedback_limit = cur_lec_feedback_limit
                         #cur_lec_feedback_limit  = self.lec_regression_filter(int(test_count), cur_lec_feedback_limit)
@@ -781,7 +794,9 @@ class Agent:
     #
     # Intended use: extracting code from LLM response
     def extract_codeblock(self, text:str):
-        if ('```') not in text:
+        if text is None:    # XXX - Deal with this better
+            return ""
+        if (text.count('```') == 0) or (text.count('```') % 2 != 0):
             return text
         lines   = text.split('\n')
         capture = False
@@ -789,7 +804,10 @@ class Agent:
         for line in lines:
             if line.strip().startswith('```'):
                 if capture:
-                    return '\n'.join(block)
+                    res_string = '\n'.join(block)
+                    if res_string is None:
+                        return ""
+                    return res_string
                 capture = True
                 continue
             if capture:
