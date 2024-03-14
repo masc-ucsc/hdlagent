@@ -69,6 +69,10 @@ Options:
   --skip_completed              If the w_dir is pointing to a directory which had previous HDLAgent runs done,
                                 this option skips those which already have already completed generation.
 
+  --update                      Re-attempt LEC iterations on current version of RTL found in a completed
+                                run dir. Cannot be invoked alongside skip_completed, as that conflicts with
+                                the idea of a re-attempt.
+
   --openai_models_list          Prints a list of available OpenAI models to use for the LLM parameter
 
   --octoai_models_list          Prints a list of available OctoAI models to use for the LLM parameter
@@ -77,7 +81,7 @@ Options:
  """
 
 # WARNING: FEATURES BELOW ARE EXPERIMENTAL - FURTHER VALIDATION AND TESTING REQUIRED
-def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_feedback_limit, top_k, skip_completed, skip_successful, w_dir, use_spec, init_context, supp_context, temperature):
+def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_feedback_limit, top_k, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature):
     # Each worker has its own Handler instance.
     handler = Handler()
     handler.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
@@ -101,7 +105,7 @@ def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_li
         if not (skip_completed and handler.check_completion(entry, w_dir)):
             handler.single_json_run(entry, w_dir)
 
-def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, lec_limit: int, lec_feedback_limit: int, top_k: int, skip_completed: bool, skip_successful: bool, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool, temperature: float):
+def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, lec_limit: int, lec_feedback_limit: int, top_k: int, skip_completed: bool, skip_successful: bool, update: bool, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool, temperature: float):
     # Create a multiprocessing manager to manage shared state
     manager      = multiprocessing.Manager()
 
@@ -114,7 +118,7 @@ def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, le
     processes    = []
     # Create and start multiprocessing workers
     for _ in range(multiprocessing.cpu_count()):
-        p = multiprocessing.Process(target=worker, args=(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_feedback_limit, top_k, skip_completed, skip_successful, w_dir, use_spec, init_context, supp_context, temperature))
+        p = multiprocessing.Process(target=worker, args=(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_feedback_limit, top_k, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature))
         processes.append(p)
         p.start()
 
@@ -122,20 +126,23 @@ def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, le
     for p in processes:
         p.join()
 
-def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: int = -1, comp_limit: int = 4, lec_limit: int = 1, lec_feedback_limit: int = -1, top_k: int = 1, start_from: str = None, w_dir: str = './', skip_completed: bool = False, skip_successful: bool = False, use_spec: bool = False, init_context: bool = False, supp_context: bool = False,  temperature: float = None, help: bool = False, parallel: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False, vertexai_models_list: bool = False):
+def main(llm: str = None, lang: str = None, json_path: str = None, json_limit: int = -1, comp_limit: int = 4, lec_limit: int = 1, lec_feedback_limit: int = -1, top_k: int = 1, start_from: str = None, w_dir: str = './', skip_completed: bool = False, skip_successful: bool = False, update: bool = False, use_spec: bool = False, init_context: bool = False, supp_context: bool = False,  temperature: float = None, help: bool = False, parallel: bool = False, openai_models_list: bool = False, octoai_models_list: bool = False, vertexai_models_list: bool = False):
     if (llm is not None) and (lang is not None) and (json_path is not None):
         spath      = resources.files('resources')
         json_data  = handler.set_json_bounds(handler.check_json(json_path), json_limit, start_from)
 
+        if skip_completed and update:
+            print("Error: cannot invoke --skip_completed and --update at the same time, exiting...")
+            exit()
         if (parallel):
-            parallel_run(spath, llm, lang, json_data, comp_limit, lec_limit, lec_feedback_limit, top_k, skip_completed, skip_successful, w_dir, use_spec, init_context, supp_context, temperature)
+            parallel_run(spath, llm, lang, json_data, comp_limit, lec_limit, lec_feedback_limit, top_k, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature)
         else:
             my_handler = Handler()
             my_handler.set_comp_iter(comp_limit)
             my_handler.set_lec_iter(lec_limit)
             my_handler.set_lec_feedback_limit(lec_feedback_limit)
             my_handler.set_k(top_k)
-            my_handler.sequential_entrypoint(spath, llm, lang, json_data, skip_completed, skip_successful, w_dir, use_spec, init_context, supp_context, temperature)
+            my_handler.sequential_entrypoint(spath, llm, lang, json_data, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature)
     elif openai_models_list:
         print(agent.list_openai_models())
     elif octoai_models_list:

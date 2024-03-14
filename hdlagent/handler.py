@@ -123,9 +123,13 @@ class Handler:
     # Intended use: Save tokens while benchmarking
     def check_success(self, entry, base_w_dir: str):
         fail_log_path = os.path.join(base_w_dir, entry['name'], "logs", f"{entry['name']}_fail.md")
-        return os.path.exists(fail_log_path)
+        if os.path.exists(fail_log_path):
+            print("FAIL!!")
+        else:
+            print("SUCCESS")
+        return not os.path.exists(fail_log_path)
 
-    def single_json_run(self, entry, base_w_dir):
+    def single_json_run(self, entry, base_w_dir, update):
             self.agent.reset_k()
             self.agent.set_interface(entry['interface'])
             self.agent.set_pipeline_stages(int(entry['pipeline_stages']))
@@ -139,22 +143,25 @@ class Handler:
 
             self.agent.dump_gold(entry['response'])
             for _ in range(self.top_k):
-                if self.agent.lec_loop(prompt, self.lec_iter, self.lec_feedback_limit, self.comp_iter):
+                if self.agent.lec_loop(prompt, self.lec_iter, self.lec_feedback_limit, self.comp_iter, update):
                     break
                 self.agent.incr_k()
         
 
-    def json_run(self, json_data, skip_completed: bool = False, skip_successful: bool = False):
+    def json_run(self, json_data, skip_completed: bool = False, skip_successful: bool = False, update: bool = False):
         base_w_dir = self.agent.w_dir
         for entry in json_data:
-            if not (skip_completed and self.check_completion(entry, base_w_dir)):
-                self.single_json_run(entry, base_w_dir)
+            successful   = self.check_success(entry, base_w_dir)
+            completed    = self.check_completion(entry, base_w_dir)
+            update_entry = (completed) and (not successful) and (update)
+            if not (skip_completed and completed):
+                self.single_json_run(entry, base_w_dir, update_entry)
             
-    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_data, skip_completed: bool = False, skip_successful: bool = False, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, temperature: float = None):
+    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_data, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, temperature: float = None):
         self.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
         self.agent.set_w_dir(w_dir)
         self.agent.set_model_temp(temperature)
 
         # Sanity test json file before starting anything
         #data = set_json_bounds(check_json(json_path), json_limit, start_from)
-        self.json_run(json_data, skip_completed, skip_successful)
+        self.json_run(json_data, skip_completed, skip_successful, update)

@@ -28,19 +28,19 @@ responses:
     {gold_verilog}
     ```
     
-    {test_count} failed test results were found. The feedback from the compiler shows the values that were tested as well as the output value(s) that were seen, called the 'DUT', and the desired output value(s) are labeled 'Expected'. Here are {lec_feedback_limit} results of the {test_count} failed test cases:
+    {test_fail_count} failed test results were found. The feedback from the compiler shows the values that were tested as well as the output value(s) that were seen, called the 'DUT', and the desired output value(s) are labeled 'Expected'. Here are {lec_feedback_limit} results of the {test_fail_count} failed test cases:
 
     {feedback}
     
     Just return the corrected code, I dont care about your reasoning or any sort of documentation or comments.
 
   comb_lec_fail_prefix: |
-    The previous module failed {test_count} test cases of the desired implementation. Remember that all other possible input combinations are implemented correctly, and that only the output(s) mentioned in the test case need modification. Unmentioned outputs should not be touched. Here are {lec_feedback_limit} results of the {test_count} failed test cases:
+    The previous module failed {test_fail_count} test cases of the desired implementation. Remember that all other possible input combinations are implemented correctly, and that only the output(s) mentioned in the test case need modification. Unmentioned outputs should not be touched. Here are {lec_feedback_limit} results of the {test_fail_count} failed test cases:
     
     {feedback}
     
   improve_comb_lec_fail_prefix: |
-    This looks better, that last program only failed {test_count} test cases. Remember that all other possible input combinations are implemented correctly, and that only the output(s) mentioned in the test case need modification. Unmentioned outputs should not be touched. Here are {lec_feedback_limit} results of the {test_count} failed test cases:
+    This looks better, that last program only failed {test_fail_count} test cases. Remember that all other possible input combinations are implemented correctly, and that only the output(s) mentioned in the test case need modification. Unmentioned outputs should not be touched. Here are {lec_feedback_limit} results of the {test_fail_count} failed test cases:
     {feedback}
     
   pipe_lec_fail_prefix: |
