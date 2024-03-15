@@ -161,7 +161,4 @@ class Handler:
         self.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
         self.agent.set_w_dir(w_dir)
         self.agent.set_model_temp(temperature)
-
-        # Sanity test json file before starting anything
-        #data = set_json_bounds(check_json(json_path), json_limit, start_from)
         self.json_run(json_data, skip_completed, skip_successful, update)
