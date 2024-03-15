@@ -704,12 +704,13 @@ class Agent:
         self.prev_test_cases   = float('inf')
         for i in range(lec_iterations):
             if (update) and (i == 0):
-                if self.test_code_compile() is None:    # Only try to update if code already compiles
+                if self.test_code_compile() is None:    # Only try to update if code already compiles and LEC returns valid feedback
                     gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
                     lec_out    = self.test_lec(gold, gate, lec_feedback_limit)
                     test_fail_count, failure_reason = lec_out.split('\n', 1)
                     test_fail_count = int(test_fail_count)
-                    prompt = self.get_lec_bootstrap_instruction(prompt, test_fail_count, lec_feedback_limit, failure_reason)
+                    if test_fail_count > 0:
+                        prompt = self.get_lec_bootstrap_instruction(prompt, test_fail_count, lec_feedback_limit, failure_reason)
             compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
             if compiled:
                 # Reformat is free to modify both the gold and the gate
