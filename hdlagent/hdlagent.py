@@ -69,6 +69,8 @@ Options:
   --skip_completed              If the w_dir is pointing to a directory which had previous HDLAgent runs done,
                                 this option skips those which already have already completed generation.
 
+  --skip_successful             Just like skip_completed, except only skips those which also passed LEC
+
   --update                      Re-attempt LEC iterations on current version of RTL found in a completed
                                 run dir. Cannot be invoked alongside skip_completed, as that conflicts with
                                 the idea of a re-attempt.
@@ -103,7 +105,7 @@ def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_li
                 break
         print(f"\nProcessing by {handler.id}: {handler.agent.name}\n")
         if not (skip_completed and handler.check_completion(entry, w_dir)):
-            handler.single_json_run(entry, w_dir)
+            handler.single_json_run(entry, w_dir, update)
 
 def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, lec_limit: int, lec_feedback_limit: int, top_k: int, skip_completed: bool, skip_successful: bool, update: bool, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool, temperature: float):
     # Create a multiprocessing manager to manage shared state
