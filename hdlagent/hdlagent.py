@@ -104,8 +104,18 @@ def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_li
             else:
                 break
         print(f"\nProcessing by {handler.id}: {handler.agent.name}\n")
-        if not (skip_completed and handler.check_completion(entry, w_dir)):
-            handler.single_json_run(entry, w_dir, update)
+        successful   = handler.check_success(entry, w_dir)
+        if successful:
+            print("successful")
+        completed    = handler.check_completion(entry, w_dir)
+        if completed:
+            print("completed")
+        update_entry = completed and (not successful) and update
+        if update_entry:
+            print("update_entry")
+        run          = not ((skip_completed and completed) or (skip_successful and successful))
+        if run:
+            handler.single_json_run(entry, w_dir, update_entry)
 
 def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, lec_limit: int, lec_feedback_limit: int, top_k: int, skip_completed: bool, skip_successful: bool, update: bool, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool, temperature: float):
     # Create a multiprocessing manager to manage shared state
