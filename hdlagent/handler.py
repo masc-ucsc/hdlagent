@@ -123,10 +123,6 @@ class Handler:
     # Intended use: Save tokens while benchmarking
     def check_success(self, entry, base_w_dir: str):
         fail_log_path = os.path.join(base_w_dir, entry['name'], "logs", f"{entry['name']}_fail.md")
-        if os.path.exists(fail_log_path):
-            print("FAIL!!")
-        else:
-            print("SUCCESS")
         return not os.path.exists(fail_log_path)
 
     def single_json_run(self, entry, base_w_dir, update):
@@ -153,8 +149,9 @@ class Handler:
         for entry in json_data:
             successful   = self.check_success(entry, base_w_dir)
             completed    = self.check_completion(entry, base_w_dir)
-            update_entry = (completed) and (not successful) and (update)
-            if not (skip_completed and completed):
+            update_entry = completed and (not successful) and update
+            run          = not ((skip_completed and completed) or (skip_successful and successful))
+            if run:
                 self.single_json_run(entry, base_w_dir, update_entry)
             
     def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_data, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, temperature: float = None):
