@@ -122,8 +122,9 @@ class Handler:
     #
     # Intended use: Save tokens while benchmarking
     def check_success(self, entry, base_w_dir: str):
+        completed     = self.check_completion(entry, base_w_dir)
         fail_log_path = os.path.join(base_w_dir, entry['name'], "logs", f"{entry['name']}_fail.md")
-        return not os.path.exists(fail_log_path)
+        return completed and not os.path.exists(fail_log_path)
 
     def single_json_run(self, entry, base_w_dir, update):
             self.agent.reset_k()
