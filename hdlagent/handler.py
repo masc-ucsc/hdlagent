@@ -140,7 +140,10 @@ class Handler:
 
             self.agent.dump_gold(entry['response'])
             for _ in range(self.top_k):
-                if self.agent.lec_loop(prompt, self.lec_iter, self.lec_feedback_limit, self.comp_iter, update):
+                successful   = self.check_success(entry, base_w_dir)
+                completed    = self.check_completion(entry, base_w_dir)
+                update_entry = completed and (not successful) and update
+                if self.agent.lec_loop(prompt, self.lec_iter, self.lec_feedback_limit, self.comp_iter, update_entry):
                     break
                 self.agent.incr_k()
         
@@ -150,10 +153,9 @@ class Handler:
         for entry in json_data:
             successful   = self.check_success(entry, base_w_dir)
             completed    = self.check_completion(entry, base_w_dir)
-            update_entry = completed and (not successful) and update
             run          = not ((skip_completed and completed) or (skip_successful and successful))
             if run:
-                self.single_json_run(entry, base_w_dir, update_entry)
+                self.single_json_run(entry, base_w_dir, update)
             
     def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_data, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, temperature: float = None):
         self.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))

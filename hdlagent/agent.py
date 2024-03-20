@@ -419,12 +419,14 @@ class Agent:
     #
     # Intended use: inside lec loop, after lec failure detected and more lec iterations available
     def get_lec_fail_instruction(self, test_fail_count: int, lec_output: str, lec_feedback_limit: int):
+        if lec_feedback_limit == 0:
+            return self.responses['no_feedback_lec_fail_suffix']
         lec_fail_prefix = self.responses['comb_lec_fail_prefix']
         if test_fail_count == -1:
             lec_fail_prefix = self.responses['bad_port_lec_fail_prefix']
         elif test_fail_count == -2:
             lec_fail_prefix = self.responses['latch_lec_fail_prefix']
-        elif (test_fail_count < self.prev_test_cases) and (self.prev_test_cases != -1):
+        elif (test_fail_count < self.prev_test_cases) and (self.prev_test_cases > 0):
             lec_fail_prefix = self.responses['improve_comb_lec_fail_prefix']
         lec_fail_suffix = self.responses['lec_fail_suffix']
         if self.pipe_stages > 0:
@@ -433,6 +435,8 @@ class Agent:
 
     def get_lec_bootstrap_instruction(self, prompt, test_fail_count, lec_feedback_limit, feedback):
         verilog = open(self.verilog,'r').read()
+        if lec_feedback_limit == 0:
+            return self.responses['no_feedback_lec_fail_bootstrap'].format(prompt=prompt, gold_verilog=verilog)
         form    = self.responses['comb_lec_fail_bootstrap']
         if test_fail_count == -1:
             form = self.responses['bad_port_lec_fail_prefix']
@@ -680,18 +684,23 @@ class Agent:
     #
     # Intended use: experimental LLM LEC steering
     def lec_regression_filter(self, test_fail_count: int, lec_feedback_limit: int):
+        next_limit = lec_feedback_limit
         if test_fail_count >= self.prev_test_cases:
             # Remove current answer and query from conversation history
             self.compile_conversation.pop()
-            self.compile_conversation.pop()
+            if len(self.compile_conversation) > 1:  # --update condition has codeblock in first query
+                self.compile_conversation.pop()
             # Writeback previous codeblock
-            self.dump_codeblock(self.compile_conversation[-1]["content"], self.verilog)
-            next_limit = 8 # sets LFL default upper range
+            if len(self.compile_conversation) > 0:
+                self.dump_codeblock(self.compile_conversation[-1]["content"], self.verilog)
+            if len(self.compile_conversation) == 1:  # shrink feedback in codeblock in first query
+                self.compile_conversation.pop()
             if lec_feedback_limit > 1:
-                next_limit = lec_feedback_limit - 1
+                next_limit = min(lec_feedback_limit - 1, test_fail_count)
+            elif lec_feedback_limit != 0:
+                next_limit = min(8, test_fail_count) # sets LFL default upper range
         else:
             self.prev_test_cases = test_fail_count
-            next_limit           = lec_feedback_limit
         return next_limit
 
     # Main generation and validation loop for benchmarking. Inner loop attempts complations
@@ -702,15 +711,19 @@ class Agent:
         self.reset_conversations()
         self.reset_perf_counters()
         self.prev_test_cases   = float('inf')
+        original_prompt = prompt
         for i in range(lec_iterations):
-            if (update) and (i == 0):
+            if (update) and (len(self.compile_conversation) == 0):
                 if self.test_code_compile() is None:    # Only try to update if code already compiles and LEC returns valid feedback
                     gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
                     lec_out    = self.test_lec(gold, gate, lec_feedback_limit)
                     test_fail_count, failure_reason = lec_out.split('\n', 1)
-                    test_fail_count = int(test_fail_count)
+                    test_fail_count      = int(test_fail_count)
+                    self.prev_test_cases = test_fail_count
+                    self.lec_f           -= 1
+                    self.lec_n           -= 1  # preliminary checks dont count
                     if test_fail_count > 0:
-                        prompt = self.get_lec_bootstrap_instruction(prompt, test_fail_count, lec_feedback_limit, failure_reason)
+                        prompt = self.get_lec_bootstrap_instruction(original_prompt, test_fail_count, lec_feedback_limit, failure_reason)
             compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
             if compiled:
                 # Reformat is free to modify both the gold and the gate
@@ -722,7 +735,11 @@ class Agent:
                     if i != lec_iterations - 1:
                         prev_lec_feedback_limit = lec_feedback_limit
                         lec_feedback_limit      = self.lec_regression_filter(test_fail_count, lec_feedback_limit)
-                        prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, prev_lec_feedback_limit)
+                        lec_out                 = self.test_lec(gold, gate, lec_feedback_limit) # re-do LEC after popping conversation
+                        _, failure_reason       = lec_out.split('\n', 1)
+                        self.lec_f             -= 1
+                        self.lec_n             -= 1  # preliminary checks dont count
+                        prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, lec_feedback_limit)
                 else:
                     self.success_message(self.compile_conversation)
                     self.dump_compile_conversation()
