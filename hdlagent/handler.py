@@ -6,7 +6,7 @@ def check_json(json_path: str):
     data = None
     if (json_path is not None):
         if not os.path.exists(json_path):
-            print("Error: json_path supplied does not exist, exiting...")
+            print(f"Error: json_path {json_path} does not exist, exiting...")
             exit()
         else:
             try:

@@ -47,38 +47,45 @@ def list_vertexai_models():
 
 def md_to_convo(md_file):
     with open(md_file, 'r') as f:
-        content = f.read()
-        # When not Markdown conversation style, default to single user entry
-        if ('**User:**' not in content) and ('**Assistant:**' not in content):
-            return [{"role": "user", "content": content}]
-
-    with open(md_file, 'r') as f:
         lines = f.readlines()
 
     conversation    = []
     current_content = ""
     current_role    = ""
+    system_content  = ""
     for line in lines:
         line = line.rstrip()
-        if '**User:**' in line or '**Assistant:**' in line:
+        if '**User:**' in line or '**Assistant:**' in line or '**System:**' in line:
             if current_content:
-                conversation.append({"role": current_role, "content": current_content.rstrip('\n')})
+                if current_role == "system":
+                    system_content += current_content.rstrip('\n')
+                else:
+                    conversation.append({"role": current_role, "content": current_content.rstrip('\n')})
                 current_content = ""
 
             if '**User:**' in line:
                 current_role = "user"
             elif '**Assistant:**' in line:
                 current_role = "assistant"
-            line_content = re.sub(r'\*\*(User:|Assistant:)\*\*\s*', '', line)
+            elif '**System:**' in line:
+                current_role = "system"
+
+            line_content = re.sub(r'\*\*(User:|Assistant|System:)\*\*\s*', '', line)
             if line_content:
                 current_content += line_content + "\n"
         else:
             current_content += line + "\n"
 
+    if len(conversation) == 0:
+        current_role = "system"
+
     if current_content:
         conversation.append({"role": current_role, "content": current_content.rstrip('\n')})
-    return conversation
 
+    if system_content:
+        conversation.insert(0, {"role": "system", "content": system_content })
+
+    return conversation
 
 class Agent:
     def __init__(self, spath: str, model: str, lang: str, use_init_context:bool = False, use_supp_context: bool = False, use_spec: bool = False):
@@ -95,7 +102,7 @@ class Agent:
         # Default prefixes and suffixes for queries
         self.responses = config['responses']
         self.responses.update(common['responses'])
-        
+
         # Pre-loads long initial language context from file(s)
         self.used_init_context = use_init_context
         self.initial_contexts  = []
@@ -103,7 +110,10 @@ class Agent:
             for context in config['initial_contexts']:
                 file = os.path.join(self.script_dir, lang, context)
                 self.initial_contexts.extend(md_to_convo(file))
-        
+
+        print("INITIAL CONTEXT:")
+        print(self.initial_contexts)
+
         # Supplemental contexts are loaded from yaml file, dictionary of {error: suggestion} pairs
         self.used_supp_context     = use_supp_context
         self.supplemental_contexts = {}
@@ -146,7 +156,15 @@ class Agent:
             self.client          = OpenAI()
         elif model in list_vertexai_models(False):
             self.chat_completion = self.vertexai_chat_completion
-            self.client          = GenerativeModel(model).start_chat()
+            try:
+                self.client          = GenerativeModel(model).start_chat()
+            except Exception as e:
+                print(f"VertexAI failed with this error: {e}")
+                print("WARNING: VertexAI uses a different API/authentitification. It requires this:")
+                print("pip3 install --upgrade --user google-cloud-aiplatform")
+                print("gcloud auth application-default login")
+                exit(-2)
+
         elif ("OPENAI_API_KEY" not in os.environ) and ("OCTOAI_TOKEN" not in os.environ) and ("PROJECT_ID" not in os.environ):
             print("Please set either OPENAI_API_KEY or OCTOAI_TOKEN or PROJECT_ID environment variable(s) before continuing, exiting...")
             exit()
@@ -207,7 +225,7 @@ class Agent:
     def incr_k(self):
         self.top_k += 1
 
-    # Sets the API query param 'temp' for the LLM, if such a param is 
+    # Sets the API query param 'temp' for the LLM, if such a param is
     # exposed in the API chat completion call
     #
     # Intended use: Whenever temperature of chat completions needs changing
@@ -342,7 +360,7 @@ class Agent:
         with open (self.gold, "w") as file:
             file.write(gold_contents)
         self.check_gold(self.gold)
-        
+
     # Helper function to prevent API charges in case gold Verilog
     # supplied is not valid or the file path is incorrect.
     #
@@ -383,7 +401,7 @@ class Agent:
     # "I want a circuit that does this <def>, named <name>, write the RTL"
     #
     # Intended use: to begin the iterative part of the compilation conversation
-    def get_compile_initial_instruction(self, prompt: str): 
+    def get_compile_initial_instruction(self, prompt: str):
         pipe_stages = self.pipe_stages
         prefix = self.responses['comb_give_instr_prefix']
         output_count = 0    # XXX - fixme hacky, Special case for DSLX
@@ -502,7 +520,7 @@ class Agent:
         self.completion_tokens += completion.usage.completion_tokens
         return completion.choices[0].message.content
 
-    # Primary interface between supported LLM's API and the Agent. 
+    # Primary interface between supported LLM's API and the Agent.
     # Send queries and returns their response(s), all while maintaining
     # the context by appending both query and response to the context history,
     # managed performance counters for token usage, time, etc...
@@ -514,10 +532,13 @@ class Agent:
             'role': 'user',
             'content': clarification
         })
+        print("---------------------------")
+        print(conversation)
         print("**User:**\n" + clarification)
 
+
         query_start_time     = time.time()
-        response             = self.chat_completion(conversation, compile_convo)    
+        response             = self.chat_completion(conversation, compile_convo)
         self.llm_query_time += (time.time() - query_start_time)
 
         # Add the model's response to the messages list to keep the conversation context
@@ -679,8 +700,8 @@ class Agent:
                 return True, ""
         return False, compile_out
 
-    # Rolls back the conversation to the LLM codeblock response which failed the least amount of 
-    # testcases. This is to avoid regression and save on context token usage. 
+    # Rolls back the conversation to the LLM codeblock response which failed the least amount of
+    # testcases. This is to avoid regression and save on context token usage.
     #
     # Intended use: experimental LLM LEC steering
     def lec_regression_filter(self, test_fail_count: int, lec_feedback_limit: int):
