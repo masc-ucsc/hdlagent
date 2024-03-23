@@ -10,7 +10,7 @@ include = ["resources/common/common.yaml"]
 [tool.poetry.dependencies]
 python = "^3.12"
 openai = "^1.10.0"
-octoai-sdk = "^0.9.0"
+octoai-sdk = "^0.10.0"
 markdown = "^3.5.2"
 vertexai = "^0.0.1"
 google-cloud-aiplatform = "^1.39.0"
