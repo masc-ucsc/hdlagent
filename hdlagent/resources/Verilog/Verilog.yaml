@@ -62,7 +62,7 @@ responses:
 
 
 initial_contexts:
- - LEC_fix_example_1.md
+ - Verilog_context_1.md
 
 supplemental_contexts:
   ' is implicitly declared': |+
