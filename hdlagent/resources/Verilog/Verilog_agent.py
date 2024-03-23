@@ -4,7 +4,7 @@ import subprocess
 
 def custom_check_errors(compiler_output):
     res_string = (str(compiler_output.stdout))[2:-1].replace("\\n", "\n")
-    if ("ERROR:" in res_string) or ("Warning:" in res_string):
+    if ("error" in res_string) or ("ERROR:" in res_string) or ("Warning:" in res_string):
         return res_string
     return None
 
