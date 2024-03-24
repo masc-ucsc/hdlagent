@@ -3,7 +3,7 @@ f=$1
 
 temp_file=$(mktemp log_check_verilog.XXXXXX)
 if which slang >/dev/null; then
-	slang ${f} 2>${temp_file}
+	slang -q --error-limit 1 ${f} 2>${temp_file}
 	if [[ $? -ne 0 ]]; then
 		cat ${temp_file}
 	else

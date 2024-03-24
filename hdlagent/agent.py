@@ -13,6 +13,8 @@ import vertexai
 from vertexai.preview.generative_models import GenerativeModel
 import yaml
 
+from hdlang import get_hdlang
+
 from importlib import resources
 
 def list_openai_models(warn: bool = True):
@@ -98,6 +100,9 @@ class Agent:
         # Set by Lang
         with open(os.path.join(self.script_dir, lang, lang + ".yaml"), 'r') as file:
             config = yaml.safe_load(file)
+
+        self.hdlang = get_hdlang(lang)
+        self.hdlang_verilog = get_hdlang("Verilog")  # code gen, interface.... is always verilog
 
         # Default prefixes and suffixes for queries
         self.responses = config['responses']
@@ -482,27 +487,30 @@ class Agent:
         return completion['candidates'][0]['content']['parts'][0]['text']
 
     def octoai_chat_completion(self, conversation, compile_convo: bool = False):
-        if self.temp is None:
-            completion = self.client.chat.completions.create(
-                model=self.model,
-                messages=conversation,
-                max_tokens=4096,
-                presence_penalty=0,
-                temperature=0.1,
-                top_p=0.9,
-            )
-        else:
-            completion = self.client.chat.completions.create(
-                model=self.model,
-                messages=conversation,
-                max_tokens=4096,  # FIXME: automatic by model? 34B can do 16K, 70B only 4K
-                presence_penalty=0,
-                temperature=self.temp,
-                top_p=0.9,
-            )
-        self.prompt_tokens     += completion.dict()['usage']['prompt_tokens']
-        self.completion_tokens += completion.dict()['usage']['completion_tokens']
-        return completion.dict()['choices'][0]['message']['content']
+        try:
+            if self.temp is None:
+                completion = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=conversation,
+                    max_tokens=2048,
+                    presence_penalty=0,
+                    top_p=0.9,
+                )
+            else:
+                completion = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=conversation,
+                    max_tokens=2048,  # FIXME: automatic by model? 34B can do 16K, 70B only 4K
+                    presence_penalty=0,
+                    temperature=self.temp,
+                    top_p=0.9,
+                )
+            self.prompt_tokens     += completion.dict()['usage']['prompt_tokens']
+            self.completion_tokens += completion.dict()['usage']['completion_tokens']
+            return completion.dict()['choices'][0]['message']['content']
+        except Exception as e:
+            print("octoai model failed: ", e)
+            return ""
 
     def openai_chat_completion(self, conversation, compile_convo: bool = False):
         if self.temp is None:
@@ -543,10 +551,14 @@ class Agent:
 
         # Add the model's response to the messages list to keep the conversation context
         if (not compile_convo) or (not self.used_supp_context):   # Explains it as user wrote the code
-            print("**Assistant:**\n" + response)
+            code = "```\n"
+            code += self.hdlang.extract_code(response)
+            code += "```"
+            print("**Assistant:**\n" + code)
+
             conversation.append({
                 'role': 'assistant',
-                'content': response
+                'content': code
             })
 
         delay = 1
@@ -570,7 +582,7 @@ class Agent:
         description    = '\n'.join(indented_lines)
         spec_contents += description
         spec_contents += "\ninterface: |\n  \n  "
-        spec_contents += (self.extract_codeblock(self.query_model(self.spec_conversation, interface_req))).replace('\n','\n    ')
+        spec_contents += (self.hdlang_verilog.extract_code(self.query_model(self.spec_conversation, interface_req))).replace('\n','\n    ')
         os.makedirs(os.path.dirname(self.spec), exist_ok=True)
         with open(self.spec, 'w') as file:
             file.write(spec_contents)
@@ -829,31 +841,8 @@ class Agent:
         with open(self.fail_log, "w") as md_file:
             md_file.write("Reason for failure:\n" + reason)
 
-    # Returns the first markdown style codeblock in a string
-    #
-    # Intended use: extracting code from LLM response
-    def extract_codeblock(self, text:str):
-        if text is None:    # XXX - Deal with this better
-            return ""
-        if (text.count('```') == 0) or (text.count('```') % 2 != 0):
-            return text
-        lines   = text.split('\n')
-        capture = False
-        block   = []
-        for line in lines:
-            if line.strip().startswith('```'):
-                if capture:
-                    res_string = '\n'.join(block)
-                    if res_string is None:
-                        return ""
-                    return res_string
-                capture = True
-                continue
-            if capture:
-                block.append(line)
-
     def dump_codeblock(self, text: str, filepath: str):
-        isolated_code = self.extract_codeblock(text)
+        isolated_code = self.hdlang.extract_code(text)
         with open(filepath, 'w') as file:
             file.write(isolated_code)
 
