@@ -159,7 +159,7 @@ class Agent:
         elif model in list_openai_models(False):
             self.chat_completion = self.openai_chat_completion
             self.client          = OpenAI()
-        elif model in list_vertexai_models(False):
+        elif model in list_vertexai_models():
             self.chat_completion = self.vertexai_chat_completion
             try:
                 self.client          = GenerativeModel(model).start_chat()
@@ -475,16 +475,16 @@ class Agent:
         return (self.responses['request_testbench']).format(prompt=prompt)
 
     def vertexai_chat_completion(self, conversation, compile_convo: bool = False):
-        if compile_convo and len(conversation) == 0:
-            chat_start = []
-            for entry in self.initial_contexts:
-                chat_start.append(entry['content'])
-            chat_start.append(clarification)
-            clarification = chat_start
-        completion              = self.client.send_message(clarification)
-        self.prompt_tokens     += completion['usage_metadata'][0]['prompt_token_count']
-        self.completion_tokens += completion['usage_metadata'][0]['candidates_token_count']
-        return completion['candidates'][0]['content']['parts'][0]['text']
+        if compile_convo and (len(conversation) == (len(self.initial_contexts) + 1)):
+            clarification = ""
+            for entry in conversation:
+                clarification += entry['content'] + "\n"
+        else:
+            clarification = conversation[-1]['content']
+        completion = self.client.send_message(clarification)
+        self.prompt_tokens     += completion.to_dict()['usage_metadata']['prompt_token_count']
+        self.completion_tokens += completion.to_dict()['usage_metadata']['candidates_token_count']
+        return completion.to_dict()['candidates'][0]['content']['parts'][0]['text']
 
     def octoai_chat_completion(self, conversation, compile_convo: bool = False):
         try:
