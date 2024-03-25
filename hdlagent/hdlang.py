@@ -54,7 +54,16 @@ class HDLang_pyrtl(HDLang):
 class HDLang_dslx(HDLang):
     def extract_code(self, prompt: str) -> str:
         txt = self.extract_codeblock(prompt)
-        return txt
+
+        answer = ""
+        capture = False
+        for l in txt.splitlines():
+            if 'struct' in l:
+                capture = True
+            if capture:
+                answer += l + "\n"
+
+        return answer
 
 def get_hdlang(lang: str) -> HDLang:
     l = lang.lower()
