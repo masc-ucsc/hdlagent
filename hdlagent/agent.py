@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 import vertexai
-from vertexai.preview.generative_models import GenerativeModel
+from vertexai.generative_models import GenerativeModel
 import yaml
 
 from hdlang import get_hdlang
@@ -174,7 +174,7 @@ class Agent:
             print("Please set either OPENAI_API_KEY or OCTOAI_TOKEN or PROJECT_ID environment variable(s) before continuing, exiting...")
             exit()
         if self.chat_completion is None:
-            print("Error: invalid model, please check --list_openai_models or --list_octoai_models or --list_vertexai_models for available LLM selection, exiting...")
+            print("Error: invalid model, please check --list_models for available LLM selection, exiting...")
             exit()
         self.model = model
         self.temp  = None
@@ -481,7 +481,16 @@ class Agent:
                 clarification += entry['content'] + "\n"
         else:
             clarification = conversation[-1]['content']
-        completion = self.client.send_message(clarification)
+        try:
+            safety_config = {
+                vertexai.generative_models.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: vertexai.generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                vertexai.generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: vertexai.generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            }
+            completion = self.client.send_message(clarification, safety_settings=safety_config)
+        except Exception as e:
+            print("Send failed due to ", e)
+            exit(3)
+
         self.prompt_tokens     += completion.to_dict()['usage_metadata']['prompt_token_count']
         self.completion_tokens += completion.to_dict()['usage_metadata']['candidates_token_count']
         return completion.to_dict()['candidates'][0]['content']['parts'][0]['text']
