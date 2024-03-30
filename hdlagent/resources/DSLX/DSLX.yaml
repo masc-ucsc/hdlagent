@@ -17,7 +17,8 @@ responses:
 
   give_instr_suffix: |
     
-    The top-level function declaration in Verilog would be {interface} and the function should return a struct which bundles together all of the output signals of the module, keeping their CASE SENSITIVE names intact. Each individual output should correspond to one and only one equivalenty sized field in the output struct, so do NOT split up the outputs into their individual bits. The VARIABLE NAMES assigned to the output struct must also have the SAME EXACT NAME(S) as the STRUCT FIELD they are assigned to.
+    The top-level function declaration should be the DSLX equivalent of this Verilog-style declaration: {interface}
+    The function should return a struct which bundles together all of the output signals of the module, keeping their CASE SENSITIVE names intact. Each individual output should correspond to one and only one equivalenty sized field in the output struct, so do NOT split up the outputs into their individual bits. The VARIABLE NAMES assigned to the output struct must also have the SAME EXACT NAME(S) as the STRUCT FIELD they are assigned to.
     Please respond with only valid program syntax. Do not provide any additional english explanation, short comments in the code are allowed but kept to a minimum.
 
   compile_err_prefix: |
@@ -37,6 +38,7 @@ responses:
 
 initial_contexts:
  - dslx_reference_sum2_gemini.md
+ - DSLX_examples.md
 
 supplemental_contexts:
   Annotated type did not match inferred type of right hand side expression: |
