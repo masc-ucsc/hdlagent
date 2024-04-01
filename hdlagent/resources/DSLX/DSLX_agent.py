@@ -68,6 +68,8 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
         in_file_content = '\n'.join(in_file_lines)
         # Check if last remaining lines are superstrings of the outputs names
         last_assigns = in_file_lines[-2: -(2 + len(outputs)): -1]
+        # Starting with longest entries prevent overlapping name matching, eg: 'or' and 'xor'
+        outputs.sort(key=lambda x: len(x[3]), reverse=True)
         for assign in last_assigns:
             pattern = r'assign\s+(\w+)\s+='
             match = re.search(pattern, assign)
@@ -75,6 +77,8 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
                 assign_name = match.group(1)
                 for output in outputs:
                     output_name = output[3]
+                    if output_name == assign_name:
+                        break
                     if output_name in assign_name:  # Output names as substrings are replaced
                         new_assign      = assign.replace(assign_name, output_name)
                         in_file_content = in_file_content.replace(assign, new_assign)
