@@ -105,28 +105,48 @@ class Handler:
     def set_lec_feedback_limit(self, n: int):
         self.lec_feedback_limit = n
 
+    # Reads the compile log file of the entry, returns the relevant results in a dictionary
+    #
+    # Intended use: for checking the status of previous runs
+    def get_results(self, entry, base_w_dir: str):
+        log_path = os.path.join(base_w_dir, entry['name'], "logs", entry['name'] + "_compile_log.md")
+        if os.path.exists(log_path):
+            with open(log_path, 'r') as file:
+                for last_line in file:
+                    pass
+
+            parts = last_line.strip().split(':')
+            _, _, comp_n, comp_f, lec_n, lec_f, top_k, _, _, _, _ = [int(part.strip()) if part.strip().isdigit() else part for part in parts]
+            res_dict = {}
+            res_dict['comp_n'] = comp_n
+            res_dict['comp_f'] = comp_f
+            res_dict['lec_n']  = lec_n
+            res_dict['lec_f']  = lec_f
+            res_dict['top_k']  = top_k
+            return res_dict
+        return None
+
     # If the test was already completed in the w_dir, it is skipped instead of being re-done
-    # This is proven by the existence of a log dump being done in its w_dir
+    # This is proven by the existence of a log dump and all top_k being completed
     #
     # Intended use: Save tokens while benchmarking
     def check_completion(self, entry, base_w_dir: str):
-        log_path = os.path.join(base_w_dir, entry['name'], "logs")
-        if os.path.exists(log_path) and os.path.isdir(log_path):
-            for file_name in os.listdir(log_path):
-                if file_name.endswith('.md'):
-                    return True
+        results = self.get_results(entry, base_w_dir)
+        if results is not None:
+            return results['top_k'] == self.top_k
         return False
 
     # If the test has already succeeded in the w_dir, it is skipped instead of being re-done
-    # This is proven by the lack of a failure dump being done in its w_dir
+    # This is proven by reading the compile log and checking for a difference between lec_n and lec_f
     #
     # Intended use: Save tokens while benchmarking
     def check_success(self, entry, base_w_dir: str):
-        completed     = self.check_completion(entry, base_w_dir)
-        fail_log_path = os.path.join(base_w_dir, entry['name'], "logs", f"{entry['name']}_fail.md")
-        return completed and not os.path.exists(fail_log_path)
+        results = self.get_results(entry, base_w_dir)
+        if results is not None:
+            return results['lec_f'] < results['lec_n']
+        return False
 
-    def single_json_run(self, entry, base_w_dir, update):
+    def single_json_run(self, entry, base_w_dir, skip_completed, update):
             self.agent.reset_k()
             self.agent.set_interface(entry['interface'])
             self.agent.set_pipeline_stages(int(entry['pipeline_stages']))
@@ -139,7 +159,14 @@ class Handler:
                 prompt = self.agent.read_spec()
 
             self.agent.dump_gold(entry['response'])
-            for _ in range(self.top_k):
+            pass_k = self.top_k
+            if skip_completed:
+                results = self.get_results(entry, base_w_dir)
+                if results is not None:
+                    pass_k -= results['top_k']
+                    self.agent.set_k(results['top_k'] + 1)
+
+            for _ in range(pass_k):
                 successful   = self.check_success(entry, base_w_dir)
                 completed    = self.check_completion(entry, base_w_dir)
                 update_entry = completed and (not successful) and update
@@ -155,7 +182,7 @@ class Handler:
             completed    = self.check_completion(entry, base_w_dir)
             run          = not ((skip_completed and completed) or (skip_successful and successful))
             if run:
-                self.single_json_run(entry, base_w_dir, update)
+                self.single_json_run(entry, base_w_dir, skip_completed, update)
             
     def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_data, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, temperature: float = None):
         self.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
