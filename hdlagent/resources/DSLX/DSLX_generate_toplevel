@@ -12,9 +12,9 @@ if [[ -z "${XLS}" ]]; then
   exit 1;
 fi
 
-$XLS/xls/dslx/interpreter_main $name.x
+$XLS/xls/dslx/interpreter_main --disable_warnings="member_naming" $name.x
 if [[ $(echo $?) -eq 0 ]]; then
-  $XLS/xls/dslx/ir_convert/ir_converter_main --top=$modulename $name.x > $name.ir;
+  $XLS/xls/dslx/ir_convert/ir_converter_main --disable_warnings="member_naming" --top=$modulename $name.x > $name.ir;
   $XLS/xls/tools/opt_main $name.ir > $name.opt.ir;
   $XLS/xls/tools/codegen_main --generator=combinational --delay_model=sky130  --separate_lines $name.opt.ir > $name.sv;
   module_decl="module ${modulename}("
