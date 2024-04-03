@@ -38,7 +38,7 @@ def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_li
         completed    = handler.check_completion(entry, w_dir)
         run          = not ((skip_completed and completed) or (skip_successful and successful))
         if run:
-            handler.single_json_run(entry, w_dir, update)
+            handler.single_json_run(entry, w_dir, skip_completed, update)
 
 def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, lec_limit: int, lec_limit_feedback: int, top_k: int, skip_completed: bool, skip_successful: bool, update: bool, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool, temperature: float):
     # Create a multiprocessing manager to manage shared state
