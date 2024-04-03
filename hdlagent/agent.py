@@ -230,6 +230,15 @@ class Agent:
     def incr_k(self):
         self.top_k += 1
 
+    # Sets K value
+    #
+    # Intended use: benchmarking, fairness when connection crashes
+    def set_k(self, k: int):
+        if k < 1:
+            print("Error: cannot set top_k less than 1, exiting...")
+            exit()
+        self.top_k = k
+
     # Sets the API query param 'temp' for the LLM, if such a param is
     # exposed in the API chat completion call
     #
