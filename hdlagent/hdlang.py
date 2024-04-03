@@ -7,18 +7,36 @@ class HDLang(ABC):
         pass
 
     def extract_codeblock(self, text:str):
-        if text.count('```') == 0:
+        if text is None:    # XXX - Deal with this better
+            return ""
+        if (text.count('```') == 0) or (text.count('```') % 2 != 0):
             return text
+        lines   = text.split('\n')
         capture = False
-        block   = ""
-        for line in text.splitlines():
-            s = line.strip()
-            if s.startswith('```'):
-                capture = not capture
+        block   = []
+        for line in lines:
+            if line.strip().startswith('```'):
+                if capture:
+                    res_string = '\n'.join(block)
+                    if res_string is None:
+                        return ""
+                    return res_string
+                capture = True
+                continue
             if capture:
-                block += s + "\n"
-
-        return block
+                block.append(line)
+        #if text.count('```') == 0:
+        #    return text
+        #capture = False
+        #block   = ""
+        #for line in text.splitlines():
+        #    s = line.strip()
+        #    if s.startswith('```'):
+        #        capture = not capture
+        #    if capture:
+        #        block += s + "\n"
+#
+        #return block
 
 class HDLang_verilog(HDLang):
     def extract_code(self, prompt: str) -> str:
@@ -53,16 +71,22 @@ class HDLang_pyrtl(HDLang):
 
 class HDLang_dslx(HDLang):
     def extract_code(self, prompt: str) -> str:
-        txt = self.extract_codeblock(prompt)
+        #print(f"raw {prompt}")
+        txt = self.extract_codeblock(prompt).replace('\\', '')
 
+        #print(f"from extract_codeblock {txt}")
         answer = ""
         capture = False
         for l in txt.splitlines():
-            if 'struct' in l:
+            if ('struct' in l) or ('fn ' in l):
                 capture = True
             if capture:
+                if '```' in l:
+                    return answer
                 answer += l + "\n"
 
+        if answer == "":
+            answer = txt
         return answer
 
 def get_hdlang(lang: str) -> HDLang:
