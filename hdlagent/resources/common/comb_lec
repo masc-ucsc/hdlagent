@@ -30,7 +30,7 @@ lec() {
 	yosys_read="read_verilog -sv ${GOLD}; hierarchy -auto-top; proc; flatten; rename -top gold; design -stash gold;
             read_verilog -sv ${GATE}; hierarchy -auto-top; proc; flatten; rename -top gate; design -stash gate;
             design -copy-from gold -as gold gold; design -copy-from gate -as gate gate;"
-	yosys_prep="miter -equiv -make_assert -make_outputs -flatten gold gate miter; sat -max 4096 -show-inputs -show-outputs -prove-asserts miter;"
+	yosys_prep="miter -equiv -make_assert -make_outputs -flatten gold gate miter; sat -max 1 -show-inputs -show-outputs -prove-asserts miter;"
 	#yosys_prep="proc; memory -nomap; write_verilog trace0.v ; equiv_make gold gate equiv; write_verilog trace0b.v ; prep -flatten -top equiv; hierarchy -top equiv; hierarchy -check; flatten; proc; opt_clean;"
 	yosy_equiv=""
 	#yosys_equiv="equiv_simple;"

@@ -148,33 +148,33 @@ supplemental_contexts:
     0007:   let a = &(b[0:8]);
     ~~~~~~~~~~~~~~~~^ ParseError: Expected start of an expression; got: &
     ```
-    Unlike Verilog, DSLX does not have unary reduction operators. The only unary operators are '!' for bitwise inversion, and '-' for two's complement negation. If one wished to peform a reduction operator, it must be done on every bit of the bit array. But since many operators do not work on bit[N] type, we must typecast as well for each bit isolated.
+    You must use the built-in unary function 'and_reduce()'. The only unary operators are '!' for bitwise inversion, and '-' for two's complement negation.
     Here is how I fixed my old program:
 
     ```
-    0007:   let a = (b[0:1] as u1) & (b[1:2] as u1) & (b[2:3] as u1) & (b[3:4] as u1) & (b[4:5] as u1) & (b[5:6] as u1) & (b[6:7] as u1) & (b[7:8] as u1);
+    0007:   let a = and_reduce(b);
     ```
   'Expected start of an expression; got: ^': |
     ```
     0007:   let a = ^(b[0:8]);
     ~~~~~~~~~~~~~~~~^ ParseError: Expected start of an expression; got: ^
     ```
-    Unlike Verilog, DSLX does not have unary reduction operators. The only unary operators are '!' for bitwise inversion, and '-' for two's complement negation. If one wished to peform a reduction operator, it must be done on every bit of the bit array. But since many operators do not work on bit[N] type, we must typecast as well for each bit isolated.
+    You must use the built-in unary function 'xor_reduce()'. The only unary operators are '!' for bitwise inversion, and '-' for two's complement negation.
     Here is how I fixed my old program:
 
     ```
-    0007:   let a = (b[0:1] as u1) ^ (b[1:2] as u1) ^ (b[2:3] as u1) ^ (b[3:4] as u1) ^ (b[4:5] as u1) ^ (b[5:6] as u1) ^ (b[6:7] as u1) ^ (b[7:8] as u1);
+    0007:   let a = xor_reduce(b);
     ```
   'Expected start of an expression; got: |': |
     ```
     0007:   let a = |(b[0:8]);
     ~~~~~~~~~~~~~~~~^ ParseError: Expected start of an expression; got: |
     ```
-    Unlike Verilog, DSLX does not have unary reduction operators. The only unary operators are '!' for bitwise inversion, and '-' for two's complement negation. If one wished to peform a reduction operator, it must be done on every bit of the bit array. But since many operators do not work on bit[N] type, we must typecast as well for each bit isolated.
+    You must use the built-in unary function 'or_reduce()'. The only unary operators are '!' for bitwise inversion, and '-' for two's complement negation.
     Here is how I fixed my old program:
 
     ```
-    0007:   let a = (b[0:1] as u1) | (b[1:2] as u1) | (b[2:3] as u1) | (b[3:4] as u1) | (b[4:5] as u1) | (b[5:6] as u1) | (b[6:7] as u1) | (b[7:8] as u1);
+    0007:   let a = or_reduce(b);
     ```
   Mismatch between member and argument types: |
     ```
@@ -239,6 +239,26 @@ supplemental_contexts:
     Here is how I fixed my old program:
 
     ```
-    0007:   let a0 = a[0:1];        // bit 0 as type bit[N]
-    0008:   let a1 = a[1:2] as u1;  // bit 1 cast as 1 bit log uInt
+    0007:   let a0 = a[0:1];        // bit 0 as generic type bits[N]
+    0008:   let a1 = a[1:2] as u1;  // bit 1 cast as 1-bit uInt
+    ```
+  'Expected start of top-level construct': |
+    ```
+    0003: struct ExampleStruct {
+    0004:   Output: u1,
+    0005: };
+    ~~~~~~~^ ParseError: Expected start of top-level construct; got: ';'
+    0006:
+    0007: func example(A: u8, B: u8) -> ExampleStruct {
+    ```
+
+    'struct' declarations do NOT end with a semicolon. 'fn' begins function declaration, DSLX only has functions, NO modules. 'fn' output type is declared after '->'.
+    Here is how I fixed my old program:
+
+    ```
+    0003: struct ExampleStruct {
+    0004:   Output: u1,
+    0005: }
+    0006:
+    0007: fn example(A: u8, B: u8) -> ExampleStruct {
     ```

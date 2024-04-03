@@ -5,9 +5,10 @@ struct NorReductionOutput {
   reduce_o: u1, // unsigned 1-bit int type, sX is for signed X-bit int type
 }
 
-fn nor_reduction(bus_i: bits[8]) -> NorReductionOutput {    // takes an input of 8 bits, this is the way to declare an array, best partice is to avoid bits[] and typecast to uX
-  // DSLX does not have any unary operators besides inversion and negation, so each individual bit must first be isolated. Resulting type is bits[] array with one entry, aka one bit
-  let or_reduce: bits[1] = (bus_i[0:1] as u1) | (bus_i[1:2] as u1) | (bus_i[2:3] as u1) | (bus_i[3:4] as u1) | (bus_i[4:5] as u1) | (bus_i[5:6] as u1) | (bus_i[6:7] as u1) | (bus_i[7:8] as u1); // non-inclusive range pythonic part-select syntax, use 'as' keyword to typecast
+fn nor_reduction(bus_i: u8) -> NorReductionOutput {    // takes an input of 8 bits
+  // DSLX has unary operator '!' for inversion, also has reduction operators: 'and_reduce()', 'or_reduce()', 'xor_reduce()'
+  let or_reduce = or_reduce(bus_i) as u1
+
   // DSLX does not support mutable variables, so intermediate values are used instead, in this case for unary inversion
   let reduce_o = !or_reduce as u1;  // typecast to 1-bit unsigned int, match output struct type
   NorReductionOutput { reduce_o: reduce_o as u1 }  // local value name matches struct field name
@@ -25,7 +26,7 @@ struct OutputStruct {
 
 fn odds_evens_sum(in_i: u7) -> OutputStruct {
   let odds_o = (in_i[5:6] ++ in_i[3:4] ++ in_i[1:2]) as u3;  // ++ operator concatenates, typecast to match output struct field type
-  let evens_o = (in_i[6:7] ++ in_i[4:5] ++ in_i[2:3] ++ in_i[0:1]) as u4; // typecast to u4 as bits[] doesn't suport arithmetic operations
+  let evens_o = (in_i[6:7] ++ in_i[4:5] ++ in_i[2:3] ++ in_i[0:1]) as u4; // typecast to u4 as derived type bits[] doesn't suport arithmetic operations
 
   let sum_o: u4 = (odds_o as u4) + evens_o; // typecast odds_o to u4 as all righthand side types must match each  other and lefthand side type when explicit
   OutputStruct { odds_o: odds_o as u3, evens_o: evens_o as u4, sum_o: sum_o as u4} // local value names match struct field name
@@ -73,29 +74,33 @@ fn add_7_to_11() -> Outputs {
 }
 ``` 
 
-**User:** Write me a DSLX function that is a naive implementation of the RISC-V FMAdd instruction, where the opcode is as listed in the official spec, but any FP rules are ignored as well as the RM and FMT fields. The source operands will take on the values of their register numbers. The 'result' output will be the multiply-add operation, and the 'rd' output will be the decoded destination register. If the opcode is incorrect, then the 'err' output must be set and the other outputs must be cleared. The equivalent Verilog declaration would be 'module fmadd(input [31:0] instruction, output [4:0] rd, output [4:0] result, output err);'
+**User:** Write me a DSLX function that is a naive implementation of the RISC-V FMAdd instruction, where the opcode is as listed in the official spec, but any FP rules are ignored as well as the RM and FMT fields. The source operands will take on the values of their register numbers. The 'result' output will be the multiply-add operation, and the 'rd' output will be the decoded destination register. If the opcode is incorrect, then the 'err' output must be set and the other outputs must be cleared. The equivalent Verilog declaration would be 'module fmadd(input [31:0] instruction, output [4:0] rd, output [31:0] result, output err);'
 
 **Assistant:** ```
 struct FMAddOutput {
   rd: u5,
-  result: u5,
+  result: u32,
   err: u1,
 }
 
 fn fmadd(instruction: u32) -> FMAddOutput {
   let opcode = instruction[0:7] as u7;     // Extract bits 0 to 6
-  let rs1 = instruction[15:20] as u5;      // bits 15 to 19
-  let rs2 = instruction[20:25] as u5;      // bits 20 to 24
-  let rs3 = instruction[27:32] as u5;      // bits 27 to 31
+  let rs1 = instruction[15:20];            // bits 15 to 19
+  let rs2 = instruction[20:25];            // bits 20 to 24
+  let rs3 = instruction[27:32];            // bits 27 to 31
 
   // sets rd and result to 0 if opcode is wrong
   let err = (opcode != u7:0b1000011) as u1;
   // 'if' is an experssion with a return value, NOT a statement that causes impossible mutations
-  let mask = if (err == u1:1) { u5:0b11111 } else { u5:0b00000 };
+  let rd_mask = if (err == u1:1) { u5:0b11111 } else { u5:0b00000 };
+  let result_mask = if (err == u1:1) { u32:0xFFFFFFFF } else { u32:0 };
 
-  let rd = instruction[7:12] as u5 & mask;  // bits 7 to 11 masked
-  // LHS type matches RHS type (u5)
-  let result = ((rs1 * rs2) + rs3) & mask;
+  let rd = instruction[7:12] as u5 & rd_mask;  // bits 7 to 11 masked
+
+  // arithmetic operations preserve bitwidth, getting the full result requires typecast, ALWAYS do this
+  let mult = rs1 as u32 * rs2 as u32;         // extend from u5 to get entire 10-bit result
+  let add  = mult + rs3 as u32;               // extend from u5 to get sum with carry-out bit
+  let result = add & result_mask;
 
   FMAddOutput { rd: rd, result: result, err: err }
 }

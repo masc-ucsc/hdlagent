@@ -24,4 +24,13 @@ responses:
   
     I have a Verilog module that was implemented given the following requirements:
     {prompt}
+    The interface of the module is:
+    {interface}
     Write an assertion based testbench for this module. Assert statements should test both simple and corner cases of the implementation for functional correctness. Do not include additional english explanation, just the code block. Keep comments short and at a minimum.
+
+  compile_testbench_iteration: |
+    
+    That program caught a compiler error:
+    {compiler_output}
+    Fix it and return the corrected program in its entirety.
+    

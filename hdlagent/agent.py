@@ -309,7 +309,10 @@ class Agent:
         # Now create the dir if it does not exist
         directory = Path(path) / ""
         if directory and not os.path.exists(directory):
-            os.makedirs(directory)
+            try:
+                os.makedirs(directory)
+            except FileExistsError:
+                pass
         self.w_dir = directory
         self.update_paths()
 
@@ -435,6 +438,17 @@ class Agent:
             clarification += self.suggest_fix(compiler_output)
         return clarification
 
+    def get_tb_initial_instruction(self, prompt: str):
+        instruction = self.responses['request_testbench']
+        return instruction.format(prompt=prompt, interface=self.interface) 
+
+    def get_compile_tb_iteration_instruction(self, compiler_output: str):
+        clarification = self.responses['compile_testbench_iteration']
+        return clarification.format(compiler_output=compiler_output)
+
+    def get_tb_iteration_instruction(self, feedback: str):
+        pass
+
     # Parses language-specific *.yaml file for the 'lec_fail' strings
     # to create the 'lec fail instruction' which is the query sent to the
     # LLM after Yosys Logical Equivalence Check failed versus the golden model..
@@ -471,8 +485,8 @@ class Agent:
     # which asks for an assertion based testbench given the implementation prompt.
     #
     # Intended use: querying LLM for testbench generation
-    def get_request_tb_instruction(self, prompt: str):
-        return (self.responses['request_testbench']).format(prompt=prompt)
+    def get_tb_initial_instruction(self, prompt: str):
+        return (self.responses['request_testbench']).format(prompt=prompt, interface=self.interface)
 
     def vertexai_chat_completion(self, conversation, compile_convo: bool = False):
         if compile_convo and (len(conversation) == (len(self.initial_contexts) + 1)):
@@ -550,7 +564,7 @@ class Agent:
             'content': clarification
         })
         print("---------------------------")
-        print(conversation)
+        #print(conversation)
         print("**User:**\n" + clarification)
 
 
@@ -559,16 +573,15 @@ class Agent:
         self.llm_query_time += (time.time() - query_start_time)
 
         # Add the model's response to the messages list to keep the conversation context
-        if (not compile_convo) or (not self.used_supp_context):   # Explains it as user wrote the code
-            code = "```\n"
-            code += self.hdlang.extract_code(response)
-            code += "```"
-            print("**Assistant:**\n" + code)
+        #code = "```\n"
+        #code += self.hdlang.extract_code(response)
+        #code += "```"
+        print("**Assistant:**\n" + response)
 
-            conversation.append({
-                'role': 'assistant',
-                'content': code
-            })
+        conversation.append({
+            'role': 'assistant',
+            'content': response
+        })
 
         delay = 1
         time.sleep(delay) # wait to limit API rate
@@ -658,13 +671,12 @@ class Agent:
     def test_tb_compile(self):
         script  = self.tb_compile_script + " " + self.tb + " " + self.verilog
         res     = subprocess.run([script], capture_output=True, shell=True)
-        print(res)
         # This should probably be its own function chosen by yaml file, if we stop using iverilog
         if "syntax error" in res:
             return res.split('\n')[0]
         elif "error" in res:
             return res
-        return ""
+        return None
 
     # Creates Icarus Verilog testbench then executes it, carrying through the output
     # from either Icarus compiler errors or testbench results and feedback
@@ -674,11 +686,11 @@ class Agent:
         script     = self.tb_script + " " + self.verilog + " " + self.tb
         res        = subprocess.run([script], capture_output=True, shell=True)
         res_string = (str(res.stdout))[2:-1].replace("\\n","\n")
-        self.lec_n += 1 # is this how we want to do it?
+        #self.lec_n += 1 # is this how we want to do it?
         if ("error" in res_string) or ("ERROR" in res_string):   # iverilog compile error
-            self.lec_f += 1
+            #self.lec_f += 1
             return res_string
-        return ""   #TODO: how to deal with logic mismatch??
+        return None
 
     # Sets conversations to 'step 0', a state where no RTL generation queries have
     # been sent, only Initial Contexts if applied for compile conversation.
@@ -701,6 +713,45 @@ class Agent:
         self.completion_tokens = 0
         self.llm_query_time    = 0.0
         self.world_clock_time  = time.time()
+
+    # The "inner loop" of the testbench generation process, checks for compile
+    # errors while writing Verilog testbench to validate target design
+    #
+    # Intended use: inside of lec loop, depends on present generated Verilog
+    def tb_compilation_loop(self, prompt: str, iterations: int = 2):
+        current_query = self.get_tb_initial_instruction(prompt)
+        for _ in range(iterations):
+            self.dump_codeblock(self.query_model(self.tb_conversation, current_query), self.tb)
+            compile_out = self.test_tb_compile()
+            if compile_out is not None:
+                current_query = self.get_compile_tb_iteration_instruction(compile_out)
+            else:
+                return True, ""
+        return False, compile_out 
+
+    # The "outer loop" of the testbench generation process, which confirms
+    # the tb and the RTL compiled, and runs them against one another
+    #
+    # Intended use: inside of lec loop, or to bootstrap a design verification
+    def tb_loop(self, prompt: str, compile_iterations: int, iterations: int = 1):
+        tb_compiled = False     # tb only needs to compile once
+        for i in range(iterations):
+            code_compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
+            if code_compiled:
+                if not tb_compiled:
+                    tb_compiled, failure_reason = self.tb_compilation_loop(prompt) # default 2 iterations
+
+                if tb_compiled:
+                    failure_reason = self.test_tb()
+                    if failure_reason is not None:
+                        prompt = self.get_tb_iteration_instruction(failure_reason)
+                    else:
+                        return True, ""
+                else:
+                    return False, failure_reason
+            else:
+                return False, failure_reason
+        return False, failure_reason
 
     # The "inner loop" of the RTL generation process, attempts to iteratively
     # write compiling code in the target language through use of feedback and
@@ -749,7 +800,7 @@ class Agent:
     # and outer loop checks generated RTL versus supplied 'gold' Verilog for logical equivalence
     #
     # Intended use: benchmarking effectiveness of the agent
-    def lec_loop(self, prompt: str, lec_iterations: int = 1, lec_feedback_limit: int = -1, compile_iterations: int = 1, update: bool = False):
+    def lec_loop(self, prompt: str, lec_iterations: int = 1, lec_feedback_limit: int = -1, compile_iterations: int = 1, update: bool = False, testbench_iterations: int = 0):
         self.reset_conversations()
         self.reset_perf_counters()
         self.prev_test_cases   = float('inf')
@@ -786,6 +837,11 @@ class Agent:
                     self.success_message(self.compile_conversation)
                     self.dump_compile_conversation()
                     return True
+            else:
+                self.dump_failure(failure_reason, self.compile_conversation)
+                self.dump_compile_conversation()
+                self.reset_conversations()
+                return False
         self.dump_failure(failure_reason, self.compile_conversation)
         self.dump_compile_conversation()
         self.reset_conversations()
