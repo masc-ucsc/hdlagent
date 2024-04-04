@@ -183,6 +183,7 @@ class Agent:
         self.spec_conversation    = []
         self.compile_conversation = []
         self.tb_conversation      = []
+        self.short_context        = False
         self.name                 = ""
         self.interface            = ""
         self.io                   = []
@@ -215,6 +216,14 @@ class Agent:
         self.verilog     = "out.v"
         self.tb          = "./tests/tb.v"
         self.gold        = None
+
+    # Sets 'short_context' operational mode where only the last response is
+    # maintained in the conversational history, useful for short context
+    # windows
+    #
+    # Intended use: initialization of Agent
+    def set_short_context(self):
+        self.short_context = True
 
     # Top K count is set back to default of 1, only necessary when looping
     # over batch specs.
@@ -573,13 +582,19 @@ class Agent:
             'content': clarification
         })
         print("---------------------------")
-        #print(conversation)
         print("**User:**\n" + clarification)
 
 
         query_start_time     = time.time()
         response             = self.chat_completion(conversation, compile_convo)
         self.llm_query_time += (time.time() - query_start_time)
+
+        # Keep context to {initial_context, initial prompt, response} -> compile error
+        if self.short_context and compile_convo:
+            if len(conversation) == (len(self.initial_contexts) + 3):
+                print("MADE IT HERE")
+                conversation.pop()
+                conversation.pop()
 
         # Add the model's response to the messages list to keep the conversation context
         #code = "```\n"
@@ -895,12 +910,6 @@ class Agent:
             md_content += "**System:** Initial contexts were appended to this conversation\n\n"
             start_idx   = len(self.initial_contexts)
         md_content += self.format_conversation(self.compile_conversation, start_idx)
-        if self.used_supp_context:
-            # Manually 'tack on' the passing file
-            with open(self.code, 'r') as f:
-                last_code = f.read()
-            md_content += "**Assistant:**\n" + last_code + "\n\n"
-            f.close()
         md_content += self.report_statistics()
         os.makedirs(os.path.dirname(self.compile_log), exist_ok=True)
         with open(self.compile_log, 'w') as md_file:
