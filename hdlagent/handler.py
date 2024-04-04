@@ -184,8 +184,10 @@ class Handler:
             if run:
                 self.single_json_run(entry, base_w_dir, skip_completed, update)
             
-    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_data, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, temperature: float = None):
+    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_data, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, temperature: float = None, short_context: bool = False):
         self.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
         self.agent.set_w_dir(w_dir)
         self.agent.set_model_temp(temperature)
+        if short_context:
+            self.agent.set_short_context
         self.json_run(json_data, skip_completed, skip_successful, update)

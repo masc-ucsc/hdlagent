@@ -13,7 +13,7 @@ from pathlib import Path
 
 
 # WARNING: FEATURES BELOW ARE EXPERIMENTAL - FURTHER VALIDATION AND TESTING REQUIRED
-def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature):
+def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature, short_context):
     # Each worker has its own Handler instance.
     handler = Handler()
     handler.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
@@ -23,6 +23,8 @@ def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_li
     handler.set_k(top_k)
     handler.agent.set_w_dir(w_dir)
     handler.agent.set_model_temp(temperature)
+    if short_context:
+        handler.agent.set_short_context()
     handler.set_id(multiprocessing.current_process().name)
 
     while True:
@@ -40,7 +42,7 @@ def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_li
         if run:
             handler.single_json_run(entry, w_dir, skip_completed, update)
 
-def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, lec_limit: int, lec_limit_feedback: int, top_k: int, skip_completed: bool, skip_successful: bool, update: bool, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool, temperature: float):
+def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, lec_limit: int, lec_limit_feedback: int, top_k: int, skip_completed: bool, skip_successful: bool, update: bool, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool, temperature: float, short_context: bool):
     # Create a multiprocessing manager to manage shared state
     manager      = multiprocessing.Manager()
 
@@ -53,7 +55,7 @@ def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, le
     processes    = []
     # Create and start multiprocessing workers
     for _ in range(multiprocessing.cpu_count()):
-        p = multiprocessing.Process(target=worker, args=(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature))
+        p = multiprocessing.Process(target=worker, args=(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature, short_context))
         processes.append(p)
         p.start()
 
@@ -86,10 +88,11 @@ def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, le
 @click.option('--skip_completed', is_flag=True, default=False, help='If w_dir has previous completed runs, do not regenerate even if failed.')
 @click.option('--skip_successful', is_flag=True, default=False, help='If w_dir has previous successful runs with LEC passing, do not regenerate.')
 @click.option('--update', is_flag=True, default=False, help='Retry LEC iterations on current RTL code generated.')
+@click.option('--short_context', is_flag=True, default=False, help='Exclude previous code responses and queries from context window.')
 
 @click.argument('files', nargs=-1, type=click.Path())
 @click.pass_context
-def process_args(ctx, list_models:bool, llm:str, lang:str, use_spec:bool, parallel:bool, bench:str, bench_limit:int, bench_from:str, w_dir:str, comp_limit:int, lec_limit:int, lec_limit_feedback:int, top_k: int, temperature:float, init_context:bool, supp_context:bool, skip_completed: bool, skip_successful: bool, update: bool, files):
+def process_args(ctx, list_models:bool, llm:str, lang:str, use_spec:bool, parallel:bool, bench:str, bench_limit:int, bench_from:str, w_dir:str, comp_limit:int, lec_limit:int, lec_limit_feedback:int, top_k: int, temperature:float, init_context:bool, supp_context:bool, skip_completed: bool, skip_successful: bool, update: bool, short_context: bool, files):
     if list_models:
         if "OPENAI_API_KEY" in os.environ:
             models = agent.list_openai_models()
@@ -128,14 +131,14 @@ def process_args(ctx, list_models:bool, llm:str, lang:str, use_spec:bool, parall
             print("Error: cannot invoke --skip_completed and --update at the same time, exiting...")
             exit()
         if (parallel):
-            parallel_run(spath, llm, lang, json_data, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature)
+            parallel_run(spath, llm, lang, json_data, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature, short_context)
         else:
             my_handler = Handler()
             my_handler.set_comp_iter(comp_limit)
             my_handler.set_lec_iter(lec_limit)
             my_handler.set_lec_feedback_limit(lec_limit_feedback)
             my_handler.set_k(top_k)
-            my_handler.sequential_entrypoint(spath, llm, lang, json_data, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature)
+            my_handler.sequential_entrypoint(spath, llm, lang, json_data, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature, short_context)
     else:
         print(ctx.get_help())
         for f in files:
