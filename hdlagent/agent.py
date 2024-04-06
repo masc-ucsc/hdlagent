@@ -116,8 +116,8 @@ class Agent:
                 file = os.path.join(self.script_dir, lang, context)
                 self.initial_contexts.extend(md_to_convo(file))
 
-        print("INITIAL CONTEXT:")
-        print(self.initial_contexts)
+        #print("INITIAL CONTEXT:")
+        #print(self.initial_contexts)
 
         # Supplemental contexts are loaded from yaml file, dictionary of {error: suggestion} pairs
         self.used_supp_context     = use_supp_context
@@ -592,7 +592,6 @@ class Agent:
         # Keep context to {initial_context, initial prompt, response} -> compile error
         if self.short_context and compile_convo:
             if len(conversation) == (len(self.initial_contexts) + 3):
-                print("MADE IT HERE")
                 conversation.pop()
                 conversation.pop()
 
@@ -654,7 +653,9 @@ class Agent:
     # Intended use: compile new code response from LLM that was dumped to file
     def test_code_compile(self):
         my_path = os.path.dirname(os.path.abspath(__file__))
-        script  = my_path + self.compile_script + self.code
+        script  = self.compile_script + self.code
+        if 'resources' in self.compile_script:
+            script  = my_path + script
         res     = subprocess.run([script], capture_output=True, shell=True)
         errors  = self.check_errors(res)
         self.comp_n += 1

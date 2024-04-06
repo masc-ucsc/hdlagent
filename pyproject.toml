@@ -15,6 +15,7 @@ markdown = "^3.5.2"
 vertexai = "^0.0.1"
 google-cloud-aiplatform = "^1.39.0"
 click = "^8.1.7"
+pyrtl = "^0.10.2"
 
 [build-system]
 requires = ["poetry-core"]
