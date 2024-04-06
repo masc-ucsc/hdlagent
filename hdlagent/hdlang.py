@@ -72,7 +72,7 @@ class HDLang_pyrtl(HDLang):
 class HDLang_dslx(HDLang):
     def extract_code(self, prompt: str) -> str:
         #print(f"raw {prompt}")
-        txt = self.extract_codeblock(prompt).replace('\\', '')
+        txt = self.extract_codeblock(prompt)
 
         #print(f"from extract_codeblock {txt}")
         answer = ""
