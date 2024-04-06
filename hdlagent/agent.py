@@ -42,7 +42,7 @@ def list_octoai_models(warn: bool = True):
         return []
 
 # XXX - hacky until Vertex adds a list API
-vertexai_models = ["gemini-1.0-pro-001"]
+vertexai_models = ["gemini-1.0-pro-001", "gemini-1.0-pro"]
 
 def list_vertexai_models():
     return vertexai_models
