@@ -24,6 +24,6 @@ poetry run python ./hdlagent/hdlagent.py  --octoai_models_list
 
 ```
 cd sample
-poetry run python ../hdlagent/hdlagent.py  --llm=gpt-3.5-turbo-0613  --lang=Verilog --json_path ./sample-test.json
+poetry run python ../hdlagent/hdlagent.py --supp_context  --llm gpt-4-turbo-preview --lang Verilog --bench ./sample-test.json
 ```
 
