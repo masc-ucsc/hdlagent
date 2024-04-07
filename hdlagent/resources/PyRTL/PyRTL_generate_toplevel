@@ -5,6 +5,12 @@ input=$1
 result="${input%.pyrtl}"
 result="${result}.v"
 
+
+if [ ! -s "$input" ]; then
+    echo "Error: no code was received" >&2
+    exit 1
+fi
+
 python $1;
 
 if [ $? -eq 0 ]; then

@@ -1,4 +1,4 @@
-compile_script: python3
+compile_script: /resources/PyRTL/PyRTL_generate_toplevel
 
 file_extension: .pyrtl
 
@@ -8,21 +8,36 @@ reformat_verilog_function: resources.PyRTL.PyRTL_agent.custom_reformat_verilog
 
 responses:
   comb_give_instr_prefix: |
-    Can you implement the described function in PyRTL using purely combinational logic. Please use these lines EXACTLY
+    Can you implement the described function in pyrtl using purely combinational logic, start the program with:
+    ```
+    import pyrtl
+    ```
+    Please use these lines EXACTLY at the end of the program
+    ```
     with open(verilog_outfile, 'w') as outfile:
-    pyrtl.output_to_verilog(outfile, add_reset=False)
-
+        pyrtl.output_to_verilog(outfile, add_reset=False)
+    ```
+    
   pipe_give_instr_prefix: |
-    Can you implement the following description of a sequential circuit in PyRTL, it should have {pipe_stages} register stage(s). Be careful in PyRTL, clock and reset signals are implicit and are automatically handled by the system. Please use these lines EXACTLY to specify a synchronous reset:
+    Can you implement the following description of a sequential circuit in pyrtl, it should have {pipe_stages} register stage(s), start the program with:
+    ```
+    import pyrtl
+    ```
+    Be careful in PyRTL, clock and reset signals are implicit and are automatically handled by the system. Please use these lines EXACTLY to specify at the end of a program to initialize with synchronous reset:
+    ```
     with open(verilog_outfile, 'w') as outfile:
     pyrtl.output_to_verilog(outfile)
-    UNLESS the circuit has an asynchronous reset, in which case you should do: 
+    ```
+    UNLESS the circuit has an asynchronous reset, in which case you should replace the last line with:
+    ```
     pyrtl.output_to_verilog(outfile, add_reset='asynchronous')
-
+    ```
+    
   give_instr_suffix: |
     
-    I would like to convert to verilog file, please add the code that converts PyRTL to Verilog. Please respond with only valid program syntax. Please do not provide any additional English explanation, short comments in the code are allowed.
+    I would like to convert to verilog file, please add the code that converts PyRTL to Verilog. Please respond with only valid program syntax. Please do not provide any additional English explanation, short comments in the code are allowed but kept to a minimum.
     The interface of the program in Verilog would be: {interface}
+    You must explicitly declare all of IO as input and output wires in your program.
 
   compile_err_prefix: |
     The previous code had a compiler warning/error. Please return the entire corrected program, not just the warning/erroring snippet. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
@@ -40,14 +55,29 @@ responses:
 
 
 initial_contexts:
- - PyRTL_context_1.text
- - PyRTL_context_2.text
- - PyRTL_context_3.text
- - PyRTL_context_4.text
- - PyRTL_context_5.text
- - PyRTL_context_6.text
+ - pyrtl_reference_sum1_gpt.md
 
 supplemental_contexts:
+  "Did you mean: 'wire'?": |
+    ```
+    example_input = WireVector(8, 'example_input')        # 8-bit input
+    temp_wire = pyrtl.WireVector(1)                       # 1-bit wire
+    example_output = pyrtl.Wire(8, 'example_output')      # 8-bit output
+    ```
+    This is my error:
+    ```
+        example_output = pyrtl.Wire(8, 'example_output')
+                     ^^^^
+    NameError: name 'Wire' is not defined. Did you mean: 'wire'?
+    ```
+    Intermediate value wires may be declared using 'WireVector(bitwidth=None, name="")', but inputs/outputs are declared using 'wire.Input(bitwidth=None, name="")' and 'pyrtl.wire.Output(bitwidth=None, name="")'.
+    Here is how I fixed my old program:
+    ```
+    example_input = pyrtl.wire.Input(8, 'example_input')     # 8-bit input
+    temp_wire = pyrtl.WireVector(8)                          # 1-bit wire  
+    example_output = pyrtl.wire.Output(8, 'example_output')  # 8-bit output
+    ```
+
   ' referenced before assignment': |
     In PyRTL, wires and registers must be explicitly declared before use. Their bitwidth and names are set by their respctive method calls to the pyrtl module.
     ```
@@ -87,12 +117,14 @@ supplemental_contexts:
         with pyrtl.otherwise:  # Hold the current value if not enabled or reset
             next_value <<= counter_reg
     ```
-  Clock signals should never be explicit: |-
+    
+  "Clock signals should never be explicit": |
     ```
     clock = pyrtl.Input(bitwidth=1, name='clock')
     ```
     In PyRTL, clock signals are implicit and are automatically handled by the system. Just remove the line(s) where you instantiate the clock(s)
-  Invalid add_reset option %s. Acceptable options are: |-
+    
+  "Invalid add_reset option %s. Acceptable options are": |
     ```
        pyrtl.OutputToVerilog(f)
     ```
@@ -101,13 +133,14 @@ supplemental_contexts:
     pyrtl.pyrtlexceptions.PyrtlError: Invalid add_reset option %s. Acceptable options are False, True, and \'asynchronous\'
     ```
     The default way to convert PyRTL to Verilog is by a call to 'pyrtl.output_to_verilog(f)', this assumes that there exists a synchronous reset signal. UNLESS you have an asynchronous reset, in which case you must call it though 'pyrtl.output_to_verilog(f, add_reset='asynchronous')', ALWAYS assume synchronous reset and NEVER explicity declare it. Syncronous resets are implicit in PyRTL and must exist even in combinational logic programs, even when they are not used, as this is best practice.
-  Wires declared but not connected: In PyRTL, wires are not connected by the usual
-    '=' assignment operator. Since we are describing a circuit, not a Python program,
-    the '<<=' operator is used instead.
-  \'Output\' object has no attribute \'assign\': In PyRTL, wires are not connected
-    by an '.assign()' method. Since we are describing a circuit, not a Python program,
-    the '<<=' operator is used instead to form connections.
-  has no attribute \'Clock\'.: |-
+    
+  "Wires declared but not connected": |
+    In PyRTL, wires are not connected by the usual '=' assignment operator. Since we are describing a circuit, not a Python program, the '<<=' operator is used instead.
+    
+  "'Output' object has no attribute 'assign'": |
+    In PyRTL, wires are not connected by an '.assign()' method. Since we are describing a circuit, not a Python program, the '<<=' operator is used instead to form connections.
+    
+  "has no attribute 'Clock'": |-
     ```
     clock = pyrtl.Clock(name='clock')
     ```

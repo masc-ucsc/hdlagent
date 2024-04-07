@@ -7,7 +7,7 @@ struct NorReductionOutput {
 
 fn nor_reduction(bus_i: u8) -> NorReductionOutput {    // takes an input of 8 bits
   // DSLX has unary operator '!' for inversion, also has reduction operators: 'and_reduce()', 'or_reduce()', 'xor_reduce()'
-  let or_reduce = or_reduce(bus_i) as u1
+  let or_reduce = or_reduce(bus_i) as u1;
 
   // DSLX does not support mutable variables, so intermediate values are used instead, in this case for unary inversion
   let reduce_o = !or_reduce as u1;  // typecast to 1-bit unsigned int, match output struct type
@@ -15,21 +15,21 @@ fn nor_reduction(bus_i: u8) -> NorReductionOutput {    // takes an input of 8 bi
 }
 ```
 
-**User:** Write me a DSLX program named 'evens_odds_sum' that takes a 7-bit input 'in_i' and has three outputs. 'odds_o' is 3-bits wide and is the odd-numbered bits from the input, concatenated in order. Conversely, 'evens_o' is 4-bits wide and is the even-numbered bits. The last output 'sum_o' is the 4-bit wide sum of 'odds_o' and 'evens_o'.
+**User:** Write me a DSLX program named 'odds_evens_sum' that takes a 7-bit input 'in_i' and has three outputs. 'odds_o' is 3-bits wide and is the odd-numbered bits from the input, concatenated in order. Conversely, 'evens_o' is 4-bits wide and is the even-numbered bits. The last output 'sum_o' is the 5-bit wide sum of 'odds_o' and 'evens_o'.
 
 **Assistant:** ```
 struct OutputStruct {
   odds_o: u3,
   evens_o: u4,
-  sum_o: u4,
+  sum_o: u5,
 }
 
 fn odds_evens_sum(in_i: u7) -> OutputStruct {
   let odds_o = (in_i[5:6] ++ in_i[3:4] ++ in_i[1:2]) as u3;  // ++ operator concatenates, typecast to match output struct field type
   let evens_o = (in_i[6:7] ++ in_i[4:5] ++ in_i[2:3] ++ in_i[0:1]) as u4; // typecast to u4 as derived type bits[] doesn't suport arithmetic operations
 
-  let sum_o: u4 = (odds_o as u4) + evens_o; // typecast odds_o to u4 as all righthand side types must match each  other and lefthand side type when explicit
-  OutputStruct { odds_o: odds_o as u3, evens_o: evens_o as u4, sum_o: sum_o as u4} // local value names match struct field name
+  let sum_o: u5 = odds_o as u5 + evens_o as u5; // typecast odds_o and evens_o to u5 as all righthand side types must be the same as the lefthand side type, this also preserves the carry-out bit in addition operation
+  OutputStruct { odds_o: odds_o as u3, evens_o: evens_o as u4, sum_o: sum_o as u5} // local value names match struct field name
 }
 ```
 
