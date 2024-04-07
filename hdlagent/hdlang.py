@@ -1,9 +1,10 @@
-
+import re
 from abc import ABC, abstractmethod
+
 
 class HDLang(ABC):
     @abstractmethod
-    def extract_code(self, prompt: str) -> str:
+    def extract_code(self, prompt: str, verilog_path: str) -> str:
         pass
 
     def extract_codeblock(self, text:str):
@@ -25,21 +26,9 @@ class HDLang(ABC):
                 continue
             if capture:
                 block.append(line)
-        #if text.count('```') == 0:
-        #    return text
-        #capture = False
-        #block   = ""
-        #for line in text.splitlines():
-        #    s = line.strip()
-        #    if s.startswith('```'):
-        #        capture = not capture
-        #    if capture:
-        #        block += s + "\n"
-#
-        #return block
 
 class HDLang_verilog(HDLang):
-    def extract_code(self, prompt: str) -> str:
+    def extract_code(self, prompt: str, verilog_path: str) -> str:
         txt = self.extract_codeblock(prompt)
 
         answer = ""
@@ -60,22 +49,36 @@ class HDLang_verilog(HDLang):
         return answer
 
 class HDLang_chisel(HDLang):
-    def extract_code(self, prompt: str) -> str:
+    def extract_code(self, prompt: str, verilog_path: str) -> str:
         txt = self.extract_codeblock(prompt)
         return txt
 
 class HDLang_pyrtl(HDLang):
-    def extract_code(self, prompt: str) -> str:
+    def extract_code(self, prompt: str, verilog_path: str) -> str:
         txt = self.extract_codeblock(prompt)
-        return txt
+
+        answer  = ""
+        capture = False
+        for l in txt.splitlines():
+            if 'import pyrtl' in l:
+                capture = True
+            if capture:
+                answer += l + "\n"
+
+        if answer == "":
+            answer = txt
+
+        pattern = r"(with open\()(.*?)(, 'w')"
+        if re.search(pattern, answer):
+            replacement = r"\1" + '\'' + str(verilog_path) + '\'' + r"\3"
+            return re.sub(pattern, replacement, answer)
+        return answer
 
 class HDLang_dslx(HDLang):
-    def extract_code(self, prompt: str) -> str:
-        #print(f"raw {prompt}")
+    def extract_code(self, prompt: str, verilog_path: str) -> str:
         txt = self.extract_codeblock(prompt)
 
-        #print(f"from extract_codeblock {txt}")
-        answer = ""
+        answer  = ""
         capture = False
         for l in txt.splitlines():
             if ('struct' in l) or ('fn ' in l):
