@@ -66,7 +66,7 @@ fn add_7_to_11() -> Outputs {
 
   // Mutable values NOT allowed, 'mut' keyword does NOT exist, so an accumulator value 'accum' is modified alongside the iterator 'i'
   let base = u16:7;    // constants must have their type declared, this is a 16-bit unsigned value 7
-  let res_o = for (i, accum): (u16, u16) in u16:0..u16:4 {
+  let res_o = for (i, accum): (u16, u16) in u16:0..u16:5 {  // exclusive range
     accum + base + i
   }(u16:0);
 
@@ -92,8 +92,8 @@ fn fmadd(instruction: u32) -> FMAddOutput {
   // sets rd and result to 0 if opcode is wrong
   let err = (opcode != u7:0b1000011) as u1;
   // 'if' is an experssion with a return value, NOT a statement that causes impossible mutations
-  let rd_mask = if (err == u1:1) { u5:0b11111 } else { u5:0b00000 };
-  let result_mask = if (err == u1:1) { u32:0xFFFFFFFF } else { u32:0 };
+  let rd_mask = if (err == u1:0) { u5:0b11111 } else { u5:0b00000 };
+  let result_mask = if (err == u1:0) { u32:0xFFFFFFFF } else { u32:0 };
 
   let rd = instruction[7:12] as u5 & rd_mask;  // bits 7 to 11 masked
 

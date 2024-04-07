@@ -5,7 +5,6 @@ input=$1
 result="${input%.pyrtl}"
 result="${result}.v"
 
-
 if [ ! -s "$input" ]; then
     echo "Error: no code was received" >&2
     exit 1
