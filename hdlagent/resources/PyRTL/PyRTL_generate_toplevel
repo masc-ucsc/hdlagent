@@ -1,0 +1,15 @@
+#!/bin/bash
+
+input=$1
+
+result="${input%.pyrtl}"
+result="${result}.v"
+
+python $1;
+
+if [ $? -eq 0 ]; then
+    if [ ! -f "$result" ]; then
+        echo "Error: A Verilog file was not produced from the PyRTL" >&2
+        exit 1
+    fi
+fi

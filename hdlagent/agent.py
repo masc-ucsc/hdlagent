@@ -597,7 +597,7 @@ class Agent:
 
         # Add the model's response to the messages list to keep the conversation context
         #code = "```\n"
-        #code += self.hdlang.extract_code(response)
+        #code += self.hdlang.extract_code(response, self.verilog)
         #code += "```"
         print("**Assistant:**\n" + response)
 
@@ -627,7 +627,7 @@ class Agent:
         description    = '\n'.join(indented_lines)
         spec_contents += description
         spec_contents += "\ninterface: |\n  \n  "
-        spec_contents += (self.hdlang_verilog.extract_code(self.query_model(self.spec_conversation, interface_req))).replace('\n','\n    ')
+        spec_contents += (self.hdlang_verilog.extract_code(self.query_model(self.spec_conversation, interface_req), self.verilog)).replace('\n','\n    ')
         os.makedirs(os.path.dirname(self.spec), exist_ok=True)
         with open(self.spec, 'w') as file:
             file.write(spec_contents)
@@ -926,7 +926,7 @@ class Agent:
             md_file.write("Reason for failure:\n" + reason)
 
     def dump_codeblock(self, text: str, filepath: str):
-        isolated_code = self.hdlang.extract_code(text)
+        isolated_code = self.hdlang.extract_code(text, self.verilog)
         with open(filepath, 'w') as file:
             file.write(isolated_code)
 
