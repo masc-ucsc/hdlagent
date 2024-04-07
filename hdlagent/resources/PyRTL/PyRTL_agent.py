@@ -13,15 +13,11 @@ def custom_check_errors(compiler_output):
 def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
     with open(in_file) as file:
         lines = file.readlines()
-    file.close() 
     # Remove unnecessary clk and rst signals
-    if ('clk' not in io_list) and ("    input clk;" in lines):
-        lines[0] = lines[0].replace("(clk, ", "(")
-        lines.pop(1)
-    #if 'reset' not in io_list:
-    #    lines.pop(pop_idx)
+    if ('clk' not in io_list) and ('    input clk;\n' in lines):
+        lines[4] = lines[4].replace("(clk, ", "(").replace("(clk)", "()")
+        lines.pop(5)
     with open(in_file, 'w') as f:
         for line in lines:
             f.write(line)
-    f.close()
     return (ref_file, in_file)
