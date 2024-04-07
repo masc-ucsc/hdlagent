@@ -55,9 +55,25 @@ responses:
 
 
 initial_contexts:
- - pyrtl_reference_sum1_gpt.md
+ - pyrtl_reference_sum2_gemini.md
+ - PyRTL_examples.md
 
 supplemental_contexts:
+  "problem with conditional assignment": |
+    ```
+    example_wire = pyrtl.WireVector(8)
+    example_wire |= 0b11110000
+    ```
+    This is my error:
+    ```
+    pyrtl.pyrtlexceptions.PyrtlError: problem with conditional assignment
+    ```
+    The '|=' driver is ONLY for 'with' blocks, which are CONDITIONAL assignment. Static assignment MUST use '<<=' as the driver.
+    Here is how I fixed my old program:
+    ```
+    example_wire = pyrtl.WireVector(8)
+    example_wire <<= 0b11110000
+    ```
   "Did you mean: 'wire'?": |
     ```
     example_input = WireVector(8, 'example_input')        # 8-bit input

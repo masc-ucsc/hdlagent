@@ -72,7 +72,7 @@ def md_to_convo(md_file):
             elif '**System:**' in line:
                 current_role = "system"
 
-            line_content = re.sub(r'\*\*(User:|Assistant|System:)\*\*\s*', '', line)
+            line_content = re.sub(r'\*\*(User:|Assistant:|System:)\*\*\s*', '', line)
             if line_content:
                 current_content += line_content + "\n"
         else:
