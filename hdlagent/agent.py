@@ -182,6 +182,7 @@ class Agent:
         # Resources used as a part of conversational flow and performance counters
         self.spec_conversation    = []
         self.compile_conversation = []
+        self.compile_history_log  = []
         self.tb_conversation      = []
         self.short_context        = False
         self.name                 = ""
@@ -551,7 +552,7 @@ class Agent:
             return completion.dict()['choices'][0]['message']['content']
         except Exception as e:
             print("octoai model failed: ", e)
-            return ""
+            exit(3)
 
     def openai_chat_completion(self, conversation, compile_convo: bool = False):
         if self.temp is None:
@@ -605,6 +606,10 @@ class Agent:
             'role': 'assistant',
             'content': response
         })
+
+        if compile_convo:
+            self.compile_history_log.append({'role': 'user', 'content' : clarification})
+            self.compile_history_log.append({'role': 'assistant', 'content' : response})
 
         delay = 1
         time.sleep(delay) # wait to limit API rate
@@ -723,6 +728,7 @@ class Agent:
     # Intended use: before starting a new Agent run
     def reset_conversations(self):
         self.compile_conversation = self.initial_contexts.copy()
+        self.compile_history_log  = []
         self.spec_conversation    = []
         self.tb_conversation      = []
 
@@ -859,15 +865,15 @@ class Agent:
                         self.lec_n             -= 1  # preliminary checks dont count
                         prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, lec_feedback_limit)
                 else:
-                    self.success_message(self.compile_conversation)
+                    self.success_message(self.compile_history_log)
                     self.dump_compile_conversation()
                     return True
             else:
-                self.dump_failure(failure_reason, self.compile_conversation)
+                self.dump_failure(failure_reason, self.compile_history_log)
                 self.dump_compile_conversation()
                 self.reset_conversations()
                 return False
-        self.dump_failure(failure_reason, self.compile_conversation)
+        self.dump_failure(failure_reason, self.compile_history_log)
         self.dump_compile_conversation()
         self.reset_conversations()
         return False
@@ -910,7 +916,8 @@ class Agent:
         if self.used_init_context:
             md_content += "**System:** Initial contexts were appended to this conversation\n\n"
             start_idx   = len(self.initial_contexts)
-        md_content += self.format_conversation(self.compile_conversation, start_idx)
+        #md_content += self.format_conversation(self.compile_conversation, start_idx)
+        md_content += self.format_conversation(self.compile_history_log, 0)
         md_content += self.report_statistics()
         os.makedirs(os.path.dirname(self.compile_log), exist_ok=True)
         with open(self.compile_log, 'w') as md_file:
