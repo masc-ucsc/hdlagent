@@ -1,6 +1,6 @@
 **User:** Write me a pyrtl program named 'nor_reduction' that takes a 8-bit input 'bus_i' and has a 1-bit output 'reduce_o' which is the NOR reduction of 'bus_i'.
 
-**Assistant**:```
+**Assistant:** ```
 import pyrtl
 
 bus_i = pyrtl.wire.Input(8, 'bus_i')  # 8 bit input, READ-ONLY
@@ -15,7 +15,7 @@ with open ('nor_reduction_pyrtl.v', 'w') as f:
 
 **User:** Write me a pyrtl program named 'odds_evens_sum' that takes a 7-bit input 'in_i' and has three outputs. 'odds_o' is 3-bits wide and is the odd-numbered bits from the input, concatenated in order. Conversely, 'evens_o' is 4-bits wide and is the even-numbered bits. The last output 'sum_o' is the 5-bit wide sum of 'odds_o' and 'evens_o'.
 
-**Assistant**:```
+**Assistant:** ```
 import pyrtl
 
 in_i = pyrtl.wire.Input(7, 'in_i')           # 7 bit input, READ-ONLY
@@ -60,7 +60,7 @@ MUL = 0b10
 # another simple conditional is 'pyrtl.mux()'
 with pyrtl.conditional_assignment:
     with op_i == ADD:
-        result_o |= rs1_i + rs2_i    # conditional wire drive is '|=', instead of '<<='
+        result_o |= rs1_i + rs2_i    # conditional wire drive is '|=' reserved ONLY for 'with' blocks
     with op_i == SUB:
         result_o |= rs1_i - rs2_i    # all operations result truncated to 8 bits by result_o wire declaration
     with op_i == MUL:                # multiplication result width is 2 * max bitwidth of operands
@@ -105,7 +105,7 @@ rs3 = instruction[25:30]    # bits 27 to 31
 with pyrtl.conditional_assignment:
     with opcode == FMADD_OPCODE:
         rd |= instruction[7:12]     # only explicitly declared wires, like 'Input', 'Output', or 'WireVector' can be driven
-        result |= (rs1 * rs2) + rs3
+        result |= (rs1 * rs2) + rs3 # ONLY use conditional drive '|=' in 'with' blocks
         err |= 0
     with pyrtl.otherwise:
         rd |= 0
