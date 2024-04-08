@@ -98,4 +98,36 @@ class add_7_to_11 extends Module {
 **User:** Write me a Chisel class that is a naive implementation of the RISC-V FMAdd instruction, where the opcode is as listed in the official spec, but any FP rules are ignored as well as the RM and FMT fields. The source operands will take on the values of their register numbers. The 'result' output will be the multiply-add operation, and the 'rd' output will be the decoded destination register. If the opcode is incorrect, then the 'err' output must be set and the other outputs must be cleared. The equivalent Verilog declaration would be 'module fmadd(input [31:0] instruction, output [4:0] rd, output [31:0] result, output err);'
 
 **Assistant:** ```
+import chisel3._
+import chisel3.util._   // imports standard library
+
+class fmadd extends Module {
+  val io = IO(new Bundle {
+  val instruction = Input(UInt(32.W))
+  val rd = Output(UInt(5.W))
+  val result = Output(UInt(32.W))
+  val err = Output(Bool())
+})
+    // const declaration, explicit width
+    val FMADD_OPCODE = "b1000011".U(7.W)
+
+    // implicit width declarations, inferred by compiler
+    val rs1 = io.instruction(19, 15)  // extract bits 15 to 19
+    val rs2 = io.instruction(24, 20)  // extract bits 20 to 24
+    val rs3 = io.instruction(31, 27)  // extract bits 27 to 31
+    val rd = io.instruction(11, 7)    // extract bits 7 to 11
+    val opcode = io.instruction(6, 0)
+
+    // Zero extend operations to 32 bits
+    val product = Wire(UInt(32.W))
+    val sum = Wire(UInt(32.W))
+    product := rs1 * rs2
+    sum := product + rs3
+
+    io.err := FMADD_OPCODE =/= opcode
+
+    // 'Mux()' used as ternay operator, can also be nested. Requires 'Bool' type, can typecast '.asBool' when needed
+    io.rd := Mux(io.err, 0.U(5.W), rd)
+    io.result := Mux(io.err, 0.U(32.W), sum)
+}
 ```
