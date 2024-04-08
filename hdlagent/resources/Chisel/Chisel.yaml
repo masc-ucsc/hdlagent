@@ -15,8 +15,9 @@ responses:
 
   give_instr_suffix: |
     
-    Please respond with only valid program syntax. Please do not provide any additional English explanation, short comments in the code are allowed. Do not add any code relating to Verilog generation, I will handle that manually.
+    Please respond with only valid program syntax. Please do not provide any additional English explanation, short comments in the code are allowed but must be kept to a minimum. Do NOT add any code relating to Verilog generation, I will handle that manually. Do NOT add anything related to testing or chisel.Drivers, implement ONLY the class.
     The interface in Verilog would be: {interface}
+    The class name must EXACTLY match the one of the module stated. As must the IO names and their bitwidths.
 
   compile_err_prefix: |
     The previous code had a compiler warning/error. Please return the entire corrected program, not just the warning/erroring snippet. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
@@ -34,11 +35,11 @@ responses:
 
 
 initial_contexts:
- - Chisel_context_1.text
- - Chisel_context_2.text
- - Chisel_context_3.text
+ - chisel_reference_sum4_gemini.md
 
 supplemental_contexts:
+  "Error: Unable to locate module": |
+    You have misnamed the class, name it EXACTLY as stated, ignoring typical naming conventions if you must. Do not include anything for Chisel compilation or file handling, this is purely a naming issue.
   'no arguments allowed for ': |
     ```
     [error] no arguments allowed for nullary macro method unary_~: ()chisel3.Bits
