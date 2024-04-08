@@ -6,8 +6,8 @@ import pyrtl
 bus_i = pyrtl.wire.Input(8, 'bus_i')  # 8 bit input, READ-ONLY
 out = pyrtl.wire.Output(1, 'out')     # 1 bit output, WRITE-ONLY
 
-// pyrtl has unary reduction methods: 'pyrtl.corecircuits.and_all_bits()', 'pyrtl.corecircuits.or_all_bits()', and 'pyrtl.coreciruits.xor_all_bits()'
-out <<= ~pyrtl.corecircuits.or_all_bits(bus_i)    // '<<=' is how wires are driven by already existing wires, equivalent to 'assign' in Verilog
+# pyrtl has unary reduction methods: 'pyrtl.corecircuits.and_all_bits()', 'pyrtl.corecircuits.or_all_bits()', and 'pyrtl.coreciruits.xor_all_bits()'
+out <<= ~pyrtl.corecircuits.or_all_bits(bus_i)    # '<<=' is how wires are driven by already existing wires, equivalent to 'assign' in Verilog
 
 with open ('nor_reduction_pyrtl.v', 'w') as f:
     pyrtl.output_to_verilog(f, add_reset=False)
@@ -65,7 +65,7 @@ with pyrtl.conditional_assignment:
         result_o |= rs1_i - rs2_i    # all operations result truncated to 8 bits by result_o wire declaration
     with op_i == MUL:                # multiplication result width is 2 * max bitwidth of operands
         result_o |= rs1_i * rs2_i
-    with pyrtl.otherwise:            # defaul/else statement handled by 'pyrtl.otherwise'
+    with pyrtl.otherwise:            # default/else statement handled by 'pyrtl.otherwise'
         result_o |= 0
 
 with open('simple_alu_pyrtl.v', 'w') as f:
@@ -100,7 +100,7 @@ opcode = instruction[0:7]   # Python part select, extract bits 0 to 6
 
 rs1 = instruction[15:20]    # bits 15 to 19
 rs2 = instruction[20:25]    # bits 20 to 24
-rs3 = instruction[25:30]    # bits 27 to 31
+rs3 = instruction[27:32]    # bits 27 to 31
 
 with pyrtl.conditional_assignment:
     with opcode == FMADD_OPCODE:

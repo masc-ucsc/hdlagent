@@ -19,3 +19,5 @@ if [ -e "$modulename.v" ]; then
     mv "$modulename.v" ../
 fi
 popd
+
+stty sane;

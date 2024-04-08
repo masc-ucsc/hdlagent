@@ -51,7 +51,19 @@ class HDLang_verilog(HDLang):
 class HDLang_chisel(HDLang):
     def extract_code(self, prompt: str, verilog_path: str) -> str:
         txt = self.extract_codeblock(prompt)
-        return txt
+        txt = txt.replace('\\', '')
+
+        answer  = ""
+        capture = False
+        for l in txt.splitlines():
+            if 'import chisel' in l:
+                capture = True
+            if capture:
+                answer += l + "\n"
+
+        if answer == "":
+            answer = txt
+        return answer
 
 class HDLang_pyrtl(HDLang):
     def extract_code(self, prompt: str, verilog_path: str) -> str:
