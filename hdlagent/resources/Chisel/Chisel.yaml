@@ -35,7 +35,8 @@ responses:
 
 
 initial_contexts:
- - chisel_reference_sum4_gemini.md
+ - chisel_reference_sum1_gpt.md
+ - Chisel_examples.md
 
 supplemental_contexts:
   "Error: Unable to locate module": |

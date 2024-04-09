@@ -55,7 +55,7 @@ responses:
 
 
 initial_contexts:
- - pyrtl_reference_sum2_gemini.md
+ - pyrtl_reference_sum1_gpt.md
  - PyRTL_examples.md
 
 supplemental_contexts:
