@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 import vertexai
-from vertexai.generative_models import GenerativeModel
+from vertexai.generative_models import *
 import yaml
 
 from hdlang import get_hdlang
@@ -162,7 +162,7 @@ class Agent:
         elif model in list_vertexai_models():
             self.chat_completion = self.vertexai_chat_completion
             try:
-                self.client          = GenerativeModel(model).start_chat()
+                self.client          = GenerativeModel(model)
             except Exception as e:
                 print(f"VertexAI failed with this error: {e}")
                 print("WARNING: VertexAI uses a different API/authentitification. It requires this:")
@@ -508,18 +508,29 @@ class Agent:
         return (self.responses['request_testbench']).format(prompt=prompt, interface=self.interface)
 
     def vertexai_chat_completion(self, conversation, compile_convo: bool = False):
-        if compile_convo and (len(conversation) == (len(self.initial_contexts) + 1)):
-            clarification = ""
-            for entry in conversation:
-                clarification += entry['content'] + "\n"
-        else:
-            clarification = conversation[-1]['content']
+        contents  = []
+        last_role = ''    # Gemini only supports alternating conversations between model/user
+        for entry in self.compile_conversation:
+            entry_content = entry['content']
+            if entry['role'] == 'assistant':
+                role = 'model'
+            else:
+                role = 'user'
+            # enforce alternating conversation
+            if role == last_role:
+                prev_content  = str(contents[-1].parts)
+                entry_content = prev_content + "\n" + entry_content
+                contents.pop()
+
+            last_role = role
+            part      = [Part.from_text(entry_content)]
+            contents.append(Content(role=role, parts=part))
         try:
-            safety_config = {
+            safety_settings = {
                 vertexai.generative_models.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: vertexai.generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
                 vertexai.generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: vertexai.generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
             }
-            completion = self.client.send_message(clarification, safety_settings=safety_config)
+            completion = self.client.generate_content(contents=contents, safety_settings=safety_settings)
         except Exception as e:
             print("Send failed due to ", e)
             exit(3)
