@@ -37,7 +37,8 @@ responses:
 
 
 initial_contexts:
- - dslx_reference_sum5_gpt.md
+ - dslx_reference_sum2_gemini.md
+ - DSLX_examples.md
 
 supplemental_contexts:
   Annotated type did not match inferred type of right hand side expression: |
