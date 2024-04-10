@@ -12,15 +12,18 @@ if [[ -z "${XLS}" ]]; then
   exit 1;
 fi
 
-$XLS/xls/dslx/interpreter_main --disable_warnings="member_naming" $name.x
+$XLS/xls/dslx/interpreter_main --disable_warnings="member_naming" --warnings_as_errors $name.x
 if [[ $(echo $?) -eq 0 ]]; then
   $XLS/xls/dslx/ir_convert/ir_converter_main --disable_warnings="member_naming" --top=$modulename $name.x > $name.ir;
   $XLS/xls/tools/opt_main $name.ir > $name.opt.ir;
   $XLS/xls/tools/codegen_main --generator=combinational --delay_model=sky130  --separate_lines $name.opt.ir > $name.sv;
   module_decl="module ${modulename}("
   sed -i "1s/.*/$module_decl/" $name.sv  # manually replace module delcaration line to set name
-#  $XLS/xls/tools/codegen_main --generator=pipeline --pipeline_stages=5 --delay_model=sky130 --separate_lines $dir$file.opt.ir > __masc__execute.sv;
   sv2v --write=adjacent $name.sv;  #convert to classic Verilog for YOSYS
   rm $name.ir; rm $name.opt.ir; rm $name.sv;  #cleanup (should we keep .sv?)
   exit 0;
+elif [[ $(echo $?) -eq 1 ]]; then
+  output=$($XLS/xls/dslx/interpreter_main --disable_warnings="member_naming" --warnings_as_errors $name.x)
+  echo "$output" >&2;
+  exit 1;
 fi
