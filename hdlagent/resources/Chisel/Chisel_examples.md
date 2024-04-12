@@ -131,3 +131,62 @@ class fmadd extends Module {
     io.result := Mux(io.err, 0.U(32.W), sum)
 }
 ```
+
+**User:** Write me a Chisel class that implements a Finite State Machine (FSM) simulating the game "green light, red light". The purpose of the game is to be in the 'GO_STATE' (state value 1) as soon as the 'GREEN_IN' signal (input value 1) is received, and to stay in that state until the 'RED_IN' signal (input value 0) is received. The state should then transition to 'STOP_STATE' (state value 0) and stay there until the 'GREEN_IN' signal is received again. The input to the class is the signal, and the output is the current state. The default/reset state should be 'STOP_STATE' and the reset is synchronous. The circuit has only one pipeline stage, meaning the result is updated on the next clock cycle. The equivalent Verilog declaration would be 'module stoplight_fsm (input clk, input rst, input signal_i, output state_o);'.
+
+**Assistant:** ```
+import chisel3._
+import chisel3.util._   // imports standard library
+
+class stoplight_fsm extends Module {
+  val io = IO(new Bundle {
+  val signal_i = Input(UInt(1.W))
+  val state_o = Output(UInt(1.W))
+})
+
+    // Initialize state Register, reset value '0.U'
+    val state_r = RegInit(0.U(1.W))
+    // Define FSM states
+    val STOP_STATE = 0.U(1.W)
+    val GO_STATE = 1.U(1.W)
+    // Define FSM inputs
+    val RED_IN = 0.U(1.W)
+    val GREEN_IN = 1.U(1.W)
+
+    // default state
+    state_r := STOP_STATE
+    // case/switch statement, FSM logic
+    switch(state_r) {
+      is(STOP_STATE) { state_r := Mux(io.signal_i === GREEN_IN, GO_STATE, state_r) } // when in 'STOP_STATE', change to 'GO_STATE' upon first 'GREEN_IN', otherwise maintain state
+      is(GO_STATE)   { state_r := Mux(io.signal_i === RED_IN, STOP_STATE, state_r) } // when in 'GO_STATE', change to 'STOP_STATE' upon first 'RED_IN', otherwise maintain state
+    }
+
+    io.state_o := state_r
+}
+```
+
+**User:** Write me a Chisel class that is a 1 stage pipelined adder, this means the result should be updated within 1 clock cycle. The carry out bit should be preserved in the extended output. The reset should be asynchronous, and the reset value should be 0. The equivalent Verilog declaration would be 'module async_adder (input clk, input rst, input [1:0] a, input [1:0] b, output [2:0] result );'
+
+**Assistant:** ```
+import chisel3._
+import chisel3.util._   // imports standard library
+
+class async_adder extends Module with RequireAsyncReset {   // 'with RequireAsyncReset' enforces asycnronous reset on implicit reset signal
+  val io = IO(new Bundle {                                  // Clock and Reset signals implicit, avoid explicit delcaration
+  val a = Input(UInt(2.W))
+  val b = Input(UInt(2.W))
+  val result = Output(UInt(3.W))
+})
+    // Extend inputs to 3 bits to preserve carry-out bit
+    val a_zero_ext = Wire(UInt(3.W))
+    val b_zero_ext = Wire(UInt(3.W))
+    a_zero_ext := io.a
+    b_zero_ext := io.b
+
+    // Initialize Register, 3-bit wide set by '3.W', default reset value set by '0.U'
+    val result_reg = RegInit(0.U(3.W))
+    // Connect adder to Register just like a Wire
+    result_reg := a_zero_ext + b_zero_ext
+    io.result := result_reg
+}
+```
