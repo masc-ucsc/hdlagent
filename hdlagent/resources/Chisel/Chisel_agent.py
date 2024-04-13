@@ -33,7 +33,6 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
     # Remove randomization block
     contents = re.sub(r"// Register and memory initialization.*?endmodule", "", contents, flags=re.DOTALL)
     lines = contents.splitlines()
-    print(lines)
     # Populate these!
     possible_clock_names = ["clk","Clk","clock","Clock"]
     possible_reset_names = ["rst","Rst","reset","Reset","aresetn"]
@@ -44,7 +43,6 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
     for name in possible_clock_names:
         for io in io_list:
             if name in io:
-                print(f"{name} vs {io}")
                 clock_name = name
                 break
     for name in possible_reset_names:
@@ -66,7 +64,6 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
         else:                   # rename
             rename_reset = True
     newlines = []
-    capture  = True
     for line in lines:
         if "io_" in line:       # remove 'io_' prepend from module io names
             for io in io_list:
@@ -115,8 +112,8 @@ def get_interface(interface: str):
 def main():
     name = ""
     ref_file = ""
-    in_file = "async_adder.v"
-    io_list = get_interface("module async_adder(input clk, input rst, input [1:0] a, input [1:0] b, output [2:0] result);")
+    in_file = "stoplight_fsm.v"
+    io_list = get_interface("module stoplight_fsm(input clk, input rst, input signal_i, output state_o);")
     custom_reformat_verilog(name, ref_file, in_file, io_list)
 
 if __name__ == "__main__":
