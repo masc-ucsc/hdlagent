@@ -4,10 +4,10 @@
 import pyrtl
 
 bus_i = pyrtl.wire.Input(8, 'bus_i')  # 8 bit input, READ-ONLY
-out = pyrtl.wire.Output(1, 'out')     # 1 bit output, WRITE-ONLY
+reduce_o = pyrtl.wire.Output(1, 'reduce_o')     # 1 bit output, WRITE-ONLY
 
 # pyrtl has unary reduction methods: 'pyrtl.corecircuits.and_all_bits()', 'pyrtl.corecircuits.or_all_bits()', and 'pyrtl.coreciruits.xor_all_bits()'
-out <<= ~pyrtl.corecircuits.or_all_bits(bus_i)    # '<<=' is how wires are driven by already existing wires, equivalent to 'assign' in Verilog
+reduce_o <<= ~pyrtl.corecircuits.or_all_bits(bus_i)    # '<<=' is how wires are driven by already existing wires, equivalent to 'assign' in Verilog
 
 with open ('nor_reduction_pyrtl.v', 'w') as f:
     pyrtl.output_to_verilog(f, add_reset=False)
@@ -114,4 +114,57 @@ with pyrtl.conditional_assignment:
 
 with open('fmadd_pyrtl.v', 'w') as f:
     pyrtl.output_to_verilog(f, add_reset=False)
+```
+
+**User:** Write me a PyRTL function that is a 1 stage pipelined adder, this means the result should be updated within 1 clock cycle. The carry out bit should be preserved in the extended output. The reset should be asynchronous, and the reset value should be 0. The equivalent Verilog declaration would be 'module async_adder (input clk, input rst, input [1:0] a, input [1:0] b, output [2:0] result );'
+
+**Assistant:** ```
+import pyrtl
+
+a = pyrtl.wire.Input(2, 'a')
+b = pyrtl.wire.Input(2, 'b')
+result = pyrtl.wire.Output(3, 'result')
+
+# Initialize state Register, bitwidth 3, reset value 0
+result_reg = pyrtl.wire.Register(3, 'result_reg', 0)
+
+# Non-blocking assignment of next value for Register to capture
+result_reg.next <<= a + b
+
+with open('async_adder_pyrtl.v', 'w') as f:
+    pyrtl.output_to_verilog(f, add_reset='asynchronous') # make reset asynchronous with 'add_reset='asynchronous''
+```
+
+**User:** Write me a PyRTL function that implements a Finite State Machine (FSM) simulating the game "green light, red light". The purpose of the game is to be in the 'GO_STATE' (state value 1) as soon as the 'GREEN_IN' signal (input value 1) is received, and to stay in that state until the 'RED_IN' signal (input value 0) is received. The state should then transition to 'STOP_STATE' (state value 0) and stay there until the 'GREEN_IN' signal is received again. The input to the class is the signal, and the output is the current state. The default/reset state should be 'STOP_STATE' and the reset is synchronous. The circuit has only one pipeline stage, meaning the result is updated on the next clock cycle. The equivalent Verilog declaration would be 'module stoplight_fsm (input clk, input rst, input signal_i, output state_o);'.
+
+**Assistant:** ```
+import pyrtl
+
+signal_i = pyrtl.wire.Input(1, 'signal_i')
+state_o = pyrtl.wire.Output(1, 'state_o')
+
+# Initialize state Register, bitwidth 1, reset value 0
+state_r = pyrtl.wire.Register(1, 'state_r', 0)
+
+# Verilog-style constant declaration
+# Define FSM states
+STOP_STATE = 0b0
+GO_STATE = 0b1
+# Define FSM inputs
+RED_IN = 0b0
+GREEN_IN = 0b1
+
+# pyrtl does not have 'case/switch', instead must use 'with pyrtl.conditional_assignment', can also use 'pyrtl.corecircuits.mux()'
+with pyrtl.conditional_assignment:
+    with state_r == STOP_STATE:
+        state_r.next |= pyrtl.corecircuits.mux(signal_i == GREEN_IN, state_r, GO_STATE)    # when in 'STOP_STATE', change to 'GO_STATE' upon first 'GREEN_IN', otherwise maintain state
+    with state_r == GO_STATE:
+        state_r.next |= pyrtl.corecircuits.mux(signal_i == RED_IN, state_r, STOP_STATE)      # when in 'GO_STATE', change to 'STOP_STATE' upon first 'RED_IN', otherwise maintain state
+    with pyrtl.otherwise:            # default/else statement handled by 'pyrtl.otherwise'
+        state_r.next |= STOP_STATE   # conditional wire drive is '|=' reserved ONLY for 'with' blocks
+
+state_o <<= state_r
+
+with open('stoplight_fsm_pyrtl.v', 'w') as f:
+    pyrtl.output_to_verilog(f)
 ```
