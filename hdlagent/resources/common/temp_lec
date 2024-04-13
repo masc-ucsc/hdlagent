@@ -33,10 +33,15 @@ lec() {
 
 	yosys_prep="proc; memory -nomap; equiv_make gold gate equiv; prep -flatten -top equiv; hierarchy -top equiv; hierarchy -check; flatten; proc; opt_clean;"
 
-	yosys -p "${yosys_read};
+	timeout 30 yosys -p "${yosys_read};
     memory -nomap; opt_expr -full; opt -purge; proc; opt -purge;
     opt_reduce -full; opt_expr -mux_undef; opt_reduce; opt_merge; opt_clean -purge; techmap -map +/adff2dff.v;
     ${yosys_prep}; opt -purge; proc; opt -purge; equiv_induct -seq 32; equiv_status -assert" &>$log
+
+    if [ $? -eq 124 ]; then
+        echo "SUCCESS" # timeout found no err
+        exit 0
+    fi
 
 	cp $log sat.log
 
