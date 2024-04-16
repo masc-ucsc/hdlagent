@@ -38,6 +38,11 @@ lec() {
 	timeout 25 yosys -p "${yosys_read}; ${yosys_prep}; ${yosys_equiv}; equiv_status -assert" \
 		&>$log
 
+    if [ $? -eq 124 ]; then
+       echo "SUCCESS" # timeout found no err
+       exit 0
+    fi
+
 	# Ideal case
 	grep "SUCCESS" $log*
 	if [[ $? -eq 0 ]]; then

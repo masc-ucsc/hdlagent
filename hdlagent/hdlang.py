@@ -30,6 +30,7 @@ class HDLang(ABC):
 class HDLang_verilog(HDLang):
     def extract_code(self, prompt: str, verilog_path: str) -> str:
         txt = self.extract_codeblock(prompt)
+        txt = txt.replace('\\', '')
 
         answer = ""
         in_module = False

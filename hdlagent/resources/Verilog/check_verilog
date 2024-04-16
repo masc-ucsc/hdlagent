@@ -1,6 +1,11 @@
 #!/bin/bash
 f=$1
 
+if [ ! -s "$f" ]; then
+    echo "Error: no code was received" >&2
+    exit 1
+fi
+
 temp_file=$(mktemp log_check_verilog.XXXXXX)
 if which slang >/dev/null; then
 	slang -q --error-limit 1 ${f} 2>${temp_file}
@@ -12,7 +17,7 @@ if which slang >/dev/null; then
 else
 	yosys -p "logger -nowarn assigned; read_verilog -sv ${f};" &>${temp_file}
 	if [[ $? -ne 0 ]]; then
-		grep "Warning:" ${temp_file} | grep -Eiv "Suppress"
+		grep -E "Warning:|ERROR:" ${temp_file} | grep -Eiv "Suppress"
 		if [[ $? -ne 0 ]]; then
 			echo "SUCCESS"
 		fi

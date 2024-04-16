@@ -37,14 +37,13 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
             lines[4] = lines[4].replace("(clk, ", "(").replace("(clk)", "()")
             pop_idx = 5
             lines.pop(pop_idx)
-        else:                   # rename
+        else:
             rename_clock = True
     if reset_name != "rst":
-        if (reset_name is None) and ("input rst;" in lines[pop_idx]):  # remove
-        # (clk, rst) , (rst), (clk, rst, xxx), (rst, xxx) -> ", rst)" , "(rst)" , " rst," , "(rst, "
-            lines[4] = lines[4].replace(", rst) ", ")").replace("(rst)", "()").replace(" rst,", "").replace("(rst, ", "(")
+        if (", rst)" in lines[4]) or ("(rst)" in lines[4]) or (" rst," in lines[4]) or ("(rst, " in lines[4]):
             lines.pop(pop_idx)
-        else:                   # rename
+        lines[4] = lines[4].replace(", rst) ", ")").replace("(rst)", "()").replace(" rst,", "").replace("(rst, ", "(")
+        if reset_name is not None:                   # rename
             rename_reset = True
     newlines = []
     for line in lines:
@@ -54,13 +53,14 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
             line = line.replace("rst", reset_name)
         newlines.append(line)
     with open(in_file, 'w') as f:
-        for line in lines:
+        for line in newlines:
             f.write(line)
     return (ref_file, in_file)
 
 def get_interface(interface: str):
         # Remove unnecessary reg type
         interface = interface.replace(' reg ', ' ').replace(' reg[', ' [')
+        interface = interface.replace(' wire ', ' ').replace(' wire[', ' [')
         # Remove (legal) whitespaces from between brackets
         interface =  re.sub(r'\[\s*(.*?)\s*\]', lambda match: f"[{match.group(1).replace(' ', '')}]", interface)
         interface = interface.replace('\n', ' ')
@@ -87,8 +87,8 @@ def get_interface(interface: str):
 def main():
     name = ""
     ref_file = ""
-    in_file = "fmadd_pyrtl.v"
-    io_list = get_interface("module fmadd( input [31:0] instruction, output reg [4:0] rd, output reg [31:0] result, output reg err);")
+    in_file = "logical_and.v"
+    io_list = get_interface("module logical_and(input [3:0] a, input [3:0] b, output [0:0] result );")
     custom_reformat_verilog(name, ref_file, in_file, io_list)
 
 if __name__ == "__main__":
