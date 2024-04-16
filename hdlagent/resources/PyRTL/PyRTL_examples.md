@@ -121,6 +121,7 @@ with open('fmadd_pyrtl.v', 'w') as f:
 **Assistant:** ```
 import pyrtl
 
+# reset and clock signals are implicit, AVOID explicit declaration
 a = pyrtl.wire.Input(2, 'a')
 b = pyrtl.wire.Input(2, 'b')
 result = pyrtl.wire.Output(3, 'result')
@@ -131,15 +132,19 @@ result_reg = pyrtl.wire.Register(3, 'result_reg', 0)
 # Non-blocking assignment of next value for Register to capture
 result_reg.next <<= a + b
 
+# Connect register to output
+result <<= result_reg
+
 with open('async_adder_pyrtl.v', 'w') as f:
     pyrtl.output_to_verilog(f, add_reset='asynchronous') # make reset asynchronous with 'add_reset='asynchronous''
 ```
 
-**User:** Write me a PyRTL function that implements a Finite State Machine (FSM) simulating the game "green light, red light". The purpose of the game is to be in the 'GO_STATE' (state value 1) as soon as the 'GREEN_IN' signal (input value 1) is received, and to stay in that state until the 'RED_IN' signal (input value 0) is received. The state should then transition to 'STOP_STATE' (state value 0) and stay there until the 'GREEN_IN' signal is received again. The input to the class is the signal, and the output is the current state. The default/reset state should be 'STOP_STATE' and the reset is synchronous. The circuit has only one pipeline stage, meaning the result is updated on the next clock cycle. The equivalent Verilog declaration would be 'module stoplight_fsm (input clk, input rst, input signal_i, output state_o);'.
+**User:** Write me a PyRTL function that implements a Finite State Machine (FSM) simulating the game "green light, red light". The purpose of the game is to be in the 'GO_STATE' (state value 1) as soon as the 'GREEN_IN' signal (input value 1) is received, and to stay in that state until the 'RED_IN' signal (input value 0) is received. The state should then transition to 'STOP_STATE' (state value 0) and stay there until the 'GREEN_IN' signal is received again. The input to the class is the signal, and the output is the current state. The default/reset state should be 'STOP_STATE' and the reset is synchronous. The circuit has only one pipeline stage, meaning the result is updated on the next clock cycle. The reset value should be 0. The equivalent Verilog declaration would be 'module stoplight_fsm (input clk, input rst, input signal_i, output state_o);'.
 
 **Assistant:** ```
 import pyrtl
 
+# reset and clock signals are implicit, AVOID explicit declaration
 signal_i = pyrtl.wire.Input(1, 'signal_i')
 state_o = pyrtl.wire.Output(1, 'state_o')
 
@@ -163,6 +168,7 @@ with pyrtl.conditional_assignment:
     with pyrtl.otherwise:            # default/else statement handled by 'pyrtl.otherwise'
         state_r.next |= STOP_STATE   # conditional wire drive is '|=' reserved ONLY for 'with' blocks
 
+# Connect register to output
 state_o <<= state_r
 
 with open('stoplight_fsm_pyrtl.v', 'w') as f:

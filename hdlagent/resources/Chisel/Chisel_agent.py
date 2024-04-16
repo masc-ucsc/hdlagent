@@ -31,7 +31,7 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
     with open(in_file) as file:
         contents = file.read()
     # Remove randomization block
-    contents = re.sub(r"// Register and memory initialization.*?endmodule", "", contents, flags=re.DOTALL)
+    contents = re.sub(r"// Register and memory initialization.*?(?=endmodule)", "", contents, flags=re.DOTALL)
     lines = contents.splitlines()
     # Populate these!
     possible_clock_names = ["clk","Clk","clock","Clock"]
@@ -84,8 +84,9 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
     return (ref_file, in_file)
 
 def get_interface(interface: str):
-        # Remove unnecessary reg type
+        # Remove unnecessary reg/wire type
         interface = interface.replace(' reg ', ' ').replace(' reg[', ' [')
+        interface = interface.replace(' wire ', ' ').replace(' wire[', ' [')
         # Remove (legal) whitespaces from between brackets
         interface =  re.sub(r'\[\s*(.*?)\s*\]', lambda match: f"[{match.group(1).replace(' ', '')}]", interface)
         interface = interface.replace('\n', ' ')
@@ -112,8 +113,8 @@ def get_interface(interface: str):
 def main():
     name = ""
     ref_file = ""
-    in_file = "stoplight_fsm.v"
-    io_list = get_interface("module stoplight_fsm(input clk, input rst, input signal_i, output state_o);")
+    in_file = "one_hot_state_register.v"
+    io_list = get_interface("module one_hot_state_register(input  [0:0] clk,input  [0:0] rst,input  [0:0] enable,input  [2:0] state_in,output  [2:0] state_out,input  [0:0] scan_enable,input  [0:0] scan_in,output  [0:0] scan_out);")
     custom_reformat_verilog(name, ref_file, in_file, io_list)
 
 if __name__ == "__main__":

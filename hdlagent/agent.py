@@ -33,7 +33,7 @@ def list_openai_models(warn: bool = True):
 
 def list_octoai_models(warn: bool = True):
     # Experimental list:
-    exp_list = ['smaug-72b-chat']
+    exp_list = ['smaug-72b-chat', 'mixtral-8x22b']
     if "OCTOAI_TOKEN" in os.environ:
         return octoai.chat.get_model_list() + exp_list
     else:
@@ -281,8 +281,9 @@ class Agent:
     #
     # Intended use: at the beginning of a new initial prompt submission
     def set_interface(self, interface: str):
-        # Remove unnecessary reg type
+        # Remove unnecessary reg/wire type
         interface = interface.replace(' reg ', ' ').replace(' reg[', ' [')
+        interface = interface.replace(' wire ', ' ').replace(' wire[', ' [')
         # Remove (legal) whitespaces from between brackets
         interface =  re.sub(r'\[\s*(.*?)\s*\]', lambda match: f"[{match.group(1).replace(' ', '')}]", interface)
         interface = interface.replace('\n', ' ')

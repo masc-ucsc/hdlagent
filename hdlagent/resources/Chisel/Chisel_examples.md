@@ -132,19 +132,20 @@ class fmadd extends Module {
 }
 ```
 
-**User:** Write me a Chisel class that implements a Finite State Machine (FSM) simulating the game "green light, red light". The purpose of the game is to be in the 'GO_STATE' (state value 1) as soon as the 'GREEN_IN' signal (input value 1) is received, and to stay in that state until the 'RED_IN' signal (input value 0) is received. The state should then transition to 'STOP_STATE' (state value 0) and stay there until the 'GREEN_IN' signal is received again. The input to the class is the signal, and the output is the current state. The default/reset state should be 'STOP_STATE' and the reset is synchronous. The circuit has only one pipeline stage, meaning the result is updated on the next clock cycle. The equivalent Verilog declaration would be 'module stoplight_fsm (input clk, input rst, input signal_i, output state_o);'.
+**User:** Write me a Chisel class that implements a Finite State Machine (FSM) simulating the game "green light, red light". The purpose of the game is to be in the 'GO_STATE' (state value 1) as soon as the 'GREEN_IN' signal (input value 1) is received, and to stay in that state until the 'RED_IN' signal (input value 0) is received. The state should then transition to 'STOP_STATE' (state value 0) and stay there until the 'GREEN_IN' signal is received again. The input to the class is the signal, and the output is the current state. The default/reset state should be 'STOP_STATE' and the reset is synchronous. The circuit has only one pipeline stage, meaning the result is updated on the next clock cycle. The reset value should be 0. The equivalent Verilog declaration would be 'module stoplight_fsm (input clk, input rst, input signal_i, output state_o);'.
 
 **Assistant:** ```
 import chisel3._
 import chisel3.util._   // imports standard library
 
+// clock and reset are implicitly declared, AVOID explicit declaration
 class stoplight_fsm extends Module {
   val io = IO(new Bundle {
   val signal_i = Input(UInt(1.W))
   val state_o = Output(UInt(1.W))
 })
 
-    // Initialize state Register, reset value '0.U'
+    // Initialize state Register 1 bit wide, reset value 0, set by '0.U(1.W)'
     val state_r = RegInit(0.U(1.W))
     // Define FSM states
     val STOP_STATE = 0.U(1.W)
@@ -172,7 +173,7 @@ import chisel3._
 import chisel3.util._   // imports standard library
 
 class async_adder extends Module with RequireAsyncReset {   // 'with RequireAsyncReset' enforces asycnronous reset on implicit reset signal
-  val io = IO(new Bundle {                                  // Clock and Reset signals implicit, avoid explicit delcaration
+  val io = IO(new Bundle {                                  // Clock and Reset signals implicitly declared, AVOID explicit delcaration
   val a = Input(UInt(2.W))
   val b = Input(UInt(2.W))
   val result = Output(UInt(3.W))
@@ -183,7 +184,7 @@ class async_adder extends Module with RequireAsyncReset {   // 'with RequireAsyn
     a_zero_ext := io.a
     b_zero_ext := io.b
 
-    // Initialize Register, 3-bit wide set by '3.W', default reset value set by '0.U'
+    // Initialize Register, 3-bit wide set by '3.W', default reset value is 0. set by '0.U'
     val result_reg = RegInit(0.U(3.W))
     // Connect adder to Register just like a Wire
     result_reg := a_zero_ext + b_zero_ext

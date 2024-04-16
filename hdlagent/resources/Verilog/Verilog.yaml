@@ -63,6 +63,7 @@ responses:
 
 initial_contexts:
  - Verilog_context_1.md
+ - Verilog_examples.md
 
 supplemental_contexts:
   ' is implicitly declared': |+
