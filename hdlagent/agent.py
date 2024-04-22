@@ -33,7 +33,7 @@ def list_openai_models(warn: bool = True):
 
 def list_octoai_models(warn: bool = True):
     # Experimental list:
-    exp_list = ['smaug-72b-chat', 'mixtral-8x22b']
+    exp_list = ['smaug-72b-chat', 'mixtral-8x22b', 'meta-llama-3-70b-instruct']
     if "OCTOAI_TOKEN" in os.environ:
         return octoai.chat.get_model_list() + exp_list
     else:
