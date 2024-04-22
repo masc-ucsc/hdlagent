@@ -16,14 +16,14 @@ export OCTOAI_TOKEN=....
 
 Running directly from the checkout repository
 ```
-poetry run python ./hdlagent/hdlagent.py  --openai_models_list
-poetry run python ./hdlagent/hdlagent.py  --octoai_models_list
+cd sample
+ poetry run  ../hdlagent/hdlagent.py --list_models
 ```
 
 ### Run a Simple test from json
 
 ```
 cd sample
-poetry run python ../hdlagent/hdlagent.py --supp_context  --llm gpt-4-turbo-preview --lang Verilog --bench ./sample-test.json
+poetry run ../hdlagent/hdlagent.py --supp_context  --llm gpt-4-turbo-preview --bench ./sample-test.json
 ```
 
