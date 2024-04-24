@@ -37,15 +37,16 @@ class HDLang_verilog(HDLang):
         for l in txt.splitlines():
             if in_module:
                 answer += l + "\n"
-                if "endmodule" in l:
-                    in_module = False
             else:
                 s = l.strip()
                 if s.startswith('`include') or s.startswith('`define') or s.startswith('`if') or s.startswith('`else') or s.startswith('`endif'):
                     answer += s
-                elif "module" in l:
+                elif "module " in l:
                     in_module = True
                     answer += s + "\n"
+
+            if "endmodule" in l: # Same line can have module and endmodule
+                in_module = False
 
         return answer
 
@@ -118,5 +119,6 @@ def get_hdlang(lang: str) -> HDLang:
     else:
         raise ValueError("Unsupported Language type in HDLang")
 
-#hdlang = get_hdlang("VerIloG")
+
+# hdlang = get_hdlang("VerIloG")
 
