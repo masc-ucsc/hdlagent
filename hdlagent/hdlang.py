@@ -11,7 +11,7 @@ class HDLang(ABC):
         if text is None:    # XXX - Deal with this better
             return ""
         if (text.count('```') == 0) or (text.count('```') % 2 != 0):
-            return text
+            return text.replace('```','')
         lines   = text.split('\n')
         capture = False
         block   = []
@@ -70,6 +70,7 @@ class HDLang_chisel(HDLang):
 class HDLang_pyrtl(HDLang):
     def extract_code(self, prompt: str, verilog_path: str) -> str:
         txt = self.extract_codeblock(prompt)
+        txt = txt.replace('\\', '')
 
         answer  = ""
         capture = False
@@ -91,6 +92,7 @@ class HDLang_pyrtl(HDLang):
 class HDLang_dslx(HDLang):
     def extract_code(self, prompt: str, verilog_path: str) -> str:
         txt = self.extract_codeblock(prompt)
+        txt = txt.replace('\\', '')
 
         answer  = ""
         capture = False
