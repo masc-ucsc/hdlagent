@@ -17,7 +17,7 @@ def check_json(json_path: str):
                 exit()
     return data
 
-def set_json_bounds(json_data, limit: int = -1, start_from: str = None):
+def set_json_bounds(json_data: dict, limit: int = -1, start_from: str = None):
     if json_data is None:
         print("Error: no json file registered, exiting...")
         exit()
@@ -146,7 +146,12 @@ class Handler:
             return results['lec_f'] < results['lec_n']
         return False
 
-    def single_json_run(self, entry, base_w_dir, skip_completed, update):
+    # Individual attempt at a .json benchmark problem, solvable through passing
+    # a Yosys LEC check. top_k sets limit for how many unsuccessful attempts
+    # can be made until marked as a failure.
+    #
+    # Indended use: benchmarking LLMs
+    def single_json_run(self, entry: dict, base_w_dir, skip_completed, update):
             self.agent.reset_k()
             self.agent.set_interface(entry['interface'])
             self.agent.set_pipeline_stages(int(entry['pipeline_stages']))
@@ -173,9 +178,13 @@ class Handler:
                 if self.agent.lec_loop(prompt, self.lec_iter, self.lec_feedback_limit, self.comp_iter, update_entry):
                     break
                 self.agent.incr_k()
-        
 
-    def json_run(self, json_data, skip_completed: bool = False, skip_successful: bool = False, update: bool = False):
+
+    # Wrapper around single_json_run(), keeps track of individual problems' statuses.
+    # Checking if they were passed to not repeat them.
+    #
+    # Intended use: benchmarking LLMs
+    def json_run(self, json_data: dict, skip_completed: bool = False, skip_successful: bool = False, update: bool = False):
         base_w_dir = self.agent.w_dir
         for entry in json_data:
             successful   = self.check_success(entry, base_w_dir)
@@ -183,11 +192,21 @@ class Handler:
             run          = not ((skip_completed and completed) or (skip_successful and successful))
             if run:
                 self.single_json_run(entry, base_w_dir, skip_completed, update)
-            
-    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_data, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, temperature: float = None, short_context: bool = False):
+
+    #def generate_spec()
+
+    # Typical user run, where a 'spec' must exist, to formally define
+    # the interface and desired behavior of the target circuit.
+    #def spec_run()
+
+    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_data: dict = None, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, temperature: float = None, short_context: bool = False):
         self.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
         self.agent.set_w_dir(w_dir)
         self.agent.set_model_temp(temperature)
         if short_context:
             self.agent.set_short_context
-        self.json_run(json_data, skip_completed, skip_successful, update)
+        if json_data is not None:
+            self.json_run(json_data, skip_completed, skip_successful, update)
+        else:
+            pass
+            # spec_run

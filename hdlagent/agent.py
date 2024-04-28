@@ -89,6 +89,14 @@ def md_to_convo(md_file):
 
     return conversation
 
+def get_name_from_interface(interface: str):
+    # regex search for module name
+    match = re.search(r'module\s+([^\s]+)\s*\(', interface)
+    if match:
+        return match.group(1).strip()
+    print(f"Error: 'interface' {interface} does not declare module name properly, exiting...")
+    exit()
+
 class Agent:
     def __init__(self, spath: str, model: str, lang: str, use_init_context:bool = False, use_supp_context: bool = False, use_spec: bool = False):
 
@@ -287,14 +295,8 @@ class Agent:
         # Remove (legal) whitespaces from between brackets
         interface =  re.sub(r'\[\s*(.*?)\s*\]', lambda match: f"[{match.group(1).replace(' ', '')}]", interface)
         interface = interface.replace('\n', ' ')
-        # regex search for module name
-        match     = re.search(r'module\s+([^\s]+)\s*\(', interface)
-        if match:
-            module_name = match.group(1).strip()
-            self.set_module_name(module_name)
-        else:
-            print(f"Error: 'interface' {interface} does not declare module name properly, exiting...")
-            exit()
+        interface = interface.replace('endmodule', ' ')
+        self.set_module_name(get_name_from_interface(interface))
         self.io = []
         # regex search for substring between '(' and ');'
         pattern = r"\((.*?)\);"
@@ -319,20 +321,18 @@ class Agent:
         self.interface  = f"module {self.name}("
         self.interface += ','.join([' '.join(inner_list) for inner_list in self.io])
         self.interface += ");"
+        self.interface = self.interface.replace('  ', ' ')
 
     # Creates and registers the 'working directory' for the current run as
     # so all output from the run including logs and produced source code
     # are left in this directory when the run is complete
     #
     # Intended use: right after the beginning of a new Agent's instantiation
-    def set_w_dir(self, path: str):
+    def set_w_dir(self, path: str, spec_path: str = None):
         # Now create the dir if it does not exist
         directory = Path(path) / ""
-        if directory and not os.path.exists(directory):
-            try:
-                os.makedirs(directory)
-            except FileExistsError:
-                pass
+        if directory:
+            os.makedirs(directory, exist_ok=True)
         self.w_dir = directory
         self.update_paths()
 
@@ -340,12 +340,17 @@ class Agent:
     # Keeps all file pointers up to date
     #
     # Intended use: inside of 'set_w_dir' or 'set_module_name'
-    def update_paths(self):
+    def update_paths(self, spec_path: str = None):
         self.compile_log  = os.path.join(self.w_dir, "logs", self.name + "_compile_log.md")
         self.fail_log     = os.path.join(self.w_dir, "logs", self.name + "_fail.md")
         if self.spec is not None:
-            self.spec     = os.path.join(self.w_dir, self.name + "_spec.yaml")
             self.spec_log = os.path.join(self.w_dir, "logs", self.name + "_spec_log.md")
+            self.spec     = os.path.join(self.w_dir, self.name + "_spec.yaml")
+            if spec_path is not None:   # XXX - partition spec_path contents into submodules, when nested
+                with open (spec_path, 'r') as path:
+                    contents = path.read()
+                    with open (self.spec, 'w') as file:
+                        file.write(contents)
         self.code         = os.path.join(self.w_dir, self.name + self.file_ext)
         self.verilog      = os.path.join(self.w_dir, self.name + ".v")
         self.tb           = os.path.join(self.w_dir, "tests", self.name + "_tb.v")
@@ -358,19 +363,24 @@ class Agent:
 
     # Helper function that extracts and reformats information from spec yaml file
     # to create initial prompt(s) for compilation loop and testbench
-    # loop (if applicable).
+    # loop (if applicable). Sets interface and module name.
     #
-    # Intended use: before a lec loop is started so the prompt can be reformatted and formalized
+    # Intended use: before a generation/lec loop is started so the prompt can be reformatted and formalized
     def read_spec(self):
         if self.spec is None:
             print("Error: attempting to read spec in a run where it is not employed, exiting...")
             exit()
         with open(self.spec, 'r') as file:
             spec = yaml.safe_load(file)
-        file.close()
-        description = spec['description']
-        interface   = spec['interface']
-        return (self.responses['spec_to_prompt']).format(description=description,interface=interface)
+        if 'description' not in spec:
+            print(f"Error: valid yaml 'description' key not found in {self.spec} file, exiting...")
+            exit()
+        if 'interface' not in spec:
+            print(f"Error: valid yaml 'interface' key not found in {self.spec} file, exiting...")
+            exit()
+        self.set_interface(spec['interface'])
+        return spec['description']
+        #return (self.responses['spec_to_prompt']).format(description=description,interface=interface)
 
     # Registers the file path of the golden Verilog to be used for LEC
     # and dumps the contents into the file.
@@ -609,19 +619,17 @@ class Agent:
                 conversation.pop()
 
         # Add the model's response to the messages list to keep the conversation context
-        #code = "```\n"
-        #code += self.hdlang.extract_code(response, self.verilog)
-        #code += "```"
         print("**Assistant:**\n" + response)
+
+        if compile_convo:
+            self.compile_history_log.append({'role': 'user', 'content' : clarification})
+            self.compile_history_log.append({'role': 'assistant', 'content' : response})
+            response = "```\n" + self.hdlang.extract_code(response, self.verilog) + "\n```"
 
         conversation.append({
             'role': 'assistant',
             'content': response
         })
-
-        if compile_convo:
-            self.compile_history_log.append({'role': 'user', 'content' : clarification})
-            self.compile_history_log.append({'role': 'assistant', 'content' : response})
 
         delay = 1
         time.sleep(delay) # wait to limit API rate
@@ -640,11 +648,17 @@ class Agent:
         spec_contents  = "description: |\n  \n"
         description    = self.query_model(self.spec_conversation, description_req)
         description_lines = description.split('\n')
-        indented_lines = ["  " + line for line in description_lines]
+        indented_lines = ["  " + line.lstrip() for line in description_lines]
         description    = '\n'.join(indented_lines)
         spec_contents += description
         spec_contents += "\ninterface: |\n  \n  "
-        spec_contents += (self.hdlang_verilog.extract_code(self.query_model(self.spec_conversation, interface_req), self.verilog)).replace('\n','\n    ')
+        interface      = (self.hdlang_verilog.extract_code(self.query_model(self.spec_conversation, interface_req), self.verilog)).replace('\n','\n    ')
+        spec_contents += interface
+
+        # Ensure module name is always set
+        if self.name == "":
+            self.set_module_name(get_name_from_interface(interface))
+
         os.makedirs(os.path.dirname(self.spec), exist_ok=True)
         with open(self.spec, 'w') as file:
             file.write(spec_contents)
@@ -945,7 +959,7 @@ class Agent:
             md_file.write("Reason for failure:\n" + reason)
 
     def dump_codeblock(self, text: str, filepath: str):
-        isolated_code = self.hdlang.extract_code(text, self.verilog)
+        isolated_code = text.replace('```','') #self.hdlang.extract_code(text, self.verilog)
         with open(filepath, 'w') as file:
             file.write(isolated_code)
 
