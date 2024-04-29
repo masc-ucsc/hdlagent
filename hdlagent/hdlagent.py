@@ -13,10 +13,10 @@ from pathlib import Path
 
 
 # WARNING: FEATURES BELOW ARE EXPERIMENTAL - FURTHER VALIDATION AND TESTING REQUIRED
-def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature, short_context):
+def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, bench_spec, init_context, supp_context, temperature, short_context):
     # Each worker has its own Handler instance.
     handler = Handler()
-    handler.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
+    handler.set_agent(Agent(spath, llm, lang, init_context, supp_context, bench_spec))
     handler.set_comp_iter(comp_limit)
     handler.set_lec_iter(lec_limit)
     handler.set_lec_feedback_limit(lec_limit_feedback)
@@ -42,7 +42,7 @@ def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_li
         if run:
             handler.single_json_run(entry, w_dir, skip_completed, update)
 
-def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, lec_limit: int, lec_limit_feedback: int, top_k: int, skip_completed: bool, skip_successful: bool, update: bool, w_dir: str, use_spec: bool, init_context: bool, supp_context: bool, temperature: float, short_context: bool):
+def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, lec_limit: int, lec_limit_feedback: int, top_k: int, skip_completed: bool, skip_successful: bool, update: bool, w_dir: str, bench_spec: bool, init_context: bool, supp_context: bool, temperature: float, short_context: bool):
     # Create a multiprocessing manager to manage shared state
     manager      = multiprocessing.Manager()
 
@@ -55,7 +55,7 @@ def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, le
     processes    = []
     # Create and start multiprocessing workers
     for _ in range(multiprocessing.cpu_count()):
-        p = multiprocessing.Process(target=worker, args=(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature, short_context))
+        p = multiprocessing.Process(target=worker, args=(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, bench_spec, init_context, supp_context, temperature, short_context))
         processes.append(p)
         p.start()
 
@@ -68,12 +68,15 @@ def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, le
 
 @click.option('--llm', type=str, default="gpt-3.5-turbo-0613", help='LLM model. Use --list_models to list models.')
 @click.option('--lang', type=click.Choice(['Verilog', 'Chisel', 'PyRTL', 'DSLX'], case_sensitive=False), default="Verilog", help='Language for code generation. It can only be "Verilog", "Chisel", "PyRTL", or "DSLX".')
-@click.option('--use_spec', is_flag=True, default=False, help='Create and use a spec when using benchmarking.')
 @click.option('--parallel', is_flag=True, default=False, help='Parallelize hdlagent.')
 
 @click.option('--bench', type=str, default=None, help='Path to the json file for benchmarking.')
 @click.option('--bench_limit', type=int, default=-1, help='Allows to specify the number of tests to run in the benchmark json file.')
 @click.option('--bench_from', type=str, default=None, help='Allows to specify from which entry to try in the benchmark json file.')
+@click.option('--bench_spec', is_flag=True, default=False, help='Create and use a spec when using benchmarking.')
+
+@click.option('--gen_spec', type=str, default=None, help='Use LLM to convert raw natural-language prompt to generate formal spec file.')
+@click.option('--target_spec', type=str, default=None, help='Triggers an RTL generation run given a target spec')
 
 @click.option('--w_dir', type=str, default="./", help='Working dir to generate resource and log files.')
 @click.option('--comp_limit', type=int, default=4, help='The amount of LLM attempts, max iterations = (top_k * lec_limit * comp_limit).')
@@ -92,7 +95,7 @@ def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, le
 
 @click.argument('files', nargs=-1, type=click.Path())
 @click.pass_context
-def process_args(ctx, list_models:bool, llm:str, lang:str, use_spec:bool, parallel:bool, bench:str, bench_limit:int, bench_from:str, w_dir:str, comp_limit:int, lec_limit:int, lec_limit_feedback:int, top_k: int, temperature:float, init_context:bool, supp_context:bool, skip_completed: bool, skip_successful: bool, update: bool, short_context: bool, files):
+def process_args(ctx, list_models:bool, llm:str, lang:str, parallel:bool, bench:str, bench_limit:int, bench_from:str, bench_spec:bool, gen_spec:str, target_spec:str, w_dir:str, comp_limit:int, lec_limit:int, lec_limit_feedback:int, top_k: int, temperature:float, init_context:bool, supp_context:bool, skip_completed: bool, skip_successful: bool, update: bool, short_context: bool, files):
     if list_models:
         if "OPENAI_API_KEY" in os.environ:
             models = agent.list_openai_models()
@@ -123,22 +126,33 @@ def process_args(ctx, list_models:bool, llm:str, lang:str, use_spec:bool, parall
                 print(" ", m)
             print("\n")
 
-    elif (bench is not None):
+    elif bench is not None:
         spath      = resources.files('resources')
         json_data  = handler.set_json_bounds(handler.check_json(bench), bench_limit, bench_from)
 
         if skip_completed and update:
             print("Error: cannot invoke --skip_completed and --update at the same time, exiting...")
             exit()
+        if gen_spec is not None:
+            print("Error: cannot invoke --bench and --gen_spec at the same time, exiting...")
+            exit()
+        if target_spec is not None:
+            print("Error: cannot invoke --bench and --target_spec at the same time, exiting...")
+            exit()
         if (parallel):
-            parallel_run(spath, llm, lang, json_data, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature, short_context)
+            parallel_run(spath, llm, lang, json_data, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, bench_spec, init_context, supp_context, temperature, short_context)
         else:
             my_handler = Handler()
             my_handler.set_comp_iter(comp_limit)
             my_handler.set_lec_iter(lec_limit)
             my_handler.set_lec_feedback_limit(lec_limit_feedback)
             my_handler.set_k(top_k)
-            my_handler.sequential_entrypoint(spath, llm, lang, json_data, skip_completed, skip_successful, update, w_dir, use_spec, init_context, supp_context, temperature, short_context)
+            my_handler.sequential_entrypoint(spath, llm, lang, json_data, skip_completed, skip_successful, update, w_dir, bench_spec, gen_spec, target_spec, init_context, supp_context, temperature, short_context)
+    elif (gen_spec is not None) or (target_spec is not None):
+            spath      = resources.files('resources')
+            my_handler = Handler()
+            my_handler.set_comp_iter(comp_limit)
+            my_handler.sequential_entrypoint(spath, llm, lang, None, skip_completed, skip_successful, update, w_dir, bench_spec, gen_spec, target_spec, init_context, supp_context, temperature, short_context)
     else:
         print(ctx.get_help())
         for f in files:

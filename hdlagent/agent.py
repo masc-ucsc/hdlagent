@@ -366,12 +366,16 @@ class Agent:
     # loop (if applicable). Sets interface and module name.
     #
     # Intended use: before a generation/lec loop is started so the prompt can be reformatted and formalized
-    def read_spec(self):
-        if self.spec is None:
+    def read_spec(self, target_spec: str = None):
+        if target_spec is None:
+            target_spec = self.spec
+
+        if target_spec is None:
             print("Error: attempting to read spec in a run where it is not employed, exiting...")
             exit()
-        with open(self.spec, 'r') as file:
+        with open(target_spec, 'r') as file:
             spec = yaml.safe_load(file)
+
         if 'description' not in spec:
             print(f"Error: valid yaml 'description' key not found in {self.spec} file, exiting...")
             exit()
@@ -815,7 +819,7 @@ class Agent:
     # supplemental context if enabled
     #
     # Intended use: inside of the lec loop
-    def code_compilation_loop(self, prompt: str, lec_iteration: int, iterations: int = 1):
+    def code_compilation_loop(self, prompt: str, lec_iteration: int = 0, iterations: int = 1):
         if lec_iteration == 0:
             current_query = self.get_compile_initial_instruction(prompt)
         else:
@@ -828,6 +832,24 @@ class Agent:
             else:
                 return True, ""
         return False, compile_out
+
+    # Control wrapper for code_compilation_loop(), user-controlled RTL generation
+    # defined by a spec in a target language. Generates the code for a single module.
+    #
+    # Intended use: user facing RTL generation
+    def spec_run_loop(self, prompt: str, iterations: int = 1):
+        self.reset_conversations()
+        self.reset_perf_counters()
+
+        compiled, failure_reason = self.code_compilation_loop(prompt, 0, iterations)
+        if compiled:
+            self.success_message(self.compile_history_log)
+        else:
+            self.dump_failure(failure_reason, self.compile_history_log)
+
+        self.dump_compile_conversation()
+        self.reset_conversations()
+        return compiled
 
     # Rolls back the conversation to the LLM codeblock response which failed the least amount of
     # testcases. This is to avoid regression and save on context token usage.
@@ -942,7 +964,6 @@ class Agent:
         if self.used_init_context:
             md_content += "**System:** Initial contexts were appended to this conversation\n\n"
             start_idx   = len(self.initial_contexts)
-        #md_content += self.format_conversation(self.compile_conversation, start_idx)
         md_content += self.format_conversation(self.compile_history_log, 0)
         md_content += self.report_statistics()
         os.makedirs(os.path.dirname(self.compile_log), exist_ok=True)
