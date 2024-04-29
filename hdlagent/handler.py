@@ -193,20 +193,41 @@ class Handler:
             if run:
                 self.single_json_run(entry, base_w_dir, skip_completed, update)
 
-    #def generate_spec()
+    # If the user does not wish to create their own spec, but has an
+    # informal definition of their desired behavior in a text file,
+    # this will use an LLM to create a formatted spec to be used for RTL
+    # generation.
+    #
+    # Intended use: format and formalize desired circuit into spec file
+    def generate_spec_from_ref(self, reference: str):
+        if not os.path.exists(reference):
+            print("Error: {reference} not found, exiting...")
+            exit()
+        with open (reference, 'r') as f:
+            self.agent.generate_spec(f.read())                                  # may get more complex once nested modules are introduced
 
     # Typical user run, where a 'spec' must exist, to formally define
     # the interface and desired behavior of the target circuit.
-    #def spec_run()
+    def spec_run(self, target_spec: str, iterations: int):
+        if not os.path.exists(target_spec):
+            print("Error: {target_spec} not found, exiting...")
+            exit()
+        prompt = self.agent.read_spec(target_spec)                              # sets name internally
+        self.agent.set_w_dir(os.path.join(self.agent.w_dir, self.agent.name))   # depends on name being set
+        self.agent.spec_run_loop(prompt, iterations)
 
-    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_data: dict = None, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', use_spec: bool = False, init_context: bool = False, supp_context: bool = False, temperature: float = None, short_context: bool = False):
+    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_data: dict = None, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', bench_spec: bool = False, gen_spec: str = None, target_spec: str = None, init_context: bool = False, supp_context: bool = False, temperature: float = None, short_context: bool = False):
+        use_spec = bench_spec or (gen_spec is not None) or (target_spec is not None)
         self.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
         self.agent.set_w_dir(w_dir)
         self.agent.set_model_temp(temperature)
         if short_context:
             self.agent.set_short_context
+
         if json_data is not None:
             self.json_run(json_data, skip_completed, skip_successful, update)
         else:
-            pass
-            # spec_run
+            if gen_spec is not None:
+                self.generate_spec_from_ref(gen_spec)
+            if target_spec is not None:
+                self.spec_run(target_spec, self.comp_iter)
