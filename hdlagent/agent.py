@@ -323,6 +323,12 @@ class Agent:
         self.interface += ");"
         self.interface = self.interface.replace('  ', ' ')
 
+    # Resolves and returns w_dir as absolute path
+    #
+    # Intended use: read of w_dir
+    def get_w_dir(self):
+        return self.w_dir.resolve()
+
     # Creates and registers the 'working directory' for the current run as
     # so all output from the run including logs and produced source code
     # are left in this directory when the run is complete
@@ -334,7 +340,7 @@ class Agent:
         if directory:
             os.makedirs(directory, exist_ok=True)
         self.w_dir = directory
-        self.update_paths()
+        self.update_paths(spec_path)
 
     # Helper function to others that may change or set file names and paths.
     # Keeps all file pointers up to date

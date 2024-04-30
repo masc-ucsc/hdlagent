@@ -1,3 +1,4 @@
+from pathlib import Path
 from agent import Agent
 import json
 import os
@@ -204,7 +205,7 @@ class Handler:
             print("Error: {reference} not found, exiting...")
             exit()
         with open (reference, 'r') as f:
-            self.agent.generate_spec(f.read())                                  # may get more complex once nested modules are introduced
+            self.agent.generate_spec(f.read())                                          # may get more complex once nested modules are introduced
 
     # Typical user run, where a 'spec' must exist, to formally define
     # the interface and desired behavior of the target circuit.
@@ -212,8 +213,12 @@ class Handler:
         if not os.path.exists(target_spec):
             print("Error: {target_spec} not found, exiting...")
             exit()
-        prompt = self.agent.read_spec(target_spec)                              # sets name internally
-        self.agent.set_w_dir(os.path.join(self.agent.w_dir, self.agent.name))   # depends on name being set
+
+        base_w_dir = self.agent.get_w_dir()                                             # auto-set w_dir to spec parent dir when unspecified
+        if base_w_dir == Path('./').resolve():
+            base_w_dir = os.path.dirname(os.path.abspath(target_spec))
+        prompt = self.agent.read_spec(target_spec)                                      # sets name internally
+        self.agent.set_w_dir(os.path.join(base_w_dir, self.agent.name), target_spec)    # depends on name being set
         self.agent.spec_run_loop(prompt, iterations)
 
     def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_data: dict = None, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', bench_spec: bool = False, gen_spec: str = None, target_spec: str = None, init_context: bool = False, supp_context: bool = False, temperature: float = None, short_context: bool = False):
