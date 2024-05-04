@@ -96,6 +96,8 @@ def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, le
 @click.argument('files', nargs=-1, type=click.Path())
 @click.pass_context
 def process_args(ctx, list_models:bool, llm:str, lang:str, parallel:bool, bench:str, bench_limit:int, bench_from:str, bench_spec:bool, gen_spec:str, target_spec:str, w_dir:str, comp_limit:int, lec_limit:int, lec_limit_feedback:int, top_k: int, temperature:float, init_context:bool, supp_context:bool, skip_completed: bool, skip_successful: bool, update: bool, short_context: bool, files):
+    llms = [llm]
+
     if list_models:
         if "OPENAI_API_KEY" in os.environ:
             models = agent.list_openai_models()
@@ -140,19 +142,19 @@ def process_args(ctx, list_models:bool, llm:str, lang:str, parallel:bool, bench:
             print("Error: cannot invoke --bench and --target_spec at the same time, exiting...")
             exit()
         if (parallel):
-            parallel_run(spath, llm, lang, json_data, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, bench_spec, init_context, supp_context, temperature, short_context)
+            parallel_run(spath, llms[0], lang, json_data, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, bench_spec, init_context, supp_context, temperature, short_context)
         else:
             my_handler = Handler()
             my_handler.set_comp_iter(comp_limit)
             my_handler.set_lec_iter(lec_limit)
             my_handler.set_lec_feedback_limit(lec_limit_feedback)
             my_handler.set_k(top_k)
-            my_handler.sequential_entrypoint(spath, llm, lang, json_data, skip_completed, skip_successful, update, w_dir, bench_spec, gen_spec, target_spec, init_context, supp_context, temperature, short_context)
+            my_handler.sequential_entrypoint(spath, llms, lang, json_data, skip_completed, skip_successful, update, w_dir, bench_spec, gen_spec, target_spec, init_context, supp_context, temperature, short_context)
     elif (gen_spec is not None) or (target_spec is not None):
             spath      = resources.files('resources')
             my_handler = Handler()
             my_handler.set_comp_iter(comp_limit)
-            my_handler.sequential_entrypoint(spath, llm, lang, None, skip_completed, skip_successful, update, w_dir, bench_spec, gen_spec, target_spec, init_context, supp_context, temperature, short_context)
+            my_handler.sequential_entrypoint(spath, llms, lang, None, skip_completed, skip_successful, update, w_dir, bench_spec, gen_spec, target_spec, init_context, supp_context, temperature, short_context)
     else:
         print(ctx.get_help())
         for f in files:

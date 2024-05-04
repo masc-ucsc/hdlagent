@@ -17,6 +17,13 @@ from hdlang import get_hdlang
 
 from importlib import resources
 
+from enum import Enum
+
+class Role(Enum):
+    INVALID     = 0
+    DESIGN      = 1
+    VALIDATION  = 2
+
 def list_openai_models(warn: bool = True):
     if "OPENAI_API_KEY" in os.environ:
         response = openai.models.list()
@@ -124,8 +131,8 @@ class Agent:
                 file = os.path.join(self.script_dir, lang, context)
                 self.initial_contexts.extend(md_to_convo(file))
 
-        #print("INITIAL CONTEXT:")
-        #print(self.initial_contexts)
+        # For multi-model modes, set Role to determine functionality
+        self.role = Role.INVALID
 
         # Supplemental contexts are loaded from yaml file, dictionary of {error: suggestion} pairs
         self.used_supp_context     = use_supp_context
@@ -182,7 +189,7 @@ class Agent:
             print("Please set either OPENAI_API_KEY or OCTOAI_TOKEN or PROJECT_ID environment variable(s) before continuing, exiting...")
             exit()
         if self.chat_completion is None:
-            print("Error: invalid model, please check --list_models for available LLM selection, exiting...")
+            print(f"Error: {model} is an invalid model, please check --list_models for available LLM selection, exiting...")
             exit()
         self.model = model
         self.temp  = None
@@ -225,6 +232,12 @@ class Agent:
         self.verilog     = "out.v"
         self.tb          = "./tests/tb.v"
         self.gold        = None
+
+    # Sets the role of the Agent and it's LLM for the given Handler set task
+    #
+    # Intended use: multi-LLM workflow
+    def set_role(self, role: Role):
+        self.role = role
 
     # Sets 'short_context' operational mode where only the last response is
     # maintained in the conversational history, useful for short context
@@ -1002,5 +1015,5 @@ class Agent:
 
     def report_statistics(self):
         self.world_clock_time = time.time() - self.world_clock_time
-        stats = f"\nRESULTS : {self.name} : {self.comp_n} : {self.comp_f} : {self.lec_n} : {self.lec_f} : {self.top_k} : {self.prompt_tokens} : {self.completion_tokens} : {self.world_clock_time} : {self.llm_query_time}"
+        stats = f"\nRESULTS : {self.model} : {self.name} : {self.comp_n} : {self.comp_f} : {self.lec_n} : {self.lec_f} : {self.top_k} : {self.prompt_tokens} : {self.completion_tokens} : {self.world_clock_time} : {self.llm_query_time}"
         return stats
