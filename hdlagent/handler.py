@@ -1,5 +1,5 @@
 from pathlib import Path
-from agent import Agent
+from agent import Agent, Role
 import json
 import os
 
@@ -38,8 +38,8 @@ def set_json_bounds(json_data: dict, limit: int = -1, start_from: str = None):
     return data[start_idx: limit]
 
 class Handler:
-    def __init__(self, agent: Agent = None):
-        self.agent = agent
+    def __init__(self):
+        self.agents             = []
 
         self.comp_iter          = 4
         self.lec_iter           = 1
@@ -49,11 +49,11 @@ class Handler:
 
         self.id                 = None
 
-    # Assign one agent to handler
+    # Assign a new agent to handler
     #
-    # Intended use: Initialization of Handler
-    def set_agent(self, agent: Agent):
-        self.agent = agent
+    # Intended use: arbitration of Agents
+    def add_agent(self, agent: Agent):
+        self.agents.append(agent)
 
     # Parallel processing Handler enumeration
     #
@@ -106,6 +106,21 @@ class Handler:
     def set_lec_feedback_limit(self, n: int):
         self.lec_feedback_limit = n
 
+    # Creates and adds each Agent to the Handlers list, assigning respective roles
+    #
+    # Intended use: setup before doing any runs
+    def create_agents(self, spath, llms, lang, init_context, supp_context, use_spec, w_dir, temperature, short_context):
+        role = Role.DESIGN
+        for llm in llms:
+            new_agent = Agent(spath, llm, lang, init_context, supp_context, use_spec)
+            new_agent.set_w_dir(w_dir)
+            new_agent.set_model_temp(temperature)
+            new_agent.set_role(role)
+            if short_context:
+                new_agent.set_short_context
+            self.add_agent(new_agent)
+            role = Role.VALIDATION          # Default only one LLM can be generate the RTL
+
     # Reads the compile log file of the entry, returns the relevant results in a dictionary
     #
     # Intended use: for checking the status of previous runs
@@ -153,32 +168,33 @@ class Handler:
     #
     # Indended use: benchmarking LLMs
     def single_json_run(self, entry: dict, base_w_dir, skip_completed, update):
-            self.agent.reset_k()
-            self.agent.set_interface(entry['interface'])
-            self.agent.set_pipeline_stages(int(entry['pipeline_stages']))
-            self.agent.set_w_dir(os.path.join(base_w_dir, self.agent.name))
+            agent = self.agents[0]
+            agent.reset_k()
+            agent.set_interface(entry['interface'])
+            agent.set_pipeline_stages(int(entry['pipeline_stages']))
+            agent.set_w_dir(os.path.join(base_w_dir, agent.name))
 
             prompt = entry['instruction']
-            if self.agent.spec is not None:
-                if not self.agent.spec_exists():
-                    self.agent.generate_spec(prompt)
-                prompt = self.agent.read_spec()
+            if agent.spec is not None:
+                if not agent.spec_exists():
+                    agent.generate_spec(prompt)
+                prompt = agent.read_spec()
 
-            self.agent.dump_gold(entry['response'])
+            agent.dump_gold(entry['response'])
             pass_k = self.top_k
             if skip_completed:
                 results = self.get_results(entry, base_w_dir)
                 if results is not None:
                     pass_k -= results['top_k']
-                    self.agent.set_k(results['top_k'] + 1)
+                    agent.set_k(results['top_k'] + 1)
 
             for _ in range(pass_k):
                 successful   = self.check_success(entry, base_w_dir)
                 completed    = self.check_completion(entry, base_w_dir)
                 update_entry = completed and (not successful) and update
-                if self.agent.lec_loop(prompt, self.lec_iter, self.lec_feedback_limit, self.comp_iter, update_entry):
+                if agent.lec_loop(prompt, self.lec_iter, self.lec_feedback_limit, self.comp_iter, update_entry):
                     break
-                self.agent.incr_k()
+                agent.incr_k()
 
 
     # Wrapper around single_json_run(), keeps track of individual problems' statuses.
@@ -186,7 +202,12 @@ class Handler:
     #
     # Intended use: benchmarking LLMs
     def json_run(self, json_data: dict, skip_completed: bool = False, skip_successful: bool = False, update: bool = False):
-        base_w_dir = self.agent.w_dir
+        num_agents = len(self.agents)
+        if num_agents > 1:
+            print(f"Error: found {num_agents} LLMs specified, only 1 allowed for benchmarking, exiting...")
+            exit()
+
+        base_w_dir = self.agents[0].w_dir
         for entry in json_data:
             successful   = self.check_success(entry, base_w_dir)
             completed    = self.check_completion(entry, base_w_dir)
@@ -202,16 +223,21 @@ class Handler:
     # Intended use: format and formalize desired circuit into spec file
     def generate_spec_from_ref(self, reference: str):
         if not os.path.exists(reference):
-            print("Error: {reference} not found, exiting...")
+            print(f"Error: {reference} not found, exiting...")
             exit()
+        num_agents = len(self.agents)
+        if num_agents > 1:
+            print(f"Error: found {num_agents} LLMs specified, only 1 allowed for spec generation, exiting...")
+            exit()
+
         with open (reference, 'r') as f:
-            self.agent.generate_spec(f.read())                                          # may get more complex once nested modules are introduced
+            self.agents[0].generate_spec(f.read())                                          # may get more complex once nested modules are introduced
 
     # Typical user run, where a 'spec' must exist, to formally define
     # the interface and desired behavior of the target circuit.
     def spec_run(self, target_spec: str, iterations: int):
         if not os.path.exists(target_spec):
-            print("Error: {target_spec} not found, exiting...")
+            print(f"Error: {target_spec} not found, exiting...")
             exit()
 
         base_w_dir = self.agent.get_w_dir()                                             # auto-set w_dir to spec parent dir when unspecified
@@ -221,13 +247,9 @@ class Handler:
         self.agent.set_w_dir(os.path.join(base_w_dir, self.agent.name), target_spec)    # depends on name being set
         self.agent.spec_run_loop(prompt, iterations)
 
-    def sequential_entrypoint(self, spath: str, llm: str, lang: str, json_data: dict = None, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', bench_spec: bool = False, gen_spec: str = None, target_spec: str = None, init_context: bool = False, supp_context: bool = False, temperature: float = None, short_context: bool = False):
+    def sequential_entrypoint(self, spath: str, llms: list, lang: str, json_data: dict = None, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', bench_spec: bool = False, gen_spec: str = None, target_spec: str = None, init_context: bool = False, supp_context: bool = False, temperature: float = None, short_context: bool = False):
         use_spec = bench_spec or (gen_spec is not None) or (target_spec is not None)
-        self.set_agent(Agent(spath, llm, lang, init_context, supp_context, use_spec))
-        self.agent.set_w_dir(w_dir)
-        self.agent.set_model_temp(temperature)
-        if short_context:
-            self.agent.set_short_context
+        self.create_agents(spath, llms, lang, init_context, supp_context, use_spec, w_dir, temperature, short_context)
 
         if json_data is not None:
             self.json_run(json_data, skip_completed, skip_successful, update)
