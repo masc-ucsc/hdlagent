@@ -10,6 +10,7 @@ import multiprocessing
 import os
 from agent import Agent
 from pathlib import Path
+import yaml
 
 
 # WARNING: FEATURES BELOW ARE EXPERIMENTAL - FURTHER VALIDATION AND TESTING REQUIRED
@@ -63,8 +64,20 @@ def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, le
     for p in processes:
         p.join()
 
+def load_config(ctx, param, value):
+    # Loads configuration settings from a YAML file and updates the context defaults
+    if value is not None:
+        with open(value, 'r') as f:
+            data = yaml.safe_load(f)
+        # Override default values with values from the config file
+        for param in ctx.command.params:
+            if param.name in data:
+                param.default = data[param.name]
+    return value
+
 @click.command()
 @click.option('--list_models', is_flag=True, default=False, help='List all available models (OpenAI, OctoAI, VertexAI), some may have too short context.')
+@click.option('--config', type=click.Path(exists=True), callback=load_config, expose_value=False, is_eager=True, help='Path to a configuration YAML file.')
 
 @click.option('--llm', type=str, default="gpt-3.5-turbo-0613", help='LLM model. Use --list_models to list models.')
 @click.option('--lang', type=click.Choice(['Verilog', 'Chisel', 'PyRTL', 'DSLX'], case_sensitive=False), default="Verilog", help='Language for code generation. It can only be "Verilog", "Chisel", "PyRTL", or "DSLX".')
