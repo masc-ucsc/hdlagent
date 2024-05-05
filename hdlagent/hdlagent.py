@@ -73,13 +73,16 @@ def load_config(ctx, param, value):
         for param in ctx.command.params:
             if param.name in data:
                 param.default = data[param.name]
+        ctx.ensure_object(dict)
+        ctx.obj.update(data)
     return value
+
 
 @click.command()
 @click.option('--list_models', is_flag=True, default=False, help='List all available models (OpenAI, OctoAI, VertexAI), some may have too short context.')
 @click.option('--config', type=click.Path(exists=True), callback=load_config, expose_value=False, is_eager=True, help='Path to a configuration YAML file.')
 
-@click.option('--llm', type=str, default="gpt-3.5-turbo-0613", help='LLM model. Use --list_models to list models.')
+@click.option('--llm', type=str, multiple=True, default=["gpt-3.5-turbo-0613"], help='Specify one of more LLM models. Use --list_models to list models.')
 @click.option('--lang', type=click.Choice(['Verilog', 'Chisel', 'PyRTL', 'DSLX'], case_sensitive=False), default="Verilog", help='Language for code generation. It can only be "Verilog", "Chisel", "PyRTL", or "DSLX".')
 @click.option('--parallel', is_flag=True, default=False, help='Parallelize hdlagent.')
 
@@ -108,8 +111,12 @@ def load_config(ctx, param, value):
 
 @click.argument('files', nargs=-1, type=click.Path())
 @click.pass_context
-def process_args(ctx, list_models:bool, llm:str, lang:str, parallel:bool, bench:str, bench_limit:int, bench_from:str, bench_spec:bool, gen_spec:str, target_spec:str, w_dir:str, comp_limit:int, lec_limit:int, lec_limit_feedback:int, top_k: int, temperature:float, init_context:bool, supp_context:bool, skip_completed: bool, skip_successful: bool, update: bool, short_context: bool, files):
-    llms = [llm]
+def process_args(ctx, list_models:bool, llm, lang:str, parallel:bool, bench:str, bench_limit:int, bench_from:str, bench_spec:bool, gen_spec:str, target_spec:str, w_dir:str, comp_limit:int, lec_limit:int, lec_limit_feedback:int, top_k: int, temperature:float, init_context:bool, supp_context:bool, skip_completed: bool, skip_successful: bool, update: bool, short_context: bool, files):
+    ctx.ensure_object(dict)
+    llm = ctx.obj.get('llm', llm)
+    if isinstance(llm, str):
+        llm = [llm]
+    print(llm)
 
     if list_models:
         if "OPENAI_API_KEY" in os.environ:
@@ -155,19 +162,19 @@ def process_args(ctx, list_models:bool, llm:str, lang:str, parallel:bool, bench:
             print("Error: cannot invoke --bench and --target_spec at the same time, exiting...")
             exit()
         if (parallel):
-            parallel_run(spath, llms[0], lang, json_data, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, bench_spec, init_context, supp_context, temperature, short_context)
+            parallel_run(spath, llm[0], lang, json_data, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, bench_spec, init_context, supp_context, temperature, short_context)
         else:
             my_handler = Handler()
             my_handler.set_comp_iter(comp_limit)
             my_handler.set_lec_iter(lec_limit)
             my_handler.set_lec_feedback_limit(lec_limit_feedback)
             my_handler.set_k(top_k)
-            my_handler.sequential_entrypoint(spath, llms, lang, json_data, skip_completed, skip_successful, update, w_dir, bench_spec, gen_spec, target_spec, init_context, supp_context, temperature, short_context)
+            my_handler.sequential_entrypoint(spath, llm, lang, json_data, skip_completed, skip_successful, update, w_dir, bench_spec, gen_spec, target_spec, init_context, supp_context, temperature, short_context)
     elif (gen_spec is not None) or (target_spec is not None):
             spath      = resources.files('resources')
             my_handler = Handler()
             my_handler.set_comp_iter(comp_limit)
-            my_handler.sequential_entrypoint(spath, llms, lang, None, skip_completed, skip_successful, update, w_dir, bench_spec, gen_spec, target_spec, init_context, supp_context, temperature, short_context)
+            my_handler.sequential_entrypoint(spath, llm, lang, None, skip_completed, skip_successful, update, w_dir, bench_spec, gen_spec, target_spec, init_context, supp_context, temperature, short_context)
     else:
         print(ctx.get_help())
         for f in files:
