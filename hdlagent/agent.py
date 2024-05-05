@@ -368,8 +368,8 @@ class Agent:
             if spec_path is not None:   # XXX - partition spec_path contents into submodules, when nested
                 with open (spec_path, 'r') as path:
                     contents = path.read()
-                    with open (self.spec, 'w') as file:
-                        file.write(contents)
+                    with open (self.spec, 'w') as file:     # this spec can be used in-place, produces no copy
+                        file.write(contents + "\nin_directory: True")
         self.code         = os.path.join(self.w_dir, self.name + self.file_ext)
         self.verilog      = os.path.join(self.w_dir, self.name + ".v")
         self.tb           = os.path.join(self.w_dir, "tests", self.name + "_tb.v")
@@ -380,9 +380,23 @@ class Agent:
     def spec_exists(self):
         return os.path.exists(self.spec)
 
+    # Helper function that maintains a copy of the spec within the w_dir.
+    #
+    # Intended use: within read_spec()
+    def resolve_spec_path(self, target_spec: str, in_directory: bool):
+        w_dir = self.get_w_dir()            # auto-set w_dir to spec parent dir when unspecified
+        if w_dir == Path('./').resolve():
+            w_dir = os.path.dirname(os.path.abspath(target_spec))
+
+        if in_directory:                    # w_dir is parent dir of spec
+            self.set_w_dir(w_dir)
+        else:                               # w_dir is set to child dir next to spec
+            self.set_w_dir(os.path.join(w_dir, self.agent.name), target_spec)
+        
     # Helper function that extracts and reformats information from spec yaml file
     # to create initial prompt(s) for compilation loop and testbench
-    # loop (if applicable). Sets interface and module name.
+    # loop (if applicable). Sets interface and module name, and copies spec to 
+    # w_dir if necessary.
     #
     # Intended use: before a generation/lec loop is started so the prompt can be reformatted and formalized
     def read_spec(self, target_spec: str = None):
@@ -395,6 +409,7 @@ class Agent:
         with open(target_spec, 'r') as file:
             spec = yaml.safe_load(file)
 
+        self.resolve_spec_path(target_spec, spec.get('in_directory') is True)
         if 'description' not in spec:
             print(f"Error: valid yaml 'description' key not found in {self.spec} file, exiting...")
             exit()
