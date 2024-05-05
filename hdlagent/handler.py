@@ -132,7 +132,7 @@ class Handler:
                     pass
 
             parts = last_line.strip().split(':')
-            _, _, comp_n, comp_f, lec_n, lec_f, top_k, _, _, _, _ = [int(part.strip()) if part.strip().isdigit() else part for part in parts]
+            _, _, _, comp_n, comp_f, lec_n, lec_f, top_k, _, _, _, _ = [int(part.strip()) if part.strip().isdigit() else part for part in parts]
             res_dict = {}
             res_dict['comp_n'] = comp_n
             res_dict['comp_f'] = comp_f
