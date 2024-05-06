@@ -11,7 +11,7 @@ iverilog -g2005-sv -o $isim_exe $tb $filename
 
 if [ -e $isim_exe ]; then
     # Run the binary
-    ./$isim_exe | tee $isim_log
+    ./$isim_exe | awk '/ERROR/{print; getline; print}';
 
     # Delete the binary
     rm -f $isim_exe

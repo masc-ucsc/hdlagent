@@ -235,13 +235,25 @@ class Handler:
 
     # Typical user run, where a 'spec' must exist, to formally define
     # the interface and desired behavior of the target circuit.
+    # Additional Agents may be used to testbench the generated RTL
+    #
+    # Intended use: user-facing code and test generation
     def spec_run(self, target_spec: str, iterations: int):
         if not os.path.exists(target_spec):
             print(f"Error: {target_spec} not found, exiting...")
             exit()
 
-        prompt = self.agents[0].read_spec(target_spec)  # sets name internally
-        self.agents[0].spec_run_loop(prompt, iterations)
+        #compiled: bool
+        #for agent in self.agents:
+        #    prompt = agent.read_spec(target_spec)   # sets name and w_dir internally
+        #    if agent.role == Role.DESIGN:           # generate the RTL
+        #        compiled = agent.spec_run_loop(prompt, iterations)
+
+        #if compiled:
+        for agent in self.agents:
+            prompt = agent.read_spec(target_spec)   # sets name and w_dir internally
+            if agent.role == Role.VALIDATION:
+                agent.tb_loop(prompt)
 
     def sequential_entrypoint(self, spath: str, llms: list, lang: str, json_data: dict = None, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', bench_spec: bool = False, gen_spec: str = None, target_spec: str = None, init_context: bool = False, supp_context: bool = False, temperature: float = None, short_context: bool = False):
         use_spec = bench_spec or (gen_spec is not None) or (target_spec is not None)
