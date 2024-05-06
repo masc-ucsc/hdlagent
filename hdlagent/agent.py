@@ -362,6 +362,7 @@ class Agent:
     def update_paths(self, spec_path: str = None):
         self.compile_log  = os.path.join(self.w_dir, "logs", self.name + "_compile_log.md")
         self.fail_log     = os.path.join(self.w_dir, "logs", self.name + "_fail.md")
+        self.tb_log       = os.path.join(self.w_dir, "logs", f"{self.name}_{self.model}_tb_log.md")
         if self.spec is not None:
             self.spec_log = os.path.join(self.w_dir, "logs", self.name + "_spec_log.md")
             self.spec     = os.path.join(self.w_dir, self.name + "_spec.yaml")
@@ -372,7 +373,7 @@ class Agent:
                         file.write(contents + "\nin_directory: True")
         self.code         = os.path.join(self.w_dir, self.name + self.file_ext)
         self.verilog      = os.path.join(self.w_dir, self.name + ".v")
-        self.tb           = os.path.join(self.w_dir, "tests", self.name + "_tb.v")
+        self.tb           = os.path.join(self.w_dir, "tests", f"{self.name}_{self.model}_tb.v")
 
     # Helper function to check if the spec exists or not
     #
@@ -749,9 +750,9 @@ class Agent:
             gold = self.gold
         if gate is None:
             gate = self.verilog
-        script    = self.lec_script + " " + gold + " " + gate
-        res       = subprocess.run([script], capture_output=True, shell=True)
-        res_string = (str(res.stdout))[2:-1].replace("\\n","\n")
+        script      = self.lec_script + " " + gold + " " + gate
+        res         = subprocess.run([script], capture_output=True, shell=True)
+        res_string  = (str(res.stdout))[2:-1].replace("\\n","\n")
         self.lec_n += 1
         if "SUCCESS" not in res_string:
             self.lec_f += 1
@@ -763,13 +764,14 @@ class Agent:
     #
     # Intended use: compile new tb response from LLM that was dumped to file
     def test_tb_compile(self):
-        script  = self.tb_compile_script + " " + self.tb + " " + self.verilog
-        res     = subprocess.run([script], capture_output=True, shell=True)
+        script     = self.tb_compile_script + " " + self.tb + " " + self.verilog
+        res        = subprocess.run([script], capture_output=True, shell=True)
+        res_string = (str(res.stderr)).replace("\\n","\n")
         # This should probably be its own function chosen by yaml file, if we stop using iverilog
-        if "syntax error" in res:
-            return res.split('\n')[0]
-        elif "error" in res:
-            return res
+        if "syntax error" in res_string:
+            return res_string.split('\n')[0]
+        elif "error" in res_string:
+            return res_string
         return None
 
     # Creates Icarus Verilog testbench then executes it, carrying through the output
@@ -780,9 +782,10 @@ class Agent:
         script     = self.tb_script + " " + self.verilog + " " + self.tb
         res        = subprocess.run([script], capture_output=True, shell=True)
         res_string = (str(res.stdout))[2:-1].replace("\\n","\n")
-        #self.lec_n += 1 # is this how we want to do it?
+        print(res_string)
+        self.lec_n += 1
         if ("error" in res_string) or ("ERROR" in res_string):   # iverilog compile error
-            #self.lec_f += 1
+            self.lec_f += 1
             return res_string
         return None
 
@@ -816,7 +819,7 @@ class Agent:
     def tb_compilation_loop(self, prompt: str, iterations: int = 2):
         current_query = self.get_tb_initial_instruction(prompt)
         for _ in range(iterations):
-            self.dump_codeblock(self.query_model(self.tb_conversation, current_query), self.tb)
+            self.dump_codeblock(self.query_model(self.tb_conversation, current_query, True), self.tb)
             compile_out = self.test_tb_compile()
             if compile_out is not None:
                 current_query = self.get_compile_tb_iteration_instruction(compile_out)
@@ -828,24 +831,36 @@ class Agent:
     # the tb and the RTL compiled, and runs them against one another
     #
     # Intended use: inside of lec loop, or to bootstrap a design verification
-    def tb_loop(self, prompt: str, compile_iterations: int, iterations: int = 1):
+    def tb_loop(self, prompt: str, iterations: int = 1):
+        if not os.path.exists(self.verilog):
+            print(f"Error: attempting to run testbenching loop on non-existent {self.verilog}, exiting...")
+            exit()
+
         tb_compiled = False     # tb only needs to compile once
         for i in range(iterations):
-            code_compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
-            if code_compiled:
-                if not tb_compiled:
-                    tb_compiled, failure_reason = self.tb_compilation_loop(prompt) # default 2 iterations
+            #code_compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
+            #if code_compiled:
+            if not tb_compiled:
+                tb_compiled, failure_reason = self.tb_compilation_loop(prompt) # default 2 iterations
 
                 if tb_compiled:
                     failure_reason = self.test_tb()
                     if failure_reason is not None:
                         prompt = self.get_tb_iteration_instruction(failure_reason)
                     else:
+                        self.success_message(self.tb_conversation)
+                        self.dump_tb_conversation()
                         return True, ""
                 else:
+                    self.dump_failure(failure_reason, self.tb_conversation)
+                    self.dump_tb_conversation()
                     return False, failure_reason
             else:
+                self.dump_failure(failure_reason, self.tb_conversation)
+                self.dump_tb_conversation()
                 return False, failure_reason
+        self.dump_failure(failure_reason, self.tb_conversation)
+        self.dump_tb_conversation()
         return False, failure_reason
 
     # The "inner loop" of the RTL generation process, attempts to iteratively
@@ -960,18 +975,6 @@ class Agent:
         self.reset_conversations()
         return False
 
-    # Main generation and verification loop for bootstrapping the implementation of RTL blocks.
-    # Inner loop attemps compilations of the target language and the outer loop generates
-    # and runs testbenches from a separate context that verify the behavior of the resulting verilog.
-    def tb_loop(self, prompt: str, tb_iterations: int = 1, compile_iterations: int = 1):
-        self.reset_conversations()
-        self.reset_perf_counters()
-        for i in range(tb_iterations):
-            if self.compilation_loop(prompt, compile_iterations):
-                gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
-                pass
-                # Reformat is free to modify both the gold and the gate
-
     # Helper function that reads and formats an LLM conversation
     # into a Markdown string
     #
@@ -1004,6 +1007,13 @@ class Agent:
         with open(self.compile_log, 'w') as md_file:
             md_file.write(md_content)
 
+    def dump_tb_conversation(self):
+        md_content  = "# Testbench Conversation\n\n"
+        md_content += self.format_conversation(self.tb_conversation)
+        os.makedirs(os.path.dirname(self.tb_log), exist_ok=True)
+        with open(self.tb_log, 'w') as md_file:
+            md_file.write(md_content)
+
     # Writes reason for failure to fail log
     #
     # Intended use: when *_loop fails, mainly for benchmarking
@@ -1015,6 +1025,7 @@ class Agent:
 
     def dump_codeblock(self, text: str, filepath: str):
         isolated_code = text.replace('```','') #self.hdlang.extract_code(text, self.verilog)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, 'w') as file:
             file.write(isolated_code)
 

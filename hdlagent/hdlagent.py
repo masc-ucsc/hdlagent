@@ -116,7 +116,6 @@ def process_args(ctx, list_models:bool, llm, lang:str, parallel:bool, bench:str,
     llm = ctx.obj.get('llm', llm)
     if isinstance(llm, str):
         llm = [llm]
-    print(llm)
 
     if list_models:
         if "OPENAI_API_KEY" in os.environ:

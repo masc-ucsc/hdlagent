@@ -1,0 +1,8 @@
+#! /usr/bin/bash
+filename=$1
+tb=$2
+
+# Compile tb binary, print to stderr
+iverilog -g2005-sv $tb $filename
+
+rm -f a.out;
