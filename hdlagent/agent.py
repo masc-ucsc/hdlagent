@@ -105,7 +105,7 @@ def get_name_from_interface(interface: str):
     exit()
 
 class Agent:
-    def __init__(self, spath: str, model: str, lang: str, use_init_context:bool = False, use_supp_context: bool = False, use_spec: bool = False):
+    def __init__(self, spath: str, model: str, lang: str, init_context_files:list = [], use_supp_context: bool = False, use_spec: bool = False):
 
         self.script_dir = spath
         # Common responses
@@ -123,14 +123,17 @@ class Agent:
         self.responses = config['responses']
         self.responses.update(common['responses'])
 
-        # Pre-loads long initial language context from file(s)
-        self.used_init_context = use_init_context
+        # Pre-loads long initial language context from user supplied and Lang default file(s)
+        self.used_init_context = len(init_context_files) > 0
         self.initial_contexts  = []
-        if use_init_context:
-            for context in config['initial_contexts']:
-                file = os.path.join(self.script_dir, lang, context)
-                self.initial_contexts.extend(md_to_convo(file))
-
+        for init_context_file in init_context_files:
+            if init_context_file == "default":
+                for context in config['initial_contexts']:
+                    file = os.path.join(self.script_dir, lang, context)
+                    self.initial_contexts.extend(md_to_convo(file))
+            else:
+                self.initial_contexts.extend(md_to_convo(init_context_file))
+        print(self.initial_contexts)
         # For multi-model modes, set Role to determine functionality
         self.role = Role.INVALID
 
