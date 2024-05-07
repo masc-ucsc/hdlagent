@@ -43,7 +43,7 @@ def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_li
         if run:
             handler.single_json_run(entry, w_dir, skip_completed, update)
 
-def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, lec_limit: int, lec_limit_feedback: int, top_k: int, skip_completed: bool, skip_successful: bool, update: bool, w_dir: str, bench_spec: bool, init_context: bool, supp_context: bool, temperature: float, short_context: bool):
+def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, lec_limit: int, lec_limit_feedback: int, top_k: int, skip_completed: bool, skip_successful: bool, update: bool, w_dir: str, bench_spec: bool, init_context: list, supp_context: bool, temperature: float, short_context: bool):
     # Create a multiprocessing manager to manage shared state
     manager      = multiprocessing.Manager()
 
@@ -102,7 +102,7 @@ def load_config(ctx, param, value):
 @click.option('--top_k', type=int, default=1, help='Number of overall LLM attempts.')
 @click.option('--temperature', type=float, help='Modify default LLM temperature.')
 
-@click.option('--init_context', is_flag=True, default=False, help='Use per language specialized initial context.')
+@click.option('--init_context', type=str, multiple=True, default=[], help='Specify one or more initial context(s) to append to chat. Use per language specialized initial context by adding \'default\'.')
 @click.option('--supp_context', is_flag=True, default=False, help='Use per each compile error a supplemental context.')
 @click.option('--skip_completed', is_flag=True, default=False, help='If w_dir has previous completed runs, do not regenerate even if failed.')
 @click.option('--skip_successful', is_flag=True, default=False, help='If w_dir has previous successful runs with LEC passing, do not regenerate.')
@@ -111,11 +111,14 @@ def load_config(ctx, param, value):
 
 @click.argument('files', nargs=-1, type=click.Path())
 @click.pass_context
-def process_args(ctx, list_models:bool, llm, lang:str, parallel:bool, bench:str, bench_limit:int, bench_from:str, bench_spec:bool, gen_spec:str, target_spec:str, w_dir:str, comp_limit:int, lec_limit:int, lec_limit_feedback:int, top_k: int, temperature:float, init_context:bool, supp_context:bool, skip_completed: bool, skip_successful: bool, update: bool, short_context: bool, files):
+def process_args(ctx, list_models:bool, llm, lang:str, parallel:bool, bench:str, bench_limit:int, bench_from:str, bench_spec:bool, gen_spec:str, target_spec:str, w_dir:str, comp_limit:int, lec_limit:int, lec_limit_feedback:int, top_k: int, temperature:float, init_context:list, supp_context:bool, skip_completed: bool, skip_successful: bool, update: bool, short_context: bool, files):
     ctx.ensure_object(dict)
     llm = ctx.obj.get('llm', llm)
     if isinstance(llm, str):
         llm = [llm]
+    init_context = ctx.obj.get('init_context', init_context)
+    if isinstance(init_context, str):
+        init_context = [init_context]
 
     if list_models:
         if "OPENAI_API_KEY" in os.environ:

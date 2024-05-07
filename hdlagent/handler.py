@@ -243,19 +243,20 @@ class Handler:
             print(f"Error: {target_spec} not found, exiting...")
             exit()
 
-        #compiled: bool
-        #for agent in self.agents:
-        #    prompt = agent.read_spec(target_spec)   # sets name and w_dir internally
-        #    if agent.role == Role.DESIGN:           # generate the RTL
-        #        compiled = agent.spec_run_loop(prompt, iterations)
-
-        #if compiled:
+        # XXX - find some way to check and warn user that code does not exist yet (necessary?)
+        compiled = True
         for agent in self.agents:
             prompt = agent.read_spec(target_spec)   # sets name and w_dir internally
-            if agent.role == Role.VALIDATION:
-                agent.tb_loop(prompt)
+            if agent.role == Role.DESIGN:           # generate the RTL
+                compiled = agent.spec_run_loop(prompt, iterations)
 
-    def sequential_entrypoint(self, spath: str, llms: list, lang: str, json_data: dict = None, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', bench_spec: bool = False, gen_spec: str = None, target_spec: str = None, init_context: bool = False, supp_context: bool = False, temperature: float = None, short_context: bool = False):
+        if compiled:
+            for agent in self.agents:
+                prompt = agent.read_spec(target_spec)   # sets name and w_dir internally
+                if agent.role == Role.VALIDATION:
+                    agent.tb_loop(prompt)
+
+    def sequential_entrypoint(self, spath: str, llms: list, lang: str, json_data: dict = None, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', bench_spec: bool = False, gen_spec: str = None, target_spec: str = None, init_context: list = [], supp_context: bool = False, temperature: float = None, short_context: bool = False):
         use_spec = bench_spec or (gen_spec is not None) or (target_spec is not None)
         self.create_agents(spath, llms, lang, init_context, supp_context, use_spec, w_dir, temperature, short_context)
 
