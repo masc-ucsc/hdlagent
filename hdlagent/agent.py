@@ -133,7 +133,7 @@ class Agent:
                     self.initial_contexts.extend(md_to_convo(file))
             else:
                 self.initial_contexts.extend(md_to_convo(init_context_file))
-        print(self.initial_contexts)
+
         # For multi-model modes, set Role to determine functionality
         self.role = Role.INVALID
 
@@ -422,7 +422,6 @@ class Agent:
             exit()
         self.set_interface(spec['interface'])
         return spec['description']
-        #return (self.responses['spec_to_prompt']).format(description=description,interface=interface)
 
     # Registers the file path of the golden Verilog to be used for LEC
     # and dumps the contents into the file.
@@ -450,18 +449,14 @@ class Agent:
         if not os.path.exists(file_path):
             print("Error: supplied Verilog file path {} invalid, exiting...".format(file_path))
             exit()
-        script = os.path.join(self.script_dir,"common/check_verilog") + " " + file_path # better way to do this?
-        res    = subprocess.run([script], capture_output=True, shell=True)
+        script     = os.path.join(self.script_dir,"common/check_verilog") + " " + file_path # better way to do this?
+        res        = subprocess.run([script], capture_output=True, shell=True)
         res_string = (str(res.stdout))[2:-1].replace("\\n", "\n")
         if "SUCCESS" not in res_string:
             print("Error: supplied Verilog file path {} did not pass Yosys compilation check, fix the following errors/warnings and try again".format(file_path))
             print(res_string)
             print("exiting...")
             exit()
-        else:   # Default method to populate the io list
-            lines = res_string.split('\n')
-            # Remove the 'SUCCESS' line
-            res_string = '\n'.join(lines[1:])
 
     # Parses common.yaml file for the 'request_spec' strings to create the
     # contents of the 'spec initial instruction' tuple which are the 2 queries
@@ -519,7 +514,10 @@ class Agent:
         return clarification.format(compiler_output=compiler_output)
 
     def get_tb_iteration_instruction(self, feedback: str):
-        pass
+        clarification = self.responses['testbench_fail_iteration']
+        with open (self.tb, 'r') as tb_file:
+            testbench = tb_file.read()
+        return clarification.format(testbench=testbench, feedback=feedback)
 
     # Parses language-specific *.yaml file for the 'lec_fail' strings
     # to create the 'lec fail instruction' which is the query sent to the
@@ -770,10 +768,13 @@ class Agent:
         script     = self.tb_compile_script + " " + self.tb + " " + self.verilog
         res        = subprocess.run([script], capture_output=True, shell=True)
         res_string = (str(res.stderr)).replace("\\n","\n")
+        self.comp_n += 1
         # This should probably be its own function chosen by yaml file, if we stop using iverilog
         if "syntax error" in res_string:
+            self.comp_f += 1
             return res_string.split('\n')[0]
         elif "error" in res_string:
+            self.comp_f += 1
             return res_string
         return None
 
@@ -827,43 +828,56 @@ class Agent:
             if compile_out is not None:
                 current_query = self.get_compile_tb_iteration_instruction(compile_out)
             else:
-                return True, ""
+                return True, None
         return False, compile_out 
 
     # The "outer loop" of the testbench generation process, which confirms
-    # the tb and the RTL compiled, and runs them against one another
+    # the tb compiled and the RTL exists, and runs them against one another.
+    # Can also be used to direct an Agent to re-write the RTL based on tb feedback.
+    # Return 'None' for the result indicates something failed, so the tb cannot not be run.
     #
     # Intended use: inside of lec loop, or to bootstrap a design verification
-    def tb_loop(self, prompt: str, iterations: int = 1):
+    def tb_loop(self, prompt: str, iterations: int = 1, designer: 'Agent' = None, code_compile_iterations: int = 1):
         if not os.path.exists(self.verilog):
             print(f"Error: attempting to run testbenching loop on non-existent {self.verilog}, exiting...")
             exit()
 
-        tb_compiled = False     # tb only needs to compile once
-        for i in range(iterations):
-            #code_compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
-            #if code_compiled:
-            if not tb_compiled:
-                tb_compiled, failure_reason = self.tb_compilation_loop(prompt) # default 2 iterations
+        if designer is None:
+            designer = self
 
-                if tb_compiled:
-                    failure_reason = self.test_tb()
-                    if failure_reason is not None:
-                        prompt = self.get_tb_iteration_instruction(failure_reason)
-                    else:
-                        self.success_message(self.tb_conversation)
-                        self.dump_tb_conversation()
-                        return True, ""
-                else:
+        # Create only one version of testbench, make sure it compiles
+        tb_compiled, failure_reason = self.tb_compilation_loop(prompt)  # default 2 iterations
+        if not tb_compiled:
+            self.dump_failure(failure_reason, self.tb_conversation)
+            self.dump_tb_conversation()
+            return None, failure_reason     # tb never compiled
+
+        code_compiled: bool = None
+        for i in range(iterations):
+            failure_reason = self.test_tb()
+            if failure_reason is None:
+                self.success_message(self.tb_conversation)
+                self.dump_tb_conversation()
+                if code_compiled is not None:
+                    designer.dump_compile_conversation()
+                return True, None
+            elif i != iterations - 1:
+                prompt = self.get_tb_iteration_instruction(failure_reason)
+                code_compiled, failure_reason = designer.code_compilation_loop(prompt, 1, code_compile_iterations)
+                if not code_compiled:
+                    designer.dump_failure(failure_reason, designer.compile_history_log)
                     self.dump_failure(failure_reason, self.tb_conversation)
                     self.dump_tb_conversation()
-                    return False, failure_reason
-            else:
-                self.dump_failure(failure_reason, self.tb_conversation)
-                self.dump_tb_conversation()
-                return False, failure_reason
+                    if code_compiled is not None:
+                        designer.dump_compile_conversation()
+                    return None, failure_reason     # new version of code failed to compile
+                else:
+                    designer.reformat_verilog(designer.name, designer.gold, designer.verilog, designer.io)
+
         self.dump_failure(failure_reason, self.tb_conversation)
         self.dump_tb_conversation()
+        if code_compiled is not None:
+            designer.dump_compile_conversation()
         return False, failure_reason
 
     # The "inner loop" of the RTL generation process, attempts to iteratively
@@ -882,26 +896,20 @@ class Agent:
             if compile_out is not None:
                 current_query = self.get_compile_iteration_instruction(compile_out)
             else:
-                return True, ""
+                return True, None
         return False, compile_out
 
     # Control wrapper for code_compilation_loop(), user-controlled RTL generation
-    # defined by a spec in a target language. Generates the code for a single module.
+    # defined by a spec in a target language. Generates the code for a single module,
+    # and dumps the conversation.
     #
     # Intended use: user facing RTL generation
-    def spec_run_loop(self, prompt: str, iterations: int = 1):
-        self.reset_conversations()
-        self.reset_perf_counters()
+    def spec_run_loop(self, prompt: str, iterations: int = 1, continued: bool = False):
+        if not continued:   # Maintain conversation history when iterating over design
+            self.reset_conversations()
+            self.reset_perf_counters()
 
-        compiled, failure_reason = self.code_compilation_loop(prompt, 0, iterations)
-        if compiled:
-            self.success_message(self.compile_history_log)
-        else:
-            self.dump_failure(failure_reason, self.compile_history_log)
-
-        self.dump_compile_conversation()
-        self.reset_conversations()
-        return compiled
+        return self.finish_run(self.code_compilation_loop(prompt, 0, iterations)[1])
 
     # Rolls back the conversation to the LLM codeblock response which failed the least amount of
     # testcases. This is to avoid regression and save on context token usage.
@@ -965,18 +973,23 @@ class Agent:
                         self.lec_n             -= 1  # preliminary checks dont count
                         prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, lec_feedback_limit)
                 else:
-                    self.success_message(self.compile_history_log)
-                    self.dump_compile_conversation()
-                    return True
+                    return self.finish_run()
             else:
-                self.dump_failure(failure_reason, self.compile_history_log)
-                self.dump_compile_conversation()
-                self.reset_conversations()
-                return False
-        self.dump_failure(failure_reason, self.compile_history_log)
+                return self.finish_run(failure_reason)
+        return self.finish_run(failure_reason)
+
+    # Helper function to handle results and logs of compile based runs
+    #
+    # Intended use: after test_lec() is called
+    def finish_run(self, failure_reason: str = None):
+        success = failure_reason is not None
+        if success:
+            self.dump_failure(failure_reason, self.compile_history_log)
+        else:
+            self.success_message(self.compile_history_log)
+
         self.dump_compile_conversation()
-        self.reset_conversations()
-        return False
+        return success
 
     # Helper function that reads and formats an LLM conversation
     # into a Markdown string
@@ -1013,6 +1026,7 @@ class Agent:
     def dump_tb_conversation(self):
         md_content  = "# Testbench Conversation\n\n"
         md_content += self.format_conversation(self.tb_conversation)
+        md_content += self.report_statistics()
         os.makedirs(os.path.dirname(self.tb_log), exist_ok=True)
         with open(self.tb_log, 'w') as md_file:
             md_file.write(md_content)
@@ -1027,7 +1041,7 @@ class Agent:
             md_file.write("Reason for failure:\n" + reason)
 
     def dump_codeblock(self, text: str, filepath: str):
-        isolated_code = text.replace('```','') #self.hdlang.extract_code(text, self.verilog)
+        isolated_code = text.replace('```','')
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, 'w') as file:
             file.write(isolated_code)

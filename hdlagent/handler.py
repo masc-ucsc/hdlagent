@@ -164,37 +164,56 @@ class Handler:
 
     # Individual attempt at a .json benchmark problem, solvable through passing
     # a Yosys LEC check. top_k sets limit for how many unsuccessful attempts
-    # can be made until marked as a failure.
+    # can be made until marked as a failure. When multiple LLMs are specified,
+    # only one will write the RTL while the others generate testbenches.
     #
     # Indended use: benchmarking LLMs
     def single_json_run(self, entry: dict, base_w_dir, skip_completed, update):
-            agent = self.agents[0]
+        for agent in self.agents:
             agent.reset_k()
             agent.set_interface(entry['interface'])
             agent.set_pipeline_stages(int(entry['pipeline_stages']))
             agent.set_w_dir(os.path.join(base_w_dir, agent.name))
 
-            prompt = entry['instruction']
-            if agent.spec is not None:
-                if not agent.spec_exists():
-                    agent.generate_spec(prompt)
-                prompt = agent.read_spec()
+        designer = self.agents[0]
+        testers  = self.agents[1:]
+        prompt   = entry['instruction']
+        if designer.spec is not None:
+            if not designer.spec_exists():
+                designer.generate_spec(prompt)
+            prompt = designer.read_spec()
 
-            agent.dump_gold(entry['response'])
-            pass_k = self.top_k
-            if skip_completed:
-                results = self.get_results(entry, base_w_dir)
-                if results is not None:
-                    pass_k -= results['top_k']
-                    agent.set_k(results['top_k'] + 1)
+        designer.dump_gold(entry['response'])
+        pass_k = self.top_k
+        if skip_completed:
+            results = self.get_results(entry, base_w_dir)
+            if results is not None:
+                pass_k -= results['top_k']
+                designer.set_k(results['top_k'] + 1)
 
-            for _ in range(pass_k):
-                successful   = self.check_success(entry, base_w_dir)
-                completed    = self.check_completion(entry, base_w_dir)
-                update_entry = completed and (not successful) and update
-                if agent.lec_loop(prompt, self.lec_iter, self.lec_feedback_limit, self.comp_iter, update_entry):
+        for _ in range(pass_k):
+            successful   = self.check_success(entry, base_w_dir)
+            completed    = self.check_completion(entry, base_w_dir)
+            update_entry = completed and (not successful) and update
+            # Single LLM only needs to generate RTL then verify versus gold
+            if not testers:
+                if designer.lec_loop(prompt, self.lec_iter, self.lec_feedback_limit, self.comp_iter, update_entry):
                     break
-                agent.incr_k()
+            else:   # Other LLMs will create additional testbenches to run design through before gold verification
+                designer.reset_conversations()
+                designer.reset_perf_counters()
+                code_compiled, failure_reason = designer.code_compilation_loop(prompt, 0, self.comp_iter)
+                if code_compiled:
+                    designer.reformat_verilog(designer.name, designer.gold, designer.verilog, designer.io)
+                    testers[0].reset_conversations()
+                    testers[0].reset_perf_counters()
+                    tb_pass, failure_reason = testers[0].tb_loop(prompt, 2, designer, self.comp_iter)
+                if tb_pass is not None:
+                    failure_reason = designer.test_lec()
+                designer.finish_run(failure_reason)
+                if tb_pass:
+                    break
+            designer.incr_k()
 
 
     # Wrapper around single_json_run(), keeps track of individual problems' statuses.
@@ -202,16 +221,11 @@ class Handler:
     #
     # Intended use: benchmarking LLMs
     def json_run(self, json_data: dict, skip_completed: bool = False, skip_successful: bool = False, update: bool = False):
-        num_agents = len(self.agents)
-        if num_agents > 1:
-            print(f"Error: found {num_agents} LLMs specified, only 1 allowed for benchmarking, exiting...")
-            exit()
-
         base_w_dir = self.agents[0].w_dir
         for entry in json_data:
-            successful   = self.check_success(entry, base_w_dir)
-            completed    = self.check_completion(entry, base_w_dir)
-            run          = not ((skip_completed and completed) or (skip_successful and successful))
+            successful = self.check_success(entry, base_w_dir)
+            completed  = self.check_completion(entry, base_w_dir)
+            run        = not ((skip_completed and completed) or (skip_successful and successful))
             if run:
                 self.single_json_run(entry, base_w_dir, skip_completed, update)
 

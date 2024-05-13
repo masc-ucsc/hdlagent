@@ -34,3 +34,16 @@ responses:
     {compiler_output}
     Fix it and return the corrected program in its entirety.
     
+  testbench_fail_iteration: |
+    
+    The program you just wrote, to verify it follows the previously mentioned intended behavior, was run against this Verilog testbench:
+    ```
+    {testbench}
+    ```
+    and this error message, due to a failed test case, was received:
+    ```
+    {feedback}
+    ```
+    Can you rewrite the program in its entirety to follow the previously mentioned intended behavior and pass the verification test bench.
+    All previously mentioned constraints on naming and input/output interfacing still apply.
+    
