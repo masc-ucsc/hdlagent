@@ -106,6 +106,19 @@ class Handler:
     def set_lec_feedback_limit(self, n: int):
         self.lec_feedback_limit = n
 
+    # Returns the Agent with 'role' of 'DESIGN'
+    # Returns 'None' if designer is not found
+    #
+    # Intended use: reference intended designer Agent
+    def get_designer(self):
+        return next((agent for agent in self.agents if agent.role == Role.DESIGN), None)
+
+    # Returns the list of tester Agents with 'role' of 'VALIDATION'
+    #
+    # Intended use: extract sublists of Agents by 'role'
+    def get_testers(self):
+        return [agent for agent in self.agents if agent.role == Role.VALIDATION]
+
     # Creates and adds each Agent to the Handlers list, assigning respective roles
     #
     # Intended use: setup before doing any runs
@@ -175,8 +188,8 @@ class Handler:
             agent.set_pipeline_stages(int(entry['pipeline_stages']))
             agent.set_w_dir(os.path.join(base_w_dir, agent.name))
 
-        designer = self.agents[0]
-        testers  = self.agents[1:]
+        designer = self.get_designer()
+        testers  = self.get_testers()
         prompt   = entry['instruction']
         if designer.spec is not None:
             if not designer.spec_exists():
@@ -208,10 +221,9 @@ class Handler:
                     testers[0].reset_conversations()
                     testers[0].reset_perf_counters()
                     tb_pass, failure_reason = testers[0].tb_loop(prompt, 2, designer, self.comp_iter)
-                if tb_pass is not None:
-                    failure_reason = designer.test_lec()
-                designer.finish_run(failure_reason)
-                if tb_pass:
+                    if tb_pass is not None:
+                        failure_reason = designer.test_lec()
+                if designer.finish_run(failure_reason):
                     break
             designer.incr_k()
 
@@ -221,7 +233,7 @@ class Handler:
     #
     # Intended use: benchmarking LLMs
     def json_run(self, json_data: dict, skip_completed: bool = False, skip_successful: bool = False, update: bool = False):
-        base_w_dir = self.agents[0].w_dir
+        base_w_dir = self.get_designer().w_dir
         for entry in json_data:
             successful = self.check_success(entry, base_w_dir)
             completed  = self.check_completion(entry, base_w_dir)
@@ -245,7 +257,7 @@ class Handler:
             exit()
 
         with open (reference, 'r') as f:
-            self.agents[0].generate_spec(f.read())  # may get more complex once nested modules are introduced
+            self.get_designer().generate_spec(f.read())  # may get more complex once nested modules are introduced
 
     # Typical user run, where a 'spec' must exist, to formally define
     # the interface and desired behavior of the target circuit.
@@ -258,17 +270,12 @@ class Handler:
             exit()
 
         # XXX - find some way to check and warn user that code does not exist yet (necessary?)
-        compiled = True
-        for agent in self.agents:
-            prompt = agent.read_spec(target_spec)   # sets name and w_dir internally
-            if agent.role == Role.DESIGN:           # generate the RTL
-                compiled = agent.spec_run_loop(prompt, iterations)
+        designer = self.get_designer()
+        compiled = designer.spec_run_loop(designer.read_spec(target_spec), iterations)
 
         if compiled:
-            for agent in self.agents:
-                prompt = agent.read_spec(target_spec)   # sets name and w_dir internally
-                if agent.role == Role.VALIDATION:
-                    agent.tb_loop(prompt)
+            for agent in self.get_testers():
+                agent.tb_loop(agent.read_spec(target_spec))
 
     def sequential_entrypoint(self, spath: str, llms: list, lang: str, json_data: dict = None, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', bench_spec: bool = False, gen_spec: str = None, target_spec: str = None, init_context: list = [], supp_context: bool = False, temperature: float = None, short_context: bool = False):
         use_spec = bench_spec or (gen_spec is not None) or (target_spec is not None)
