@@ -7,21 +7,29 @@ if [ ! -s "$f" ]; then
 fi
 
 temp_file=$(mktemp log_check_verilog.XXXXXX)
-if which slang >/dev/null; then
-	slang -q --error-limit 1 ${f} 2>${temp_file}
-	if [[ $? -ne 0 ]]; then
-		cat ${temp_file}
-	else
-		echo "SUCCESS"
-	fi
-else
-	yosys -p "logger -nowarn assigned; read_verilog -sv ${f};" &>${temp_file}
-	if [[ $? -ne 0 ]]; then
-		grep -E "Warning:|ERROR:" ${temp_file} | grep -Eiv "Suppress"
-		if [[ $? -ne 0 ]]; then
-			echo "SUCCESS"
-		fi
-	fi
+#if which slang >/dev/null; then
+#	slang -q --error-limit 1 ${f} 2>${temp_file}
+#	if [[ $? -ne 0 ]]; then
+#		cat ${temp_file}
+#        echo "slang fail"
+#        exit
+#	fi
+#fi
+
+yosys -p "logger -nowarn assigned; read_verilog -sv ${f};" &>${temp_file}
+if [[ $? -eq 0 ]]; then
+	grep -E "Warning:|ERROR:" ${temp_file} | grep -Eiv "Suppress"
+	if [[ $? -eq 0 ]]; then
+		exit
+    fi
 fi
 
-#rm tmp.check_verilog
+
+iverilog -g2005-sv ${f} 2>${temp_file}
+grep -E "error" ${temp_file}
+if [[ $? -eq 0 ]]; then
+    exit
+fi
+
+
+echo "SUCCESS"
