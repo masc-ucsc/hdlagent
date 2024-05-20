@@ -407,7 +407,7 @@ class Agent:
         if in_directory:                    # w_dir is parent dir of spec
             self.set_w_dir(w_dir)
         else:                               # w_dir is set to child dir next to spec
-            self.set_w_dir(os.path.join(w_dir, self.agent.name), target_spec)
+            self.set_w_dir(os.path.join(w_dir, self.name), target_spec)
         
     # Helper function that extracts and reformats information from spec yaml file
     # to create initial prompt(s) for compilation loop and testbench
