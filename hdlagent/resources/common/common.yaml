@@ -1,5 +1,8 @@
 lec_filter_function: resources.common.filter_functions.comment_filter_function
 
+testbench_initial_contexts:
+ - Testbench_examples.md
+
 responses:
   suggest_prefix: |
     
