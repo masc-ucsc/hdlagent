@@ -17,15 +17,11 @@ import yaml
 def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, bench_spec, init_context, supp_context, temperature, short_context):
     # Each worker has its own Handler instance.
     handler = Handler()
-    handler.set_agent(Agent(spath, llm, lang, init_context, supp_context, bench_spec))
+    handler.create_agents(spath, llm, lang, init_context, supp_context, bench_spec, w_dir, temperature, short_context)
     handler.set_comp_iter(comp_limit)
     handler.set_lec_iter(lec_limit)
     handler.set_lec_feedback_limit(lec_limit_feedback)
     handler.set_k(top_k)
-    handler.agent.set_w_dir(w_dir)
-    handler.agent.set_model_temp(temperature)
-    if short_context:
-        handler.agent.set_short_context()
     handler.set_id(multiprocessing.current_process().name)
 
     while True:
@@ -36,14 +32,14 @@ def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_li
                 shared_index.value += 1
             else:
                 break
-        print(f"\nProcessing by {handler.id}: {handler.agent.name}\n")
+        print(f"\nProcessing by {handler.id}: {handler.agents[0].name}\n")
         successful   = handler.check_success(entry, w_dir)
         completed    = handler.check_completion(entry, w_dir)
         run          = not ((skip_completed and completed) or (skip_successful and successful))
         if run:
             handler.single_json_run(entry, w_dir, skip_completed, update)
 
-def parallel_run(spath: str, llm: str, lang: str, json_data, comp_limit: int, lec_limit: int, lec_limit_feedback: int, top_k: int, skip_completed: bool, skip_successful: bool, update: bool, w_dir: str, bench_spec: bool, init_context: list, supp_context: bool, temperature: float, short_context: bool):
+def parallel_run(spath: str, llm: list, lang: str, json_data, comp_limit: int, lec_limit: int, lec_limit_feedback: int, top_k: int, skip_completed: bool, skip_successful: bool, update: bool, w_dir: str, bench_spec: bool, init_context: list, supp_context: bool, temperature: float, short_context: bool):
     # Create a multiprocessing manager to manage shared state
     manager      = multiprocessing.Manager()
 
@@ -164,7 +160,7 @@ def process_args(ctx, list_models:bool, llm, lang:str, parallel:bool, bench:str,
             print("Error: cannot invoke --bench and --target_spec at the same time, exiting...")
             exit()
         if (parallel):
-            parallel_run(spath, llm[0], lang, json_data, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, bench_spec, init_context, supp_context, temperature, short_context)
+            parallel_run(spath, llm, lang, json_data, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, bench_spec, init_context, supp_context, temperature, short_context)
         else:
             my_handler = Handler()
             my_handler.set_comp_iter(comp_limit)
