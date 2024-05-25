@@ -124,8 +124,8 @@ class Agent:
         self.responses.update(common['responses'])
 
         # Pre-loads long initial language context from user supplied and Lang default file(s)
-        self.used_init_context = len(init_context_files) > 0
-        self.initial_contexts  = []
+        self.init_context_files = init_context_files
+        self.initial_contexts   = []
         for init_context_file in init_context_files:
             if init_context_file == "default":
                 for context in config['initial_contexts']:
@@ -237,10 +237,22 @@ class Agent:
         self.gold        = None
 
     # Sets the role of the Agent and it's LLM for the given Handler set task
+    # Changes initial context to Testbench based when given VALIDATION role
     #
     # Intended use: multi-LLM workflow
     def set_role(self, role: Role):
         self.role = role
+        if role == Role.VALIDATION: # TODO - do this smarter
+            self.initial_contexts.clear()
+            with open(os.path.join(self.script_dir,"common/common.yaml"), 'r') as file:
+                common = yaml.safe_load(file)
+            for init_context_file in self.init_context_files:
+                if init_context_file == "default":
+                    for context in common['testbench_initial_contexts']:
+                        file = os.path.join(self.script_dir, 'common', context)
+                        self.initial_contexts.extend(md_to_convo(file))
+                else:
+                    self.initial_contexts.extend(md_to_convo(init_context_file))
 
     # Sets 'short_context' operational mode where only the last response is
     # maintained in the conversational history, useful for short context
@@ -578,6 +590,7 @@ class Agent:
             contents.append(Content(role=role, parts=part))
         try:
             safety_settings = {
+                vertexai.generative_models.HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_ONLY_HIGH,
                 vertexai.generative_models.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: vertexai.generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
                 vertexai.generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: vertexai.generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
             }
@@ -770,10 +783,7 @@ class Agent:
         res_string = (str(res.stderr)).replace("\\n","\n")
         self.comp_n += 1
         # This should probably be its own function chosen by yaml file, if we stop using iverilog
-        if "syntax error" in res_string:
-            self.comp_f += 1
-            return res_string.split('\n')[0]
-        elif "error" in res_string:
+        if "error" in res_string:
             self.comp_f += 1
             return res_string
         return None
@@ -846,7 +856,7 @@ class Agent:
             designer = self
 
         # Create only one version of testbench, make sure it compiles
-        tb_compiled, failure_reason = self.tb_compilation_loop(prompt)  # default 2 iterations
+        tb_compiled, failure_reason = self.tb_compilation_loop(prompt, code_compile_iterations)  # same iterations as code compile
         if not tb_compiled:
             self.dump_failure(failure_reason, self.tb_conversation)
             self.dump_tb_conversation()
@@ -1014,7 +1024,7 @@ class Agent:
     def dump_compile_conversation(self):
         start_idx  = 0
         md_content = "# Compile Conversation\n\n"
-        if self.used_init_context:
+        if self.initial_contexts:
             md_content += "**System:** Initial contexts were appended to this conversation\n\n"
             start_idx   = len(self.initial_contexts)
         md_content += self.format_conversation(self.compile_history_log, 0)
