@@ -381,7 +381,7 @@ class Agent:
         if self.spec is not None:
             self.spec_log = os.path.join(self.w_dir, "logs", self.name + "_spec_log.md")
             self.spec     = os.path.join(self.w_dir, self.name + "_spec.yaml")
-            if spec_path is not None:   # XXX - partition spec_path contents into submodules, when nested
+            if self.name != "" and spec_path is not None:   # XXX - partition spec_path contents into submodules, when nested
                 with open (spec_path, 'r') as path:
                     contents = path.read()
                     with open (self.spec, 'w') as file:     # this spec can be used in-place, produces no copy
