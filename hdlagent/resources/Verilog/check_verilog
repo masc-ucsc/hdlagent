@@ -2,34 +2,64 @@
 f=$1
 
 if [ ! -s "$f" ]; then
-    echo "Error: no code was received" >&2
-    exit 1
+	echo "Error: no code was received" >&2
+	exit 1
 fi
 
-temp_file=$(mktemp log_check_verilog.XXXXXX)
-#if which slang >/dev/null; then
-#	slang -q --error-limit 1 ${f} 2>${temp_file}
-#	if [[ $? -ne 0 ]]; then
-#		cat ${temp_file}
-#        echo "slang fail"
-#        exit
-#	fi
-#fi
+mkdir -p logs
+temp_file=$(mktemp logs/check_verilog.XXXXXX)
 
-yosys -p "logger -nowarn assigned; read_verilog -sv ${f};" &>${temp_file}
-if [[ $? -eq 0 ]]; then
-	grep -E "Warning:|ERROR:" ${temp_file} | grep -Eiv "Suppress"
+TEST_DONE="none"
+
+if which slang >/dev/null; then
+	echo "=================" >>${temp_file}
+	echo "SLANG LOG:" >>${temp_file}
+	slang -q --error-limit 1 ${f} 2>>${temp_file}
+	if [[ $? -ne 0 ]]; then
+		echo "SLANG compile error" >>${temp_file}
+		exit 3
+	fi
+	TEST_DONE="slang"
+else
+	echo "slang not installed" >>${temp_file}
+fi
+
+if which yosys >/dev/null; then
+	echo "=================" >>${temp_file}
+	echo "YOSYS LOG:" >>${temp_file}
+	yosys -p "logger -nowarn assigned; read_verilog -sv ${f};" 2>>${temp_file}
 	if [[ $? -eq 0 ]]; then
-		exit
-    fi
+		if [ $(grep -E "Warning:|ERROR:" ${temp_file} | grep -Eiv "Suppress" | wc -l) -gt 0 ]; then
+			echo "Yosys compile error" >>${temp_file}
+			exit 3
+		fi
+	else
+		echo "Yosys run error" >>${temp_file}
+		exit 3
+	fi
+	TEST_DONE="yosys"
+else
+	echo "YOSYS not installed" >>${temp_file}
 fi
 
-
-iverilog -g2005-sv ${f} 2>${temp_file}
-grep -E "error" ${temp_file}
-if [[ $? -eq 0 ]]; then
-    exit
+if which iverilog >/dev/null; then
+	echo "=================" >>${temp_file}
+	echo "ICARUS LOG:" >>${temp_file}
+	iverilog -g2005-sv -o ${temp_file}icarus_exe ${f} 2>>${temp_file}
+	grep -E "error" ${temp_file}
+	if [[ $? -eq 0 ]]; then
+		echo "icarus compile error" >>${temp_file}
+		exit 3
+	fi
+	rm -f ${temp_file}icarus_exe
+	TEST_DONE="icarus"
+else
+	echo "icarus not installed" >>${temp_file}
 fi
 
+if [ ${TEST_DONE} == "none" ]; then
+	echo "Install slang and/or Yosys and/or icarus to test the code generated" >>${temp_file}
+	exit 3
+fi
 
-echo "SUCCESS"
+exit 0
