@@ -8,6 +8,14 @@ from importlib import resources
 import os
 
 def create(args):
+    if args.help:
+        print("\n\nCreate a new structured spec file out of a plain problem explanation")
+        return
+
+    if len(args.file_list)==0:
+        print("ERROR: create needs a file list of plain text")
+        exit(4)
+
     spath      = resources.files('resources')
     my_handler = Handler()
     my_handler.set_comp_iter(args.comp_limit)
@@ -19,10 +27,22 @@ def create(args):
             my_handler.sequential_entrypoint(spath=str(spath), llms=args.llm, lang=args.lang, update=args.update, w_dir=args.w_dir, gen_spec=f, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
 
 def bench(args):
-    print(f"Running build command with LLM: {args.llm}")
-    # Add your logic for the build command here
+    if args.help:
+        print("\n\nPerformance against benchmarks")
+        return
+
+    if args.skip_completed and args.update:
+        print("ERROR: Benchmarks can not invoke --skip_completed and --update at the same time")
+        exit()
+
+    for f in args.bench_list:
+        print(f"BENCHMARKING... {f}(to be added)")
 
 def build(args):
+    if args.help:
+        print("\n\nBuild the HDL out of the spec file[s] or spec files in directory")
+        return
+
     spath      = resources.files('resources')
     my_handler = Handler()
     my_handler.set_comp_iter(args.comp_limit)
@@ -41,41 +61,50 @@ def build(args):
             my_handler.spec_run(target_spec=f, iterations=args.comp_limit)
 
 def list_models(args):
-    all_models = []
-    if "OPENAI_API_KEY" in os.environ:
-        models = agent.list_openai_models()
-        if len(models):
-            all_models += models
-            if not args.silent:
-                print("OpenAI models:")
-                for m in models:
-                    if "gpt" in m:
-                        print(" ", m)
-                print("\n")
-    else:
-        print("OpenAI unavailable unless OPENAI_API_KEY is set")
+    if args.help:
+        return []
 
-    if "OCTOAI_TOKEN" in os.environ:
-        models = agent.list_octoai_models()
+    all_models = []
+    if not hasattr(args,'model'):
+        args.model = []
+
+    showall = len(args.model)==0
+    if "openai" in args.model or showall:
+        if "OPENAI_API_KEY" in os.environ:
+            models = agent.list_openai_models()
+            if len(models):
+                all_models += models
+                if not args.silent:
+                    print("OpenAI models:")
+                    for m in models:
+                        if "gpt" in m:
+                            print(" ", m)
+                    print("\n")
+        else:
+            print("OpenAI unavailable unless OPENAI_API_KEY is set")
+
+    if "octoai" in args.model or showall:
+        if "OCTOAI_TOKEN" in os.environ:
+            models = agent.list_octoai_models()
+            if len(models):
+                all_models += models
+                if not args.silent:
+                    print("OctoAI models:")
+                    for m in models:
+                        print(" ", m)
+                    print("\n")
+        else:
+            print("OctoAI unavailable unless OCTOAI_TOKEN is set")
+
+    if "vertex" in args.model or showall:
+        models = agent.list_vertexai_models()
         if len(models):
             all_models += models
             if not args.silent:
-                print("OctoAI models:")
+                print("VertexAI models:")
                 for m in models:
                     print(" ", m)
                 print("\n")
-    else:
-        print("OctoAI unavailable unless OCTOAI_TOKEN is set")
-
-    # TODO: It would be nice to have a cleaner API or way to test for access and/or ask to login if VertexAI model is used. Not just a try/except at runtime
-    models = agent.list_vertexai_models()
-    if len(models):
-        all_models += models
-        if not args.silent:
-            print("VertexAI models:")
-            for m in models:
-                print(" ", m)
-            print("\n")
 
     return all_models
 
@@ -118,6 +147,10 @@ def check_args(args):
     l = list_models(qargs)
     qargs.silent = False
 
+    if len(l) == 0:
+        print("ERROR: no model available. Try setting OPENAI/Gemini/OCTOAI tokens")
+        exit(5)
+
     for x in args.llm:
         if not (x in l):
             print(f"ERROR: model {x} is not in list-models available")
@@ -126,14 +159,15 @@ def check_args(args):
 def add_create_command(subparsers):
     parser = subparsers.add_parser("create", help="Create a spec from a simple explanation", add_help=False)
     add_shared_args(parser)
-    parser.add_argument("file_list", nargs="+", help="Explicit list of text files to create spec.yaml specs")
+    parser.add_argument("file_list", nargs="*", help="Explicit list of text files to create spec.yaml specs")
 
     return parser
 
 def add_bench_command(subparsers):
     parser = subparsers.add_parser("bench", help="Benchmark the existing hdlagent setup", add_help=False)
     add_shared_args(parser)
-    parser.add_argument("file_list", nargs="+", help="List of files to clean")
+    parser.add_argument('--skip_completed',        action="store_false", help='Skip generated already generated tests')
+    parser.add_argument("bench_list", nargs="+", help="List of files to clean")
 
     return parser
 
@@ -168,23 +202,26 @@ def cli_agent():
     else:
         args.help = False
 
-    # args = parser.parse_args()
-    if args.command:
-        check_args(args)
-
+    args.silent = False
     check_tools(args)
 
     if args.command == "create":
         if args.help:
             parser_create.print_help()
+        else:
+            check_args(args)
         create(args)
     elif args.command == "bench":
         if args.help:
             parser_bench.print_help()
+        else:
+            check_args(args)
         bench(args)
     elif args.command == "build":
         if args.help:
             parser_build.print_help()
+        else:
+            check_args(args)
         build(args)
     elif args.command == "list-models":
         if args.help:

@@ -26,7 +26,13 @@ class Role(Enum):
 
 def list_openai_models(warn: bool = True):
     if "OPENAI_API_KEY" in os.environ:
-        response = openai.models.list()
+        try:
+            response = openai.models.list()
+        except Exception as e:
+            if warn:
+                print("Warning: could not connect to OpenAI, Skipping")
+            return []
+
         ret_list = []
         for entry in response.data:
             ret_list.append(entry.id)
@@ -35,14 +41,16 @@ def list_openai_models(warn: bool = True):
         return ret_list
     else:
         if warn:
-            print("OPENAI_API_KEY not set")
+            print("Warning: OPENAI_API_KEY not set")
         return []
 
 def list_octoai_models(warn: bool = True):
     # Experimental list:
     exp_list = ['smaug-72b-chat', 'mixtral-8x22b', 'meta-llama-3-70b-instruct']
     if "OCTOAI_TOKEN" in os.environ:
-        return octoai.chat.get_model_list() + exp_list
+        # NOTE: Even without internet, it returns a list
+        l = octoai.chat.get_model_list()
+        return l + exp_list
     else:
         if warn:
             print("OCTOAI_TOKEN not set")
