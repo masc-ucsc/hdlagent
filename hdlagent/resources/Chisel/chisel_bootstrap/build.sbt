@@ -7,7 +7,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "chisel_regression",
     libraryDependencies ++= Seq(
-      "edu.berkeley.cs" %% "chisel3" % "3.5.0-RC2",
+      "edu.berkeley.cs" %% "chisel3" % "3.6.1",
       "edu.berkeley.cs" %% "chiseltest" % "0.3.2" % "test"
     ),
     scalacOptions ++= Seq(
