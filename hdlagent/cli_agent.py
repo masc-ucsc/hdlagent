@@ -7,13 +7,13 @@ from handler import Handler
 from importlib import resources
 import os
 
-def create(args):
+def start(args):
     if args.help:
-        print("\n\nCreate a new structured spec file out of a plain problem explanation")
+        print("\n\nStart a new structured spec file out of a plain problem explanation")
         return
 
     if len(args.file_list)==0:
-        print("ERROR: create needs a file list of plain text")
+        print("ERROR: start needs a file list of plain text")
         exit(4)
 
     spath      = resources.files('resources')
@@ -156,10 +156,10 @@ def check_args(args):
             print(f"ERROR: model {x} is not in list-models available")
             exit(3)
 
-def add_create_command(subparsers):
-    parser = subparsers.add_parser("create", help="Create a spec from a simple explanation", add_help=False)
+def add_start_command(subparsers):
+    parser = subparsers.add_parser("start", help="Start a spec from a simple explanation", add_help=False)
     add_shared_args(parser)
-    parser.add_argument("file_list", nargs="*", help="Explicit list of text files to create spec.yaml specs")
+    parser.add_argument("file_list", nargs="*", help="Explicit list of text files to start spec.yaml specs")
 
     return parser
 
@@ -190,10 +190,10 @@ def cli_agent():
     parser     = argparse.ArgumentParser(description = "hdlagent: A Hardware Description Language Agent", add_help=False)
     subparsers = parser.add_subparsers(dest          = "command")
 
-    parser_create = add_create_command(subparsers)
-    parser_bench  = add_bench_command(subparsers)
-    parser_build  = add_build_command(subparsers)
+    parser_bench       = add_bench_command(subparsers)
+    parser_build       = add_build_command(subparsers)
     parser_list_models = add_list_models_command(subparsers)
+    parser_start       = add_start_command(subparsers)
 
     args, unknown = parser.parse_known_args()
 
@@ -205,12 +205,12 @@ def cli_agent():
     args.silent = False
     check_tools(args)
 
-    if args.command == "create":
+    if args.command == "start":
         if args.help:
-            parser_create.print_help()
+            parser_start.print_help()
         else:
             check_args(args)
-        create(args)
+        start(args)
     elif args.command == "bench":
         if args.help:
             parser_bench.print_help()

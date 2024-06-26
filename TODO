@@ -1,9 +1,9 @@
 
-
 -Convert bench to new API (bench xxx)
 
 -Use remote hdeval prompt support
 
--Switch most LLMs APIs to use llm (https://llm.datasette.io/en/stable/plugins/directory.html#remote-apis)
- +All but octoai
+-Add LLMs APIs to use llm (https://llm.datasette.io/en/stable/plugins/directory.html#remote-apis)
+ +Keep original, but use llm as alternative and access to claude and VertexAI
+ +Seems to support all but octoai
 
