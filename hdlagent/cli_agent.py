@@ -32,11 +32,22 @@ def bench(args):
         return
 
     if args.skip_completed and args.update:
-        print("ERROR: Benchmarks can not invoke --skip_completed and --update at the same time")
+        print("ERROR: Benchmarks cannot invoke --skip_completed and --update at the same time")
         exit()
 
-    for f in args.bench_list:
-        print(f"BENCHMARKING... {f}(to be added)")
+    json_path = args.bench
+    json_data = check_json(json_path) 
+
+    if not json_data:
+        print("Error: Failed to load or parse the JSON file at", json_path)
+        exit()
+
+    my_handler = Handler()
+    my_handler.set_comp_iter(args.comp_limit)
+
+    for entry in json_data['verilog_problems']:
+        print(f"BENCHMARKING... {entry['name']}")
+        my_handler.single_json_run(entry, args.w_dir, args.skip_completed, args.update)
 
 def build(args):
     if args.help:
