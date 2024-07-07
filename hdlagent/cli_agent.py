@@ -115,7 +115,7 @@ def list_models(args):
 
     return all_models
 
-def add_shared_args(model):
+def add_shared_args(model, add_update=True):
     model.add_argument('--config', type=str, action="store", help='Path to a configuration YAML file')
     model.add_argument('--llm', type=str, action="append", default=['gpt-4o'], help='LLM model. Use list_models to see models')
     model.add_argument('--lang', type=str, action="store", default="Verilog", choices=['Verilog', 'Chisel', 'PyRTL', 'DSLX'], help='Language for code generation. It can only be "Verilog", "Chisel", "PyRTL", or "DSLX")')
@@ -125,7 +125,8 @@ def add_shared_args(model):
     model.add_argument('--init_context', action="append", default=[], help='Use per language specialized initial context')
     model.add_argument('--supp_context', action="store_false", help='Use per each compile error a supplemental context')
     model.add_argument('--short_context', action="store_false", help='Exclude previous code responses and queries from context window')
-    model.add_argument('--update', action="store_true", help='Retry LEC iterations on current RTL code generated')
+    if add_update:
+        model.add_argument('--update', action="store_true", help='Retry LEC iterations on current RTL code generated')
 
 def check_tools(args):
     if shutil.which('yosys') is None:
@@ -166,10 +167,12 @@ def add_start_command(subparsers):
     return parser
 
 def add_bench_command(subparsers):
-    parser = subparsers.add_parser("bench", help="Benchmark the existing hdlagent setup", add_help=False)
-    add_shared_args(parser)
+    parser = subparsers.add_parser("bench", help="Benchmark the existing hdlagent setup using a JSON file with Verilog problems", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    add_shared_args(parser, add_update=False)  # Assuming `add_shared_args` does not add `--update` anymore or it's added conditionally
     parser.add_argument('json_file', type=str, help="Path to the JSON file containing benchmarks")
-    parser.add_argument('--skip_completed', action="store_true", help='Skip already completed tests')
+    parser.add_argument('--skip_completed', action="store_true", help='Skip tests that have already been completed')
+    # Now safely add --update only here if needed
+    parser.add_argument('--update', action="store_true", help='Force update of tests even if they have already been completed')
     return parser
 
 def add_build_command(subparsers):
