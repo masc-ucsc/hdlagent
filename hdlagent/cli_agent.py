@@ -6,6 +6,7 @@ import argparse
 from handler import Handler, check_json
 from importlib import resources
 import os
+import hdeval
 
 def start(args):
     if args.help:

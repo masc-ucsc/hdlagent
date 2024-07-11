@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "hdlagent"
+version = "0.1.0"
+description = "A CLI tool for handling HDL evaluations"
+authors = ["Mark Zakharov"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+Markdown = "^3.6"
+hdeval = { path = "../../hdeval/", develop = true }
+openai = "^1.35.13"
+octoai = "^1.4.0"
+vertexai = "^1.49.0"
+PyYAML = "^6.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
