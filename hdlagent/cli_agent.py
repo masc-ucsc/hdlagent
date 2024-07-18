@@ -7,6 +7,7 @@ from handler import Handler, check_json
 from importlib import resources
 import os
 import hdeval
+import octoai
 
 def start(args):
     if args.help:
