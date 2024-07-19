@@ -1,0 +1,1 @@
+build a simple RCA with 2 inputs (a,b,c) each 8 bits and a result of 11 bits called foo
