@@ -3,28 +3,26 @@
 import shutil
 import agent
 import argparse
-from handler import Handler, check_json
+from handler import Handler
 from importlib import resources
 import os
-import hdeval
-import octoai
 
 def start(args):
     if args.help:
         print("\n\nStart a new structured spec file out of a plain problem explanation")
         return
 
-    if len(args.file_list) == 0:
+    if len(args.file_list)==0:
         print("ERROR: start needs a file list of plain text")
         exit(4)
 
-    spath = resources.files('resources')
+    spath      = resources.files('resources')
     my_handler = Handler()
     my_handler.set_comp_iter(args.comp_limit)
 
     for f in args.file_list:
         if args.help:
-            print(f"Creating spec from {f}")
+            print(f"creating spec from {f}")
         else:
             my_handler.sequential_entrypoint(spath=str(spath), llms=args.llm, lang=args.lang, update=args.update, w_dir=args.w_dir, gen_spec=f, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
 
@@ -33,20 +31,10 @@ def bench(args):
         print("\n\nPerformance against benchmarks")
         return
 
-    json_path = args.json_file
-    json_data = check_json(json_path)
+    if args.skip_completed and args.update:
+        print("ERROR: Benchmarks can not invoke --skip_completed and --update at the same time")
+        exit()
 
-    if not json_data:
-        print("Error: Failed to load or parse the JSON file at", json_path)
-        return
-
-    my_handler = Handler()
-    my_handler.set_comp_iter(args.comp_limit)
-    my_handler.create_agents(resources.files('resources'), args.llm, args.lang, [], False, True, args.w_dir, None, False)
-
-    for entry in json_data['verilog_problems']:
-        print(f"BENCHMARKING... {entry['name']}")
-        my_handler.single_json_run(entry, args.w_dir, args.skip_completed, args.update)
     if args.limit:
         print("limit: ")
         exit()
@@ -57,7 +45,7 @@ def bench(args):
     if args.lec_limit:
         print("lec_limit: ")
         exit()
-     
+
     if args.lec_limit_feedback:
         print("lec_limit_feedback: ")
         exit()
@@ -78,12 +66,12 @@ def build(args):
         print("\n\nBuild the HDL out of the spec file[s] or spec files in directory")
         return
 
-    spath = resources.files('resources')
+    spath      = resources.files('resources')
     my_handler = Handler()
     my_handler.set_comp_iter(args.comp_limit)
-    my_handler.create_agents(spath=str(spath), llms=args.llm, lang=args.lang, use_spec=True, temperature=None, w_dir=args.w_dir, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
+    my_handler.create_agents(spath=str(spath), llms=args.llm, lang=args.lang, use_spec=True, temperature= None, w_dir=args.w_dir, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
 
-    if len(args.file_list) == 0:  # Check current directory to build
+    if len(args.file_list) == 0: # Check current directory to build
         files = os.listdir(args.w_dir)
         args.file_list = [file for file in files if file.endswith("spec.yaml")]
 
@@ -100,10 +88,10 @@ def list_models(args):
         return []
 
     all_models = []
-    if not hasattr(args, 'model'):
+    if not hasattr(args,'model'):
         args.model = []
 
-    showall = len(args.model) == 0
+    showall = len(args.model)==0
     if "openai" in args.model or showall:
         if "OPENAI_API_KEY" in os.environ:
             models = agent.list_openai_models()
@@ -112,7 +100,8 @@ def list_models(args):
                 if not args.silent:
                     print("OpenAI models:")
                     for m in models:
-                        print(" ", m)
+                        if "gpt" in m:
+                            print(" ", m)
                     print("\n")
         else:
             print("OpenAI unavailable unless OPENAI_API_KEY is set")
@@ -142,18 +131,21 @@ def list_models(args):
 
     return all_models
 
-def add_shared_args(model, add_update=True):
-    model.add_argument('--config', type=str, action="store", help='Path to a configuration YAML file')
-    model.add_argument('--llm', type=str, action="append", default=['gpt-4o'], help='LLM model. Use list_models to see models')
-    model.add_argument('--lang', type=str, action="store", default="Verilog", choices=['Verilog', 'Chisel', 'PyRTL', 'DSLX'], help='Language for code generation. It can only be "Verilog", "Chisel", "PyRTL", or "DSLX")')
-    model.add_argument('--parallel', action="store_false", help='Parallelize hdlagent runs')
-    model.add_argument('--w_dir', type=str, action="store", default="./", help='Working dir to generate resource and log files')
-    model.add_argument('--comp_limit', type=int, action="store", default=4, help='The amount of LLM attempts, max iterations = (top_k * lec_limit * comp_limit)')
-    model.add_argument('--init_context', action="append", default=[], help='Use per language specialized initial context')
-    model.add_argument('--supp_context', action="store_false", help='Use per each compile error a supplemental context')
+def add_shared_args(model):
+
+    model.add_argument('--config',        type=str,   action="store",       help='Path to a configuration YAML file')
+    model.add_argument('--llm',           type=str,   action="append",      default=['gpt-4o'], help='LLM model. Use list_models to see models')
+    model.add_argument('--lang',          type=str,   action="store",       default="Verilog",                choices=['Verilog', 'Chisel', 'PyRTL', 'DSLX'], help='Language for code generation. It can only be "Verilog", "Chisel", "PyRTL", or "DSLX"')
+    model.add_argument('--parallel',      action="store_false", help='Parallelize hdlagent runs')
+
+    model.add_argument('--w_dir',         type=str,   action="store",       default="./",         help='Working dir to generate resource and log files')
+    model.add_argument('--comp_limit',    type=int,   action="store",       default=4,            help='The amount of LLM attempts, max iterations = (top_k * lec_limit * comp_limit)')
+
+    model.add_argument('--init_context',  action="append",      default=[], help='Use per language specialized initial context')
+    model.add_argument('--supp_context',  action="store_false", help='Use per each compile error a supplemental context')
     model.add_argument('--short_context', action="store_false", help='Exclude previous code responses and queries from context window')
-    if add_update:
-        model.add_argument('--update', action="store_true", help='Retry LEC iterations on current RTL code generated')
+
+    model.add_argument('--update',        action="store_false", help='Retry LEC iterations on current RTL code generated')
 
 def check_tools(args):
     if shutil.which('yosys') is None:
@@ -165,7 +157,7 @@ def check_tools(args):
         exit(3)
 
 def check_args(args):
-    if not hasattr(args, 'file_list'):
+    if not hasattr(args,'file_list'):
         args.file_list = []
 
     for f in args.file_list:
@@ -191,45 +183,40 @@ def add_start_command(subparsers):
     parser = subparsers.add_parser("start", help="Start a spec from a simple explanation", add_help=False)
     add_shared_args(parser)
     parser.add_argument("file_list", nargs="*", help="Explicit list of text files to start spec.yaml specs")
+
     return parser
 
 def add_bench_command(subparsers):
-    parser = subparsers.add_parser("bench", help="Benchmark the existing hdlagent setup using a JSON file with Verilog problems", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    add_shared_args(parser, add_update=False)  # Assuming `add_shared_args` does not add `--update` anymore or it's added conditionally
-    parser.add_argument('json_file', type=str, help="Path to the JSON file containing benchmarks")
-    parser.add_argument('--skip_completed', action="store_true", help='Skip tests that have already been completed')
-    # Now safely add --update only here if needed
-    parser.add_argument('--update', action="store_true", help='Force update of tests even if they have already been completed')
     parser = subparsers.add_parser("bench", help="Benchmark the existing hdlagent setup", add_help=False)
     add_shared_args(parser)
     parser.add_argument('--skip_completed',        action="store_false", help='Skip generated already generated tests')
-    parser.add_argument("bench_list", nargs="*", help="List of files to clean")
-    parser.add_argument('--bench', type=str, help='Path to the JSON file for benchmarking.')
-    parser.add_argument('--bench_limit', type=int, help='Allows to specify the number of tests to run in the benchmark JSON file.')
-    parser.add_argument('--bench_from', type=str, help='Allows to specify from which entry to try in the benchmark JSON file.')
-    parser.add_argument('--bench_spec', action='store_true', help='Create and use a spec when using benchmarking.')
+    parser.add_argument("bench_list", nargs="+", help="List of files to clean")
+
     return parser
 
 def add_build_command(subparsers):
     parser = subparsers.add_parser("build", help="Build the code (HDL+test) from the spec file", add_help=False)
     add_shared_args(parser)
     parser.add_argument("file_list", nargs="*", help="Explicit list of spec files, or find *spec.yaml in w_dir")
+
     return parser
 
 def add_list_models_command(subparsers):
     parser = subparsers.add_parser("list-models", help="List the existing models available", add_help=False)
     add_shared_args(parser)
     parser.add_argument("model", nargs="*", help="platform (openai, octoai, vertex)")
+
     return parser
 
 def cli_agent():
-    parser = argparse.ArgumentParser(description="hdlagent: A Hardware Description Language Agent", add_help=False)
-    subparsers = parser.add_subparsers(dest="command")
 
-    parser_bench = add_bench_command(subparsers)
-    parser_build = add_build_command(subparsers)
+    parser     = argparse.ArgumentParser(description = "hdlagent: A Hardware Description Language Agent", add_help=False)
+    subparsers = parser.add_subparsers(dest          = "command")
+
+    parser_bench       = add_bench_command(subparsers)
+    parser_build       = add_build_command(subparsers)
     parser_list_models = add_list_models_command(subparsers)
-    parser_start = add_start_command(subparsers)
+    parser_start       = add_start_command(subparsers)
 
     args, unknown = parser.parse_known_args()
 
@@ -268,4 +255,3 @@ def cli_agent():
 
 if __name__ == "__main__":
     cli_agent()
-
