@@ -47,6 +47,31 @@ def bench(args):
     for entry in json_data['verilog_problems']:
         print(f"BENCHMARKING... {entry['name']}")
         my_handler.single_json_run(entry, args.w_dir, args.skip_completed, args.update)
+    if args.limit:
+        print("limit: ")
+        exit()
+    if args.comp_limit:
+        print("comp_limit: ")
+        exit()
+
+    if args.lec_limit:
+        print("lec_limit: ")
+        exit()
+     
+    if args.lec_limit_feedback:
+        print("lec_limit_feedback: ")
+        exit()
+
+    if args.skip_successful:
+        print("skip_successful: ")
+        exit()
+
+    if args.spec:
+        print("spec: ")
+        exit()
+
+    for f in args.bench_list:
+        print(f"BENCHMARKING... {f}(to be added)")
 
 def build(args):
     if args.help:
@@ -175,6 +200,14 @@ def add_bench_command(subparsers):
     parser.add_argument('--skip_completed', action="store_true", help='Skip tests that have already been completed')
     # Now safely add --update only here if needed
     parser.add_argument('--update', action="store_true", help='Force update of tests even if they have already been completed')
+    parser = subparsers.add_parser("bench", help="Benchmark the existing hdlagent setup", add_help=False)
+    add_shared_args(parser)
+    parser.add_argument('--skip_completed',        action="store_false", help='Skip generated already generated tests')
+    parser.add_argument("bench_list", nargs="*", help="List of files to clean")
+    parser.add_argument('--bench', type=str, help='Path to the JSON file for benchmarking.')
+    parser.add_argument('--bench_limit', type=int, help='Allows to specify the number of tests to run in the benchmark JSON file.')
+    parser.add_argument('--bench_from', type=str, help='Allows to specify from which entry to try in the benchmark JSON file.')
+    parser.add_argument('--bench_spec', action='store_true', help='Create and use a spec when using benchmarking.')
     return parser
 
 def add_build_command(subparsers):
