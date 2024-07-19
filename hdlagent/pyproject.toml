@@ -7,7 +7,7 @@ authors = ["Mark Zakharov"]
 [tool.poetry.dependencies]
 python = "^3.8"
 Markdown = "^3.6"
-hdeval = { git = "https://github.com/masc-ucsc/hdeval.git" }
+hdeval = { git = "https://github.com/masc-ucsc/hdeval.git", branch = "main" }
 openai = "^1.35.13"
 octoai = "^1.4.0"
 vertexai = "^1.49.0"
