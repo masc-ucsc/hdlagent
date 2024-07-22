@@ -10,5 +10,3 @@ hdlagent/tests
 hdlagent/*.yaml
 hdlagent/*.md
 hdlagent/out
-tmp.*
-*.egg-info

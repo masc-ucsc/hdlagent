@@ -123,11 +123,6 @@ class Handler:
     #
     # Intended use: setup before doing any runs
     def create_agents(self, spath, llms, lang, init_context, supp_context, use_spec, w_dir, temperature, short_context):
-        new_agent = Agent(spath, 'gpt-4o', lang, init_context, supp_context, use_spec)
-        new_agent.set_role(Role.DESIGN)  # Setting role to DESIGN
-        new_agent.set_w_dir(w_dir)
-        self.add_agent(new_agent)
-
         role = Role.DESIGN
         for llm in llms:
             new_agent = Agent(spath, llm, lang, init_context, supp_context, use_spec)
@@ -187,11 +182,6 @@ class Handler:
     #
     # Indended use: benchmarking LLMs
     def single_json_run(self, entry: dict, base_w_dir, skip_completed, update):
-        designer = self.get_designer()
-        if designer is None:
-            print("No designer found. Skipping:", entry['name'])
-            return
-
         for agent in self.agents:
             agent.reset_k()
             agent.set_interface(entry['interface'])
