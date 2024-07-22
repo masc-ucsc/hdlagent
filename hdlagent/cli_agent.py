@@ -37,6 +37,27 @@ def bench(args):
 
     for f in args.bench_list:
         print(f"BENCHMARKING... {f}(to be added)")
+    # Load benchmark configurations
+    config_path = args.bench_config
+    with open(config_path, 'r') as file:
+        bench_config = json.load(file)
+
+    results = []
+    for config in bench_config['configurations']:
+        # Set up environment based on config
+        args.llm = config.get('llm', args.llm)
+        args.temperature = config.get('temperature', None)
+        args.lang = config.get('lang', args.lang)
+
+        # Potentially use build function or a new shared method
+        build_result = build(args)  # This function might need to return results
+
+        # Collect results
+        results.append({
+            'config': config,
+            'result': build_result
+        })
+
 
 def build(args):
     if args.help:
@@ -169,6 +190,7 @@ def add_bench_command(subparsers):
     parser.add_argument('--skip_completed',        action="store_false", help='Skip generated already generated tests')
     parser.add_argument("bench_list", nargs="+", help="List of files to clean")
 
+    parser.add_argument('--bench', type=str, help='Path to the benchmark configuration file')
     return parser
 
 def add_build_command(subparsers):
