@@ -21,6 +21,4 @@ module RCA(
 
     // Combining the sum and carries into the final output
     assign foo = {carry[7], sum, carry[6:0]};
-
 endmodule
-

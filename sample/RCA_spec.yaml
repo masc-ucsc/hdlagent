@@ -1,5 +1,6 @@
 description: |
   
+<<<<<<< HEAD
   - **Module Name: RCA (Ripple Carry Adder)**
   
   - **Inputs:**
@@ -34,4 +35,24 @@ description: |
 interface: |
   
   module RCA(input [7:0] a, input [7:0] b, input c, output [10:0] foo);
+=======
+  - **Module Name**: RCA 
+  
+  - **Inputs**:
+  - `a`: 8-bit input 
+  - `b`: 8-bit input
+  - `c`: 8-bit input
+  
+  - **Output**:
+  - `foo`: 11-bit result 
+  
+  - **Functionality**:
+  - Implement a Ripple Carry Adder (RCA)
+  - The sum of `a`, `b`, and `c` should be computed 
+  - The result (`foo`) should consist of 11 bits to accommodate potential overflow 
+  
+interface: |
+  
+  module RCA(input [7:0] a, input [7:0] b, input [7:0] c, output [10:0] foo);
+>>>>>>> temp
     
