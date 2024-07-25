@@ -13,6 +13,11 @@ from pathlib import Path
 import yaml
 
 
+class HDEvalInterface:
+    def __init__(self):
+        print("HDEvalInterface initialized")
+
+
 # WARNING: FEATURES BELOW ARE EXPERIMENTAL - FURTHER VALIDATION AND TESTING REQUIRED
 def worker(shared_list, shared_index, lock, spath, llm, lang, comp_limit, lec_limit, lec_limit_feedback, top_k, skip_completed, skip_successful, update, w_dir, bench_spec, init_context, supp_context, temperature, short_context):
     # Each worker has its own Handler instance.

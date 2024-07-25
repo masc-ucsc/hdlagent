@@ -1,24 +1,21 @@
 
 module RCA(
-    input [7:0] a,
-    input [7:0] b,
-    input [0:0] c,
-    output [10:0] foo
+    input [7:0] a,   // First 8-bit input operand
+    input [7:0] b,   // Second 8-bit input operand
+    input [7:0] c,   // Third 8-bit input operand
+    output [10:0] foo // 11-bit output to store the result of (a + b + c)
 );
-    wire [7:0] sum;
-    wire [7:0] carry;
+    wire [8:0] sum_ab; // Intermediate sum of a and b (9 bits to account for carry)
+    wire [9:0] sum_abc; // Intermediate sum of sum_ab and c (10 bits to account for carry)
+    
+    // Ripple Carry Adder for a + b
+    assign sum_ab = a + b;
 
-    // First bit addition
-    assign {carry[0], sum[0]} = a[0] + b[0] + c;
+    // Ripple Carry Adder for sum_ab + c
+    assign sum_abc = sum_ab + c;
 
-    // Ripple Carry Adder for bits 1 to 7
-    genvar i;
-    generate
-        for (i = 1; i < 8; i = i + 1) begin : add_bits
-            assign {carry[i], sum[i]} = a[i] + b[i] + carry[i-1];
-        end
-    endgenerate
+    // Assign the final sum to foo
+    assign foo = sum_abc;
 
-    // Combining the sum and carries into the final output
-    assign foo = {carry[7], sum, carry[6:0]};
 endmodule
+

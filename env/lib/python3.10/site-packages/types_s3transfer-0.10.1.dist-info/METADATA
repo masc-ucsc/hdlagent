@@ -1,0 +1,81 @@
+Metadata-Version: 2.1
+Name: types-s3transfer
+Version: 0.10.1
+Summary: Type annotations and code completion for s3transfer
+Home-page: https://youtype.github.io/mypy_boto3_builder/
+License: MIT
+Keywords: s3transfer,type-annotations,pyright,mypy,boto3
+Author: Vlad Emelianov
+Author-email: vlad.emelianov.nz@gmail.com
+Requires-Python: >=3.8,<4.0
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Environment :: Console
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Natural Language :: English
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Typing :: Stubs Only
+Project-URL: Bug Tracker, https://github.com/youtype/types-s3transfer/issues
+Project-URL: Documentation, https://youtype.github.io/mypy_boto3_builder/
+Project-URL: Repository, https://github.com/youtype/types-s3transfer
+Project-URL: Source, https://github.com/youtype/types-s3transfer
+Description-Content-Type: text/markdown
+
+# types-s3transfer
+
+[![PyPI - types-s3transfer](https://img.shields.io/pypi/v/types-s3transfer.svg?color=blue&label=types-s3transfer)](https://pypi.org/project/types-s3transfer)
+[![PyPI - s3transfer](https://img.shields.io/pypi/v/s3transfer.svg?color=blue&label=s3transfer)](https://pypi.org/project/s3transfer)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/types-s3transfer.svg?color=blue)](https://pypi.org/project/types-s3transfer)
+[![PyPI - Downloads](https://static.pepy.tech/badge/types-s3transfer)](https://pepy.tech/project/types-s3transfer)
+
+![boto3.typed](https://github.com/youtype/mypy_boto3_builder/raw/main/logo.png)
+
+Type annotations and code completion for [s3transfer](https://pypi.org/project/s3transfer/) package.
+This package is a part of [mypy_boto3_builder](https://github.com/youtype/mypy_boto3_builder) project.
+
+[![Publish botocore-stubs](https://github.com/youtype/botocore-stubs/actions/workflows/publish_on_update.yml/badge.svg)](https://github.com/youtype/botocore-stubs/actions/workflows/publish_on_update.yml)
+[![Publish types-awscrt](https://github.com/youtype/types-awscrt/actions/workflows/publish_on_update.yml/badge.svg)](https://github.com/youtype/types-awscrt/actions/workflows/publish_on_update.yml)
+[![Publish types-s3transfer](https://github.com/youtype/types-s3transfer/actions/workflows/publish_on_update.yml/badge.svg)](https://github.com/youtype/types-s3transfer/actions/workflows/publish_on_update.yml)
+
+
+- [types-s3transfer](#types-s3transfer)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Latest changes](#latest-changes)
+  - [Versioning](#versioning)
+  - [Support and contributing](#support-and-contributing)
+
+
+## Installation
+
+```bash
+python -m pip install types-s3transfer
+```
+
+## Usage
+
+Use [mypy](https://github.com/python/mypy) or [pyright](https://github.com/microsoft/pyright) for type checking.
+
+### Latest changes
+
+Full changelog can be found in [Releases](https://github.com/youtype/types-s3transfer/releases).
+
+## Versioning
+
+`types-s3transfer` version is the same as related `s3transfer` version and follows
+[PEP 440](https://www.python.org/dev/peps/pep-0440/) format.
+
+## Support and contributing
+
+Please reports any bugs or request new features in
+[types-s3transfer](https://github.com/youtype/types-s3transfer/issues/) repository.
+

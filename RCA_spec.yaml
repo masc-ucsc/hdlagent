@@ -1,0 +1,32 @@
+description: |
+  
+  - **Module Name**: RCA (Ripple Carry Adder)
+  
+  - **Purpose**: Build a simple Ripple Carry Adder (RCA) with 2 inputs `(a, b, c)` each 8 bits and generate a result of 11 bits called `foo`.
+  
+  - **Inputs**:
+  - `a`: 8-bit input
+  - `b`: 8-bit input
+  - `c`: 8-bit input
+  
+  - **Output**:
+  - `foo`: 11-bit result
+  
+  - **Functionality**:
+  - The RCA module will take three 8-bit inputs, `a`, `b`, and `c`, and produce an 11-bit result `foo`.
+  - The inputs will be summed together.
+  - The sum of the inputs, which can be up to 24 bits in total, will be truncated or managed to fit into the 11-bit output `foo`.
+  
+  - **Design Considerations**:
+  - Ensure that the adder sums the three 8-bit inputs correctly.
+  - Handle any carry that results from each stage of the addition.
+  - Final output should correctly represent the sum within 11-bit precision.
+  
+  - **Implementation Details**:
+  - Use full adders to build the Ripple Carry Adder, cascading from the least significant bit (LSB) to the most significant bit (MSB).
+  - Track and propagate carries between the bit positions.
+  - Ensure final result `foo` is valid and represents the sum of `a`, `b`, and `c` within the 11-bit constraint.
+interface: |
+  
+  module RCA (input [7:0] a, input [7:0] b, input [7:0] c, output [10:0] foo);
+    
