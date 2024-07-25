@@ -1,4 +1,4 @@
-[tool.poetry]
+ [tool.poetry]
 name = "hdlagent"
 version = "0.1.1"
 description = ""
@@ -24,6 +24,9 @@ vertexai = "^1.0.0"
 google-cloud-aiplatform = "^1.39.0"
 click = "^8.1.7"
 pyrtl = "^0.10.2"
+#hdeval = "^0.1.0"
+hdeval = { git = "https://github.com/masc-ucsc/hdeval", branch = "main" }
+#hdeval = { path = "../hdeval", develop = true }
 
 [build-system]
 requires = ["poetry-core"]

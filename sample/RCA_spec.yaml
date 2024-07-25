@@ -1,58 +1,46 @@
 description: |
   
-<<<<<<< HEAD
-  - **Module Name: RCA (Ripple Carry Adder)**
+  - Module Name: RCA
+  - The RCA module implements a simple ripple carry adder.
   
-  - **Inputs:**
-  - `a` (8 bits)
-  - `b` (8 bits)
-  - `c` (1 bit of carry input)
+  - Input Ports:
+  - a: 
+  - Description: First 8-bit input operand.
+  - Bit-width: 8 bits
   
-  - **Output:**
-  - `foo` (11 bits)
+  - b: 
+  - Description: Second 8-bit input operand.
+  - Bit-width: 8 bits
   
-  - **Description:**
-  - The RCA module is designed to add two 8-bit inputs (`a` and `b`) and an additional 1-bit carry input (`c`).
-  - The result of this addition is stored in an 11-bit output named `foo`.
-  - The output `foo` accounts for the possibility of a carry-out from the most significant bit, which is why it contains 11 bits, even though the inputs are 8 bits each.
+  - c: 
+  - Description: Third 8-bit input operand.
+  - Bit-width: 8 bits
   
-  - **Functionality:**
-  - The Ripple Carry Adder works by processing each bit of the inputs `a` and `b` sequentially from the least significant bit (LSB) to the most significant bit (MSB).
-  - At each bit position, the sum is computed using the corresponding bits from `a`, `b`, and the carry bit from the previous position.
-  - The carry bit is propagated to the next higher bit position.
-  - The 1-bit carry input `c` is added to the LSB of the inputs `a` and `b`.
-  - The process continues until all bits have been processed and the final carry bit is computed, ensuring a full 11-bit result for `foo`.
+  - Output Ports:
+  - foo: 
+  - Description: Output result of the addition.
+  - Bit-width: 11 bits
   
-  - **Constraints:**
-  - The input values `a` and `b` should each be exactly 8 bits in length.
-  - The carry input `c` should be a single bit.
+  - Functionality:
+  - The RCA module takes three 8-bit input operands (a, b, and c).
+  - It performs an addition operation on these three operands.
+  - The result of the addition is stored in an 11-bit output called foo.
   
-  - **Behavioral Summary:**
-  - If `a` and `b` are both 8-bit numbers and `c` is a 1-bit number, then the sum (`a + b + c`) is produced as an 11-bit number `foo`.
-  - The 11-bit output ensures that all possible outcomes of the addition, including the carry-out from the MSB, are accurately represented.
+  - Data Flow:
+  - The input operands (a, b, and c) are processed by the RCA module.
+  - A ripple carry adder algorithm is used to sum the operand values.
+  - The calculation of the sum includes intermediate carry bits being propagated through the addition process.
+  - The final result, which may extend up to 11 bits (including carry-out bits), is then assigned to the output foo.
   
-  This formal specification provides a clear overview of the desired RCA module, detailing its inputs, output, functionality, and constraints.
-interface: |
+  - Edge Cases and Considerations:
+  - The module must handle cases where the sum exceeds the 8-bit operand limit, requiring the use of carry bits.
+  - Ensure proper handling of carry overflow, resulting in an accurate 11-bit output.
   
-  module RCA(input [7:0] a, input [7:0] b, input c, output [10:0] foo);
-=======
-  - **Module Name**: RCA 
-  
-  - **Inputs**:
-  - `a`: 8-bit input 
-  - `b`: 8-bit input
-  - `c`: 8-bit input
-  
-  - **Output**:
-  - `foo`: 11-bit result 
-  
-  - **Functionality**:
-  - Implement a Ripple Carry Adder (RCA)
-  - The sum of `a`, `b`, and `c` should be computed 
-  - The result (`foo`) should consist of 11 bits to accommodate potential overflow 
-  
+  - Example Operation:
+  - If a = 10101010, b = 11001100, and c = 00110011
+  - The RCA performs the operation: \(a + b + c\)
+  - Result stored in foo could potentially involve carry bits, ensuring the final output is 11 bits long.
 interface: |
   
   module RCA(input [7:0] a, input [7:0] b, input [7:0] c, output [10:0] foo);
->>>>>>> temp
     
