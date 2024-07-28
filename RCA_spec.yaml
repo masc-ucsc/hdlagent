@@ -1,32 +1,42 @@
 description: |
   
-  - **Module Name**: RCA (Ripple Carry Adder)
+  - **Module Name**: 
+  - RCA
   
-  - **Purpose**: Build a simple Ripple Carry Adder (RCA) with 2 inputs `(a, b, c)` each 8 bits and generate a result of 11 bits called `foo`.
-  
-  - **Inputs**:
+  - **Inputs**: 
   - `a`: 8-bit input
   - `b`: 8-bit input
   - `c`: 8-bit input
   
-  - **Output**:
-  - `foo`: 11-bit result
+  - **Outputs**:
+  - `foo`: 11-bit output
   
-  - **Functionality**:
-  - The RCA module will take three 8-bit inputs, `a`, `b`, and `c`, and produce an 11-bit result `foo`.
-  - The inputs will be summed together.
-  - The sum of the inputs, which can be up to 24 bits in total, will be truncated or managed to fit into the 11-bit output `foo`.
+  - **Description**:
+  - The module `RCA` is a simple Ripple Carry Adder (RCA).
+  - It takes three 8-bit inputs: `a`, `b`, and `c`.
+  - The result of the addition is placed in an 11-bit output called `foo`.
   
-  - **Design Considerations**:
-  - Ensure that the adder sums the three 8-bit inputs correctly.
-  - Handle any carry that results from each stage of the addition.
-  - Final output should correctly represent the sum within 11-bit precision.
+  - **Functional Detail**:
+  - The inputs `a`, `b`, and `c` are 8-bit binary numbers.
+  - The primary function of this module is to add the three 8-bit inputs.
+  - Since adding three 8-bit numbers can produce a result larger than 8 bits, the sum is accommodated in an 11-bit output.
+  - The 11-bit output `foo` captures the full range of possible sums, from 0 to 765 (in binary: 00000000000 to 1011111101).
   
-  - **Implementation Details**:
-  - Use full adders to build the Ripple Carry Adder, cascading from the least significant bit (LSB) to the most significant bit (MSB).
-  - Track and propagate carries between the bit positions.
-  - Ensure final result `foo` is valid and represents the sum of `a`, `b`, and `c` within the 11-bit constraint.
+  - **Operational Logic**:
+  - The adder sums the inputs `a`, `b`, and `c` bit by bit.
+  - It propagates carries across each bit from the least significant bit (LSB) to the most significant bit (MSB).
+  - The result is the combined value of `a + b + c` placed in the `foo` output.
+  
+  - **Examples of Operation**:
+  - If `a = 00110101` (53 in decimal), `b = 01011001` (89 in decimal), and `c = 00001111` (15 in decimal), then:
+  - Sum = `00110101 + 01011001 + 00001111` = `100001100` (157 in decimal)
+  - The `foo` output will then hold `00010000101`.
+  
+  - **Edge Cases**:
+  - If all inputs are at their maximum value (i.e., `11111111` or 255 in decimal):
+  - Sum = `11111111 + 11111111 + 11111111` = `11111101110` (765 in decimal)
+  - The `foo` output will reflect the result, `1011111101`.
 interface: |
   
-  module RCA (input [7:0] a, input [7:0] b, input [7:0] c, output [10:0] foo);
+  module RCA(input [7:0] a, input [7:0] b, input [7:0] c, output [10:0] foo);
     

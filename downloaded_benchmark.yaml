@@ -1,0 +1,2621 @@
+verilog_problems:
+- class: custom
+  instruction: Design a module that takes 8 bit signed inputs 'a' and 'b' and has
+    outputs 'div' and 'mod' which are the 6 bit signed results of 'a' by 'b' division
+    and modulus operations, respectively.
+  interface: module truncated_sign_div_mod (input signed [7:0] a, input signed [7:0]
+    b, output signed [5:0] div, output signed [5:0] mod);
+  name: truncated_sign_div_mod
+  pipeline_stages: '0'
+  response: "module truncated_sign_div_mod (\n    input signed [7:0] a,\n    input\
+    \ signed [7:0] b,\n    output signed [5:0] div,\n    output signed [5:0] mod\n\
+    );\n  wire signed [7:0] full_div;\n  wire signed [7:0] full_mod;\n  assign full_div\
+    \ = a / b;\n  assign full_mod = a % b;\n  assign div = full_div[5:0];\n  assign\
+    \ mod = full_mod[5:0];\nendmodule\n"
+- class: custom
+  instruction: Design a module that takes two signed 8 bit inputs 'a' and 'b' and
+    sets the sole output bit 'out_o' when 'a' is less than 'b' by at least 5, ignoring
+    any overflow conditions
+  interface: module biased_sign_compare (input signed [7:0] a, input signed [7:0]
+    b, output out_o);
+  name: biased_sign_compare
+  pipeline_stages: '0'
+  response: "module biased_sign_compare (\n    input signed [7:0] a,\n    input signed\
+    \ [7:0] b,\n    output out_o\n);\n  assign out_o = (a + 8'sd4) < b;\nendmodule\n"
+- class: custom
+  instruction: Design a module that takes two 8 bit signed inputs 'a' and 'b' and
+    produces their signed product, added to the value 4, as 16 bit output 'out_o'.
+  interface: module biased_sign_mult (input signed [7:0] a, input signed [7:0] b,
+    output signed [15:0] out_o);
+  name: biased_sign_mult
+  pipeline_stages: '0'
+  response: "module biased_sign_mult (\n    input signed [7:0] a,\n    input signed\
+    \ [7:0] b,\n    output signed [15:0] out_o\n);\n  assign out_o = (a * b) + 16'sd4;\n\
+    endmodule\n"
+- class: hdlbits
+  instruction: 'Design a 1-bit full adder. The inputs are: [0:0]a, [0:0]b, [0:0]cin
+    and the outputs are: [0:0]sum, [0:0]cout.'
+  interface: module full_adder (input a, input b, input cin, output sum, output cout);
+  name: full_adder
+  pipeline_stages: '0'
+  response: "module full_adder (\n    input a,\n    input b,\n    input cin,\n   \
+    \ output sum,\n    output cout\n);\n  assign sum  = a ^ b ^ cin;\n  assign cout\
+    \ = (a & b) | (cin & (a ^ b));\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that performs an OR reduction on its 8 bit input bus
+    ''reduce_i''. The output is named ''result_o'' and should be one bit as it is
+    the OR of each bit of ''reduce_i''. Input(s): reduce_i[7:0]. Output(s): result_o[0]'
+  interface: module or_reduction (input [7:0] reduce_i, output result_o);
+  name: or_reduction
+  pipeline_stages: '0'
+  response: "module or_reduction (\n    input [7:0] reduce_i,\n    output result_o\n\
+    );\n  assign result_o = |reduce_i;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that implements a variable logical left shift. The
+    shift amount is set by 5 bit input bus ''shift_n_i'' and the value being left
+    shifted is a 32 bit input bus ''val_i''. The result is also a 32 bit output bus
+    named ''result_o''. Input(s): shift_n_i[4:0], val_i[31:0]. Output(s): result_o[31:0].'
+  interface: module variable_logical_leftshift (input [4:0] shift_n_i, input [31:0]
+    val_i, output [31:0] result_o);
+  name: variable_logical_leftshift
+  pipeline_stages: '0'
+  response: "module variable_logical_leftshift (\n    input [4:0] shift_n_i,\n   \
+    \ input [31:0] val_i,\n    output [31:0] result_o\n);\n  assign result_o = val_i\
+    \ << shift_n_i;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that performs a NAND reduction on its 8 bit input
+    bus ''reduce_i''. The output is named ''result_o'' and should be one bit as it
+    is the NAND of each bit of ''reduce_i''. Input(s): reduce_i[7:0]. Output(s): result_o[0].'
+  interface: module nand_reduction (input [7:0] reduce_i, output result_o);
+  name: nand_reduction
+  pipeline_stages: '0'
+  response: "module nand_reduction (\n    input [7:0] reduce_i,\n    output result_o\n\
+    );\n  assign result_o = ~&reduce_i;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that performs an XOR reduction on its 8 bit input
+    but ''reduce_i''. The output is named ''result_o'' and should be one bit as it
+    is the XOR of each bit of ''reduce_i''. Input(s): reduce_i[7:0]. Output(s): result_o[0].'
+  interface: module xor_reduction (input [7:0] reduce_i, output result_o);
+  name: xor_reduction
+  pipeline_stages: '0'
+  response: "module xor_reduction (\n    input [7:0] reduce_i,\n    output result_o\n\
+    );\n  assign result_o = ^reduce_i;\nendmodule\n"
+- class: custom
+  instruction: 'Design a variable logical shift module that takes a 6 bit input named
+    ''shift_n_i'' which determines by how many bits the input value must be shifted.
+    A positive ''shift_n_i'' value represents the left shift amount, and a negative
+    ''shift_n_i'' value represents a right shift amount. This means if ''shift_n_i''
+    is all ones, a right shift by 1 will be performed. If ''shift_n_i'' is -32, then
+    a right shift by 32 will be performed, which is the largest right shift possible.
+    The largest left shift possible would thus be 31, as ''shift_n_i'' is only 6 bits
+    wide. The value to be shifted is input through a 32 bit bus named ''val_i'' and
+    is output from a 32 bit bus named ''result_o''. Input(s): shift_n_i[5:0], val_i[31:0].
+    Output(s): result_o[31:0].'
+  interface: module variable_logical_shift (input [5:0] shift_n_i, input [31:0] val_i,
+    output [31:0] result_o);
+  name: variable_logical_shift
+  pipeline_stages: '0'
+  response: "module variable_logical_shift (\n    input [5:0] shift_n_i,\n    input\
+    \ [31:0] val_i,\n    output [31:0] result_o\n);\n  wire [31:0] left_res_w;\n \
+    \ wire [31:0] right_res_w;\n  wire [5:0] _2s_c_shift_w;\n\n  assign _2s_c_shift_w\
+    \ = ~(shift_n_i) + 1;\n  assign right_res_w = val_i >> _2s_c_shift_w;\n  assign\
+    \ left_res_w = val_i << shift_n_i[4:0];\n\n  assign result_o = shift_n_i[5] ==\
+    \ 1'b1 ? right_res_w : left_res_w;\nendmodule\n"
+- class: custom
+  instruction: 'The _7seg_display module controls a seven-segment display using a
+    4-bit input `val_i`, representing hexadecimal values (0-F). The module has seven
+    single-bit outputs: `top_left_vert_o`, `top_right_vert_o`, `bot_left_vert_o`,
+    `bot_right_vert_o` for the vertical segments, and `top_horizontal_o`, `mid_horizontal_o`,
+    `bot_horizontal_o` for the horizontal segments. Internally, it uses conditional
+    logic to activate these segments based on the input. For each hexadecimal value,
+    the module sets the segments to display the corresponding character, with conditions
+    ensuring correct representation, including specific handling for lowercase ''b''
+    and ''d'' to avoid confusion with similar-looking numbers. The design is purely
+    combinational, with outputs directly and immediately responding to changes in
+    the input value'
+  interface: module _7seg_display (input [3:0] val_i, output top_left_vert_o, output
+    top_right_vert_o, output bot_left_vert_o,  output bot_right_vert_o, output top_horizontal_o,
+    output mid_horizontal_o, output bot_horizontal_o);
+  name: _7seg_display
+  pipeline_stages: '0'
+  response: "module _7seg_display (\n    input [3:0] val_i,\n    output top_left_vert_o,\n\
+    \    output top_right_vert_o,\n    output bot_left_vert_o,\n        output bot_right_vert_o,\n\
+    \    output top_horizontal_o,\n    output mid_horizontal_o,\n    output bot_horizontal_o\n\
+    );\n\n  wire zero, one, two, three, four, five, six, seven, eight, nine;\n  wire\
+    \ A, b, C, d, E, F;\n\n  assign zero = val_i == 4'b0000;\n  assign one = val_i\
+    \ == 4'b0001;\n  assign two = val_i == 4'b0010;\n  assign three = val_i == 4'b0011;\n\
+    \  assign four = val_i == 4'b0100;\n  assign five = val_i == 4'b0101;\n  assign\
+    \ six = val_i == 4'b0110;\n  assign seven = val_i == 4'b0111;\n  assign eight\
+    \ = val_i == 4'b1000;\n  assign nine = val_i == 4'b1001;\n  assign A = val_i ==\
+    \ 4'b1010;\n  assign b = val_i == 4'b1011;\n  assign C = val_i == 4'b1100;\n \
+    \ assign d = val_i == 4'b1101;\n  assign E = val_i == 4'b1110;\n  assign F = val_i\
+    \ ==  4'b1111;\n\n  assign top_horizontal_o = !one && !four && !b && !d;\n  assign\
+    \ mid_horizontal_o = !zero && !one && !seven && !C;\n  assign bot_horizontal_o\
+    \ = !one && !four && !seven && !nine && !A && !F;\n  assign top_left_vert_o  =\
+    \ !one && !two && !three && !seven && !d;\n  assign bot_left_vert_o  = !one &&\
+    \ !three && !four && !seven && !nine;\n  assign top_right_vert_o = !five && !six\
+    \ && !b && !C && !E && !F;\n  assign bot_right_vert_o = !two && !C && !E && !F;\n\
+    \nendmodule\n"
+- class: custom
+  instruction: 'Create a module that concatenates and duplicates inputs 8 bit inputs
+    ''a_i'' and ''b_i'' into a 32 bit bus in the order of a_i, b_i, b_i, a_i. The
+    output wire name is ''result_o''. Input(s): a_i[7:0], b_i[7:0]. Output(s): result_o[31:0].'
+  interface: module ABBA_bus (input [7:0] a_i, input [7:0] b_i, output [31:0] result_o);
+  name: ABBA_bus
+  pipeline_stages: '0'
+  response: "module ABBA_bus (\n    input [7:0] a_i,\n    input [7:0] b_i,\n    output\
+    \ [31:0] result_o\n);\n  assign result_o = {a_i, b_i, b_i, a_i};\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that performs a NOR reduction on its 8 bit input bus
+    ''reduce_i''. The output is named ''result_o'' and should be one bit as it is
+    the NOR of each bit of ''reduce_i''. Input(s): reduce_i[7:0]. Output(s): result_o[0].'
+  interface: module nor_reduction (input [7:0] reduce_i, output result_o);
+  name: nor_reduction
+  pipeline_stages: '0'
+  response: "module nor_reduction (\n    input [7:0] reduce_i,\n    output result_o\n\
+    );\n  assign result_o = ~|reduce_i;\nendmodule\n"
+- class: custom
+  instruction: 'Implement a module that sign extends an input int sized wire ''int_i[31:0]''
+    to an output double sized wire ''double_o[63:0]''. Input(s): int_i[31:0]. Output(s):
+    double_o[63:0].'
+  interface: module sign_extend_int_to_double (input [31:0] int_i, output [63:0] double_o);
+  name: sign_extend_int_to_double
+  pipeline_stages: '0'
+  response: "module sign_extend_int_to_double (\n    input [31:0] int_i,\n    output\
+    \ [63:0] double_o\n);\n  wire [31:0] s_ext_w;\n  assign s_ext_w = int_i[31] ==\
+    \ 1'b1 ? 32'hFFFFFFFF : 32'd0;\n  assign double_o = {s_ext_w, int_i};\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that implements a variable logical right shift. The
+    shift amount is set by 5 bit input bus ''shift_n_i'' and the value being right
+    shifted is a 32 bit input bus ''val_i''. The result is also a 32 bit bus output
+    named ''result_o''. Input(s): shift_n_i[4:0], val_i[31:0]. Output(s): result_o[31:0].'
+  interface: module variable_logical_rightshift (input [4:0] shift_n_i, input [31:0]
+    val_i, output [31:0] result_o);
+  name: variable_logical_rightshift
+  pipeline_stages: '0'
+  response: "module variable_logical_rightshift (\n    input [4:0] shift_n_i,\n  \
+    \  input [31:0] val_i,\n    output [31:0] result_o\n);\n  assign result_o = val_i\
+    \ >> shift_n_i;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that performs an AND reduction on its 8 bit input
+    bus ''reduce_i''. The output is named ''result_o'' and should be one bit as it
+    is the AND of each bit of ''reduce_i''. Input(s): reduce_i[7:0]. Output(s): result_o[0].'
+  interface: module and_reduction (input [7:0] reduce_i, output result_o);
+  name: and_reduction
+  pipeline_stages: '0'
+  response: "module and_reduction (\n    input [7:0] reduce_i,\n    output result_o\n\
+    );\n  assign result_o = &reduce_i;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that zero extends a 32-bit int input `int_i` to a
+    64-bit double output `double_o`. Input(s): int_i[31:0]. Output(s): double_o[63:0].'
+  interface: module zero_extend_int_to_double (input [31:0] int_i, output [63:0] double_o);
+  name: zero_extend_int_to_double
+  pipeline_stages: '0'
+  response: "module zero_extend_int_to_double (\n    input [31:0] int_i,\n    output\
+    \ [63:0] double_o\n);\n  assign double_o = {32'd0, int_i};\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that performs a variable arithmetic right shift. It
+    takes input [4:0]''shift_n_i'' that represents the shift amount and input [31:0]''val_i''
+    which is the value being shifted. The output is [31:0]''result_o''. Input(s):
+    shift_n_i[4:0], val_i[31:0]. Output(s): result_o[31:0].'
+  interface: module variable_arithmetic_rightshift (input [4:0] shift_n_i, input [31:0]
+    val_i, output [31:0] result_o);
+  name: variable_arithmetic_rightshift
+  pipeline_stages: '0'
+  response: "module variable_arithmetic_rightshift (\n    input [4:0] shift_n_i,\n\
+    \    input [31:0] val_i,\n    output [31:0] result_o\n);\n  assign result_o =\
+    \ $signed(val_i) >>> shift_n_i;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that outputs a 16 bit bus named ''result_o'' that
+    is the concatenation of 8 bit bus ''a_i'' and 8 bit bus ''b_i'', where ''a_i''
+    are the upper 8 bits and ''b_i'' are the lower 8 bits. Input(s): a_i[7:0], b_i[7:0].
+    Output(s): result_o[15:0].'
+  interface: module simple_concatenation (input [7:0] a_i, input [7:0] b_i, output
+    [15:0] result_o);
+  name: simple_concatenation
+  pipeline_stages: '0'
+  response: "module simple_concatenation (\n    input [7:0] a_i,\n    input [7:0]\
+    \ b_i,\n    output [15:0] result_o\n);\n  assign result_o = {a_i, b_i};\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that performs an XNOR reduction on its 8 bit input
+    bus ''reduce_i''. The output is named ''result_o'' and should be one bit as it
+    is the XNOR of each bit of ''reduce_i''. Input(s): reduce_i[7:0]. Output(s): result_o[0].'
+  interface: module xnor_reduction (input [7:0] reduce_i, output result_o);
+  name: xnor_reduction
+  pipeline_stages: '0'
+  response: "module xnor_reduction (\n    input [7:0] reduce_i,\n    output result_o\n\
+    );\n  assign result_o = ~^reduce_i;\nendmodule\n"
+- class: custom
+  instruction: Implement a module that decodes a 4 bit wide one hot input named 'one_hot_i'
+    into its 2 bit decimal form, which is an output bus named 'decoded_o'. There is
+    an additional output single bit wire named 'err_o' which should go high if 'one_hot_i'
+    is not a valid one hot signal, in which case 'decoded_o' should take on value
+    0. The input(s) are one_hot_i[3:0]. The output(s) are err_o[0] and decoded_o[1:0]
+  interface: module one_hot_decoder (input [3:0] one_hot_i, output [1:0] decoded_o,
+    output err_o);
+  name: one_hot_decoder
+  pipeline_stages: '0'
+  response: "module one_hot_decoder (\n    input [3:0] one_hot_i,\n    output [1:0]\
+    \ decoded_o,\n    output err_o\n);\n  always_comb begin case (one_hot_i)\n   \
+    \ 4'b0001 : begin\n      decoded_o = 2'b00;\n      err_o = 1'b0; end\n    4'b0010\
+    \ : begin\n      decoded_o = 2'b01;\n      err_o = 1'b0; end\n    4'b0100 : begin\n\
+    \      decoded_o = 2'b10;\n      err_o = 1'b0; end\n    4'b1000 : begin\n    \
+    \  decoded_o = 2'b11;\n      err_o = 1'b0; end\n    default: begin\n      decoded_o\
+    \ = 2'b00;\n      err_o = 1'b1; end\n  endcase\n  end\nendmodule\n"
+- class: custom
+  instruction: 'Create a module that takes a 4 bit wide input bus named `element_i`
+    and replicates and concatenates it four times, creating 16 bit wide output bus
+    named `result_o`. Input(s): element_i[3:0]. Output(s): result_o[15:0].'
+  interface: module _4_replication (input [3:0] element_i, output [15:0] result_o);
+  name: _4_replication
+  pipeline_stages: '0'
+  response: "module _4_replication (\n    input [3:0] element_i,\n    output [15:0]\
+    \ result_o\n);\n  assign result_o = {4{element_i}};\nendmodule\n"
+- class: hdlbits
+  instruction: 'Implement a 4:1 multiplexer. The inputs are: [3:0]data_in, [1:0]select
+    and the outputs are: [0:0]data_out.'
+  interface: module mux_4to1 (input [3:0] data_in, input [1:0] select, output reg
+    data_out  // Use reg since we're using procedural assignment);
+  name: mux_4to1
+  pipeline_stages: '0'
+  response: "module mux_4to1 (\n    input [3:0] data_in,\n    input [1:0] select,\n\
+    \    output reg data_out );\n\n  always_comb begin\n    case (select)\n      2'b00:\
+    \   data_out = data_in[0];\n      2'b01:   data_out = data_in[1];\n      2'b10:\
+    \   data_out = data_in[2];\n      2'b11:   data_out = data_in[3];\n      default:\
+    \ data_out = data_in[0];\n    endcase\n  end\n\nendmodule\n\n"
+- class: custom
+  instruction: 'Implement a 2-to-4 binary decoder. The inputs are: [1:0]in_i and the
+    outputs are: [3:0]out_o.'
+  interface: module decoder_2to4 (input  [1:0] in_i, output [3:0] out_o);
+  name: decoder_2to4
+  pipeline_stages: '0'
+  response: "module decoder_2to4 (\n    input  [1:0] in_i,\n    output [3:0] out_o\n\
+    );\n  always @(in_i) begin\n    case (in_i)\n      2'b00:   out_o = 4'b0001;\n\
+    \      2'b01:   out_o = 4'b0010;\n      2'b10:   out_o = 4'b0100;\n      2'b11:\
+    \   out_o = 4'b1000;\n      default: out_o = 'b0;\n    endcase\n  end\nendmodule\n"
+- class: custom
+  instruction: 'Implement a 4-bit magnitude comparator. The inputs are: [3:0]A, [3:0]B
+    and the outputs are: [0:0]A_gt_B, [0:0]A_eq_B, [0:0]A_lt_B.'
+  interface: module comparator_4bit (input [3:0] A, input [3:0] B, output A_gt_B,
+    output A_eq_B, output A_lt_B );
+  name: comparator_4bit
+  pipeline_stages: '0'
+  response: "module comparator_4bit (\n    input [3:0] A,\n    input [3:0] B,\n  \
+    \  output A_gt_B,  \n    output A_eq_B, \n    output A_lt_B  \n);\n  assign A_gt_B\
+    \ = (A > B);\n  assign A_eq_B = (A == B);\n  assign A_lt_B = (A < B);\nendmodule\n"
+- class: custom
+  instruction: 'Design an 8-bit parity generator. The output should be 1 for even
+    parity. The inputs are: [7:0]in_i and the outputs are: [0:0]parity_out.'
+  interface: module even_parity_generator (input [7:0] in_i, output parity_out);
+  name: even_parity_generator
+  pipeline_stages: '0'
+  response: "module even_parity_generator (\n    input [7:0] in_i,\n    output parity_out\n\
+    );\n  assign parity_out = ^(in_i[7:0]);\nendmodule\n"
+- class: custom
+  instruction: 'Implement a 4-input OR gate using only 2-input OR gates. The inputs
+    are: [0:0]in0, [0:0]in1, [0:0]in2, [0:0]in3 and the output is: [0:0]out_o.'
+  interface: module or_4input (input  in0, input in1, input in2, input in3, output
+    out_o);
+  name: or_4input
+  pipeline_stages: '0'
+  response: "module or_4input (\n    input  in0,\n    input in1,\n    input in2,\n\
+    \    input in3,\n    output out_o\n);\n  wire or_01, or_23;\n  or (or_01, in0,\
+    \ in1);\n  or (or_23, in2, in3);\n  or (out_o, or_01, or_23);\nendmodule\n"
+- class: hdlbits
+  instruction: 'Design a 4-to-1 multiplexer. Inputs: [1:0]sel, [3:0]inputs. Output:
+    [0:0]out_o'
+  interface: module alt_mux_4to1 (input [1:0] sel, input [3:0] inputs, output reg
+    out_o);
+  name: alt_mux_4to1
+  pipeline_stages: '0'
+  response: "module alt_mux_4to1 (\n    input [1:0] sel,\n    input [3:0] inputs,\n\
+    \    output reg out_o\n);\n\n  always @(sel, inputs) begin\n    case (sel)\n \
+    \     2'b00:   out_o <= inputs[0];\n      2'b01:   out_o <= inputs[1];\n     \
+    \ 2'b10:   out_o <= inputs[2];\n      2'b11:   out_o <= inputs[3];\n      default:\
+    \ out_o <= 0;\n    endcase\n  end\n\nendmodule\n"
+- class: hdlbits
+  instruction: 'Create a 1-bit full adder. Inputs: [0:0]a, [0:0]b, [0:0]cin. Outputs:
+    [0:0]sum, [0:0]cout'
+  interface: module alt_full_adder (input  a, input  b, input  cin, output sum, output
+    cout);
+  name: alt_full_adder
+  pipeline_stages: '0'
+  response: "module alt_full_adder (\n    input  a,\n    input  b,\n    input  cin,\n\
+    \    output sum,\n    output cout\n);\n  assign sum  = a ^ b ^ cin;\n  assign\
+    \ cout = (a & b) | (cin & (a ^ b));\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that takes a 4-bit binary input and outputs its 2''s
+    complement value. Inputs: [3:0]bin_in. Output: [3:0]twos_out'
+  interface: module twos_complement (input [3:0] bin_in, output reg [3:0] twos_out);
+  name: twos_complement
+  pipeline_stages: '0'
+  response: "module twos_complement (\n    input [3:0] bin_in,\n    output reg [3:0]\
+    \ twos_out\n);\n  always @(bin_in) begin\n    twos_out = ~bin_in + 4'b0001;\n\
+    \  end\nendmodule\n"
+- class: custom
+  instruction: Design a module with a fixed width of 3. Initialize an output port
+    named 'out_o', whose length is 3 bits. The binary value held at 'out_o' will be
+    all ones.
+  interface: module parameterized_width (output [2:0] out_o);
+  name: parameterized_width
+  pipeline_stages: '0'
+  response: "module parameterized_width (\n    output [2:0] out_o\n);\n     assign\
+    \ out_o = {3{1'b1}};\n endmodule"
+- class: hdlbits
+  instruction: 'Design a module that adds two 8-bit numbers. Inputs: [7:0]a, [7:0]b.
+    Output: [7:0]sum'
+  interface: module adder (input  [7:0] a, input  [7:0] b, output [7:0] sum);
+  name: adder
+  pipeline_stages: '0'
+  response: "module adder (\n    input  [7:0] a,\n    input  [7:0] b,\n    output\
+    \ [7:0] sum\n);\n  assign sum = a + b;\nendmodule\n"
+- class: custom
+  instruction: 'Implement a subtractor module that subtracts ''b'' from ''a'' for
+    two 8-bit numbers. Inputs: [7:0]a, [7:0]b. Output: [7:0]diff'
+  interface: module subtractor (input  [7:0] a, input  [7:0] b, output [7:0] diff);
+  name: subtractor
+  pipeline_stages: '0'
+  response: "module subtractor (\n    input  [7:0] a,\n    input  [7:0] b,\n    output\
+    \ [7:0] diff\n);\n  assign diff = a - b;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that multiplies two 4-bit numbers resulting in an
+    8-bit output. Inputs: [3:0]a, [3:0]b. Output: [7:0]product'
+  interface: module multiplier (input  [3:0] a, input  [3:0] b, output [7:0] product);
+  name: multiplier
+  pipeline_stages: '0'
+  response: "module multiplier (\n    input  [3:0] a,\n    input  [3:0] b,\n    output\
+    \ [7:0] product\n);\n  assign product = a * b;\nendmodule\n"
+- class: custom
+  instruction: 'Implement a module to divide an 8-bit number ''a'' by a 4-bit number
+    ''b'' and provide quotient and remainder outputs. Inputs: [7:0]a, [3:0]b. Outputs:
+    [7:0]quotient, [3:0]remainder'
+  interface: module divider (input  [7:0] a, input  [3:0] b, output [7:0] quotient,
+    output [3:0] remainder);
+  name: divider
+  pipeline_stages: '0'
+  response: "module divider (\n    input  [7:0] a,\n    input  [3:0] b,\n    output\
+    \ [7:0] quotient,\n    output [3:0] remainder\n);\n  assign quotient  = a / b;\n\
+    \  assign remainder = a % b;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that computes the modulus of two 4-bit numbers ''a''
+    and ''b''. Inputs: [3:0]a, [3:0]b. Output: [3:0]result'
+  interface: module modulus_calculator (input  [3:0] a, input  [3:0] b, output [3:0]
+    result);
+  name: modulus_calculator
+  pipeline_stages: '0'
+  response: "module modulus_calculator (\n    input  [3:0] a,\n    input  [3:0] b,\n\
+    \    output [3:0] result\n);\n  assign result = a % b;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module with input: [7:0]a and output: [7:0]result that shifts
+    an 8-bit number to the left by 2 positions.'
+  interface: module left_shifter (input  [7:0] a, output [7:0] result);
+  name: left_shifter
+  pipeline_stages: '0'
+  response: "module left_shifter (\n    input  [7:0] a,\n    output [7:0] result\n\
+    );\n  assign result = a << 2;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module with inputs: [3:0]a, [3:0]b and output: [0:0]equal
+    that checks if two 4-bit numbers are equal.'
+  interface: module equality_check (input [3:0] a, input [3:0] b, output equal);
+  name: equality_check
+  pipeline_stages: '0'
+  response: "module equality_check (\n    input [3:0] a,\n    input [3:0] b,\n   \
+    \ output equal\n);\n  assign equal = (a == b);\nendmodule\n"
+- class: custom
+  instruction: 'Implement a module with inputs: [7:0]a, [7:0]b and output: [0:0]greater
+    that compares two 8-bit numbers and outputs if ''a'' is greater than ''b''.'
+  interface: module greater_than_check (input [7:0] a, input [7:0] b, output greater);
+  name: greater_than_check
+  pipeline_stages: '0'
+  response: "module greater_than_check (\n    input [7:0] a,\n    input [7:0] b,\n\
+    \    output greater\n);\n  assign greater = (a > b);\nendmodule\n"
+- class: custom
+  instruction: 'Design a module with inputs: [7:0]a, [7:0]b and output: [0:0]less_eq
+    that checks if an 8-bit number is less than or equal to another 8-bit number.'
+  interface: module less_equal_check (input [7:0] a, input [7:0] b, output less_eq);
+  name: less_equal_check
+  pipeline_stages: '0'
+  response: "module less_equal_check (\n    input [7:0] a,\n    input [7:0] b,\n \
+    \   output less_eq\n);\n  assign less_eq = (a <= b);\nendmodule\n"
+- class: custom
+  instruction: 'Create a module with inputs: [3:0]a, [3:0]b and output: [0:0]result
+    that computes the logical AND between two 4-bit numbers.'
+  interface: module logical_and (input  [3:0] a, input  [3:0] b, output [0:0] result);
+  name: logical_and
+  pipeline_stages: '0'
+  response: "module logical_and (\n    input  [3:0] a,\n    input  [3:0] b,\n    output\
+    \ [0:0] result\n);\n  assign result = a && b;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module with inputs: [3:0]a, [3:0]b and output: [0:0]result
+    that computes the logical OR between two 4-bit numbers.'
+  interface: module logical_or (input  [3:0] a, input  [3:0] b, output [0:0] result);
+  name: logical_or
+  pipeline_stages: '0'
+  response: "module logical_or (\n    input  [3:0] a,\n    input  [3:0] b,\n    output\
+    \ [0:0] result\n);\n  assign result = a || b;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module with input: [3:0]a and output: [0:0]result that negates
+    a 4-bit input `a`.'
+  interface: module logical_not (input  [3:0] a, output [0:0] result);
+  name: logical_not
+  pipeline_stages: '0'
+  response: "module logical_not (\n    input  [3:0] a,\n    output [0:0] result\n\
+    );\n  assign result = !a;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module with input: [3:0]a and output: [0:0]result that outputs
+    ''1'' if the 4-bit input `a` is even, and ''0'' otherwise.'
+  interface: module check_even (input [3:0] a, output reg result);
+  name: check_even
+  pipeline_stages: '0'
+  response: "module check_even (\n    input [3:0] a,\n    output reg result\n);\n\
+    \  always @(a) begin\n    if (a[0] == 0) result = 1;\n    else result = 0;\n \
+    \ end\nendmodule\n"
+- class: hdlbits
+  instruction: 'Implement a module with inputs: [1:0]sel, [7:0]i0, [7:0]i1, [7:0]i2
+    and output: [7:0]out_o that takes a 2-bit selector and multiplexes between three
+    8-bit inputs. The default output should be 0.'
+  interface: module mux (input [1:0] sel, input [7:0] i0, input [7:0] i1, input [7:0]
+    i2, output reg [7:0] out_o);
+  name: mux
+  pipeline_stages: '0'
+  response: "module mux (\n    input [1:0] sel,\n    input [7:0] i0,\n    input [7:0]\
+    \ i1,\n    input [7:0] i2,\n    output reg [7:0] out_o\n);\n  always @(sel, i0,\
+    \ i1, i2) begin\n    case (sel)\n      2'b00:   out_o = i0;\n      2'b01:   out_o\
+    \ = i1;\n      2'b10:   out_o = i2;\n      default: out_o = 8'b00000000;\n   \
+    \ endcase\n  end\nendmodule\n"
+- class: custom
+  instruction: 'Design a module with input: [7:0]a and output: [0:0]o that sets the
+    output to ''1'' if the 8-bit input is in the range [32, 64].'
+  interface: module check_range (input [7:0] a, output reg o);
+  name: check_range
+  pipeline_stages: '0'
+  response: "module check_range (\n    input [7:0] a,\n    output reg o\n);\n  always\
+    \ @(a) begin\n    if (a >= 32 && a <= 64) o = 1;\n    else o = 0;\n  end\nendmodule\n"
+- class: custom
+  instruction: 'Create a module with input: [3:0]a and output: [1:0]count that counts
+    the number of ''1''s in a 4-bit input and outputs a 2-bit result.'
+  interface: module count_ones (input [3:0] a, output reg [1:0] count);
+  name: count_ones
+  pipeline_stages: '0'
+  response: "module count_ones (\n    input [3:0] a,\n    output reg [1:0] count\n\
+    );\n  always @(a) begin\n    count = a[0] + a[1] + a[2] + a[3];\n  end\nendmodule\n"
+- class: custom
+  instruction: Implement a module that encodes a 2-bit input '[1:0]a' into a 4-bit
+    one-hot encoded output '[3:0]one_hot'.
+  interface: module one_hot_encoder (input [1:0] a, output reg [3:0] one_hot);
+  name: one_hot_encoder
+  pipeline_stages: '0'
+  response: "module one_hot_encoder (\n    input [1:0] a,\n    output reg [3:0] one_hot\n\
+    );\n  always @(a) begin\n    case (a)\n      2'b00:   one_hot = 4'b0001;\n   \
+    \   2'b01:   one_hot = 4'b0010;\n      2'b10:   one_hot = 4'b0100;\n      2'b11:\
+    \   one_hot = 4'b1000;\n      default: one_hot = 4'b0000;\n    endcase\n  end\n\
+    endmodule"
+- class: custom
+  instruction: 'Design a module that demonstrates the use of a local variable. The
+    input: [7:0]a and the outputs: [15:0]o, [0:0]is_even, It should take an 8-bit
+    input ''a'' and set a 1-bit output ''is_even'' to ''1'' if ''a'' is even. Output
+    ''o'' should hold the same value as ''is_even'''
+  interface: module local_variable_demo (input  [ 7:0] a, output [15:0] o, output
+    [ 0:0] is_even);
+  name: local_variable_demo
+  pipeline_stages: '0'
+  response: "module local_variable_demo (\n    input  [ 7:0] a,\n    output [15:0]\
+    \ o,\n    output [ 0:0] is_even\n);\n  reg is_even; \n  always @(a) begin\n  \
+    \  is_even = a[0] == 0;\n  end\n  assign o = is_even;\nendmodule\n"
+- class: custom
+  instruction: 'Implement a module with two always blocks that share a common variable
+    ''shared_var''. The input: [7:0]a and the outputs: [7:0]o, [7:0]shared_var. The
+    fireset block should update ''shared_var'' with input ''a'', and the second block
+    should set output ''o'' to ''shared_var''.'
+  interface: module shared_variable_demo (input  [7:0] a, output [7:0] o, output [7:0]
+    shared_var);
+  name: shared_variable_demo
+  pipeline_stages: '0'
+  response: "module shared_variable_demo (\n    input  [7:0] a,\n    output [7:0]\
+    \ o,\n    output [7:0] shared_var\n);\n  reg [7:0] shared_var;  \n  always @(a)\
+    \ begin\n    shared_var = a;\n  end\n  always @(shared_var) begin\n    o = shared_var;\n\
+    \  end\nendmodule\n"
+- class: custom
+  instruction: Design a module that utilizes both a parameter and a localparam to
+    set a 4-bit output 'o' to a specific value. The parameter should be the value
+    9, and the localparam should be value of the parameter plus one. 'o' will take
+    the value of the localparam.
+  interface: module param_demo (output reg [3:0] o);
+  name: param_demo
+  pipeline_stages: '0'
+  response: "module param_demo (\n    output reg [3:0] o\n);\n\n  parameter reg [3:0]\
+    \ FixedVal = 4'b1001;\n  localparam reg [3:0] ModifiedVal = FixedVal + 1;\n\n\
+    \  initial begin\n    o = ModifiedVal;\n  end\n\nendmodule\n"
+- class: custom
+  instruction: 'Create a module that showcases a wire ''w'' being driven by two continuous
+    assignments. The inputs: [0:0]a, [0:0]b, [0:0]sel and the outputs: [0:0]w, [0:0]w1,
+    [0:0]w2. ''w1'' is the bitwise AND of ''a'' and ''b'', while ''w2'' is the bitwise
+    OR of ''a'' and ''b''. ''w'' will be set to the value of ''w1'' when ''sel'' is
+    high, and the value of ''w2'' when ''sel'' is low.'
+  interface: module wire_drive_demo (input  a, input b, input sel, output w, output
+    w1, output w2);
+  name: wire_drive_demo
+  pipeline_stages: '0'
+  response: "module wire_drive_demo (\n    input  a,\n    input b,\n    input sel,\n\
+    \    output w,\n    output w1,\n    output w2\n);\n  wire w1, w2;\n  assign w1\
+    \ = a & b;\n  assign w2 = a | b;\n  assign w  = sel ? w1 : w2;\nendmodule\n"
+- class: custom
+  instruction: Design a module that uses a localparam to set an 8-bit output 'o' to
+    a constant value of 8'b10101010..
+  interface: module constant_demo (output reg [7:0] o);
+  name: constant_demo
+  pipeline_stages: '0'
+  response: "module constant_demo (\n    output reg [7:0] o\n);\n  localparam reg\
+    \ [7:0] ConstanVal = 8'b10101010;\n  initial begin\n    o = ConstanVal;\n  end\n\
+    endmodule\n"
+- class: custom
+  instruction: Create a module that demonstrates the difference between a `parameter`
+    and a `localparam`. The parameters value should be 10 and the local parameters
+    value should be one greater than that. Set 'o' to the value of the local parameter.
+    The module has one output 4-bit `o`
+  interface: module param_difference_demo (output [3:0] o);
+  name: param_difference_demo
+  pipeline_stages: '0'
+  response: "module param_difference_demo (\n    output [3:0] o\n);\n\n  parameter\
+    \ reg [3:0] PARAM_VAL = 4'b1010;\n  localparam reg [3:0] LocalparamVal = PARAM_VAL\
+    \ + 1; \n  assign o = LocalparamVal;\n\nendmodule\n"
+- class: custom
+  instruction: Implement a module which takes a 4-bit input 'a' and outputs 'o' as
+    1 if 'a' is equal to a binary literal of value 11.
+  interface: module binary_literal_demo (input [3:0] a, output o);
+  name: binary_literal_demo
+  pipeline_stages: '0'
+  response: "module binary_literal_demo (\n    input [3:0] a,\n    output o\n);\n\
+    \  assign o = (a == 4'b1011) ? 1'b1 : 1'b0;\nendmodule\n"
+- class: custom
+  instruction: Design a module that showcases the use of both base and width specifiers
+    for a constant. Use the value to set an 8-bit output 'o' to be 170 in decimal.
+  interface: module base_width_demo (output reg [7:0] o);
+  name: base_width_demo
+  pipeline_stages: '0'
+  response: "module base_width_demo (\n    output reg [7:0] o\n);\n\n  localparam\
+    \ reg [7:0] ConstantVal = 8'd170; \n  initial begin\n    o = ConstantVal;\n  end\n\
+    \nendmodule\n"
+- class: custom
+  instruction: Create a module that uses a hexadecimal literal to set a 16-bit output
+    'o' set to value 0xA55A.
+  interface: module hex_literal_demo (output reg [15:0] o);
+  name: hex_literal_demo
+  pipeline_stages: '0'
+  response: "module hex_literal_demo (\n    output reg [15:0] o\n);\n  localparam\
+    \ reg [15:0] HexVal = 16'hA55A; \n  initial begin\n    o = HexVal;\n  end\nendmodule\n"
+- class: custom
+  instruction: 'Implement a module that computes the bitwise AND operation. Inputs:
+    [7:0]a, [7:0]b. Outputs: [7:0]o.'
+  interface: module bitwise_and (input  [7:0] a, input  [7:0] b, output [7:0] o);
+  name: bitwise_and
+  pipeline_stages: '0'
+  response: "module bitwise_and (\n    input  [7:0] a,\n    input  [7:0] b,\n    output\
+    \ [7:0] o\n);\n  assign o = a & b;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that calculates the bitwise OR operation. Inputs:
+    [7:0]a, [7:0]b. Outputs: [7:0]o.'
+  interface: module bitwise_or (input  [7:0] a, input  [7:0] b, output [7:0] o);
+  name: bitwise_or
+  pipeline_stages: '0'
+  response: "module bitwise_or (\n    input  [7:0] a,\n    input  [7:0] b,\n    output\
+    \ [7:0] o\n);\n  assign o = a | b;\nendmodule\n"
+- class: custom
+  instruction: 'Create a module which computes the bitwise XOR operation. Inputs:
+    [7:0]a, [7:0]b. Outputs: [7:0]o.'
+  interface: module bitwise_xor (input  [7:0] a, input  [7:0] b, output [7:0] o);
+  name: bitwise_xor
+  pipeline_stages: '0'
+  response: "module bitwise_xor (\n    input  [7:0] a,\n    input  [7:0] b,\n    output\
+    \ [7:0] o\n);\n  assign o = a ^ b;\nendmodule\n"
+- class: custom
+  instruction: 'Develop a module that inverts the bits. Inputs: [7:0]a. Outputs: [7:0]o.'
+  interface: module bitwise_not (input  [7:0] a, output [7:0] o);
+  name: bitwise_not
+  pipeline_stages: '0'
+  response: "module bitwise_not (\n    input  [7:0] a,\n    output [7:0] o\n);\n \
+    \ assign o = ~a;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that shifts bits left by two positions. Inputs: [7:0]a.
+    Outputs: [7:0]o.'
+  interface: module left_shift (input  [7:0] a, output [7:0] o);
+  name: left_shift
+  pipeline_stages: '0'
+  response: "module left_shift (\n    input  [7:0] a,\n    output [7:0] o\n);\n  assign\
+    \ o = a << 2;\nendmodule\n"
+- class: custom
+  instruction: 'Implement a module that shifts bits right by three positions. Inputs:
+    [7:0]a. Outputs: [7:0]o.'
+  interface: module right_shift (input  [7:0] a, output [7:0] o);
+  name: right_shift
+  pipeline_stages: '0'
+  response: "module right_shift (\n    input  [7:0] a,\n    output [7:0] o\n);\n \
+    \ assign o = a >> 3;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that combines multiple bitwise operations. Inputs:
+    [7:0]a, [7:0]b. Outputs: [7:0]o. The module should take two 8-bit inputs ''a''
+    and ''b'', and produce an 8-bit output ''o'' that is the result of ''(a AND b)
+    XOR (a OR b)''.'
+  interface: module combined_operations (input  [7:0] a, input  [7:0] b, output [7:0]
+    o);
+  name: combined_operations
+  pipeline_stages: '0'
+  response: "module combined_operations (\n    input  [7:0] a,\n    input  [7:0] b,\n\
+    \    output [7:0] o\n);\n  assign o = (a & b) ^ (a | b);\nendmodule\n"
+- class: custom
+  instruction: 'Create a module that utilizes a for loop to find the sum of each bit
+    of input ''data''. Inputs: [7:0]data. Outputs: [3:0]sum.'
+  interface: module vector_sum (input [7:0] data, output reg [3:0] sum);
+  name: vector_sum
+  pipeline_stages: '0'
+  response: "module vector_sum (\n    input [7:0] data,\n    output reg [3:0] sum\n\
+    );\n  integer i;\n  always @(data) begin\n    sum = 0;\n    for (i = 0; i < 8;\
+    \ i = i + 1) sum = sum + data[i];\n  end\nendmodule\n"
+- class: custom
+  instruction: 'Implement a module that computes both the sum and difference of two
+    4-bit inputs ''a'' and ''b'' concurrently, producing two 4-bit outputs ''sum''
+    and ''diff''. The inputs: [3:0]a, [3:0]b and the outputs: [3:0]sum, [3:0]diff.'
+  interface: module concurrent_arithmetic (input  [3:0] a, input  [3:0] b, output
+    [3:0] sum, output [3:0] diff);
+  name: concurrent_arithmetic
+  pipeline_stages: '0'
+  response: "module concurrent_arithmetic (\n    input  [3:0] a,\n    input  [3:0]\
+    \ b,\n    output [3:0] sum,\n    output [3:0] diff\n);\n  assign sum  = a + b;\n\
+    \  assign diff = a - b;\nendmodule\n"
+- class: custom
+  instruction: 'Implement a module that has two input signals ''a'' and ''b''. Produce
+    an output ''o1'' that represents the AND operation and an output ''o2'' that represents
+    the OR operation. Both operations should be calculated concurrently. The inputs:
+    a, b and the outputs: [0:0]o1, o2.'
+  interface: module concurrent_logic (input  a, input b, output o1, output o2);
+  name: concurrent_logic
+  pipeline_stages: '0'
+  response: "module concurrent_logic (\n    input  a,\n    input b,\n    output o1,\n\
+    \    output o2\n);\n  assign o1 = a & b;\n  assign o2 = a | b;\nendmodule\n"
+- class: custom
+  instruction: 'Implement a module for multiplication and addition of two inputs.
+    The inputs: [3:0]m1, m2 and the outputs: [7:0]product, [4:0]sum.'
+  interface: module concurrent_math (input [3:0] m1, input [3:0] m2, output reg [7:0]
+    product, output [4:0] sum);
+  name: concurrent_math
+  pipeline_stages: '0'
+  response: "module concurrent_math (\n    input [3:0] m1,\n    input [3:0] m2,\n\
+    \    output reg [7:0] product,\n    output [4:0] sum\n);\n  always @(m1, m2) product\
+    \ = m1 * m2;\n  always @(m1, m2) sum = m1 + m2;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that concurrently calculates the bitwise AND, OR,
+    and XOR of two 4-bit vectors ''v1'' and ''v2''. The results should be stored in
+    outputs ''and_result'', ''or_result'', and ''xor_result'' respectively. The inputs:
+    [3:0]v1, [3:0]v2 and the outputs: [3:0]and_result, [3:0]or_result, [3:0]xor_result.'
+  interface: module bitwise_operations (input  [3:0] v1, input  [3:0] v2, output [3:0]
+    and_result, output [3:0] or_result, output [3:0] xor_result);
+  name: bitwise_operations
+  pipeline_stages: '0'
+  response: "module bitwise_operations (\n    input  [3:0] v1,\n    input  [3:0] v2,\n\
+    \    output [3:0] and_result,\n    output [3:0] or_result,\n    output [3:0] xor_result\n\
+    );\n  assign and_result = v1 & v2;\n  assign or_result  = v1 | v2;\n  assign xor_result\
+    \ = v1 ^ v2;\nendmodule\n"
+- class: custom
+  instruction: 'Implement a module that takes a single-bit input ''in1'' and produces
+    a single-bit output ''out1'', which is the inverted version of ''in1''. The goal
+    is to invert a single-bit input. The input: in1 and the output: [0:0]out1.'
+  interface: module inverter (input in1, output [0:0] out1);
+  name: inverter
+  pipeline_stages: '0'
+  response: "module inverter (\n    input in1,\n    output [0:0] out1\n);\n  assign\
+    \ out1 = ~in1;\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that accepts a 4-bit binary number as input and outputs
+    the corresponding 2''s complement of that number. The goal is to calculate the
+    2''s complement of a binary number. The input: bin_input and the output: [3:0]complement_output.'
+  interface: module assign_twos_complement (input  [3:0] bin_input, output [3:0] complement_output);
+  name: assign_twos_complement
+  pipeline_stages: '0'
+  response: "module assign_twos_complement (\n    input  [3:0] bin_input,\n    output\
+    \ [3:0] complement_output\n);\n  assign complement_output = ~bin_input + 4'b0001;\n\
+    endmodule\n"
+- class: custom
+  instruction: 'Create a module that produces a 4-bit Gray code output ''gray_out''
+    from a 4-bit binary input ''bin_in''. The input: bin_in and the output: [3:0]gray_out'
+  interface: module bin_to_gray (input  [3:0] bin_in, output [3:0] gray_out);
+  name: bin_to_gray
+  pipeline_stages: '0'
+  response: "module bin_to_gray (\n    input  [3:0] bin_in,\n    output [3:0] gray_out\n\
+    );\n  assign gray_out = bin_in ^ (bin_in >> 1);\nendmodule\n"
+- class: custom
+  instruction: 'Design a module that accepts two 4-bit inputs. The module should have
+    two outputs ''O1'' and ''O2''. ''O1'' should hold the result of A AND B, while
+    ''O2'' should hold the result of A OR B. The input: [3:0]A, B and the output:
+    [3:0]O1, [3:0]O2.'
+  interface: module basic_logic (input  [3:0] A, input  [3:0] B, output [3:0] O1,
+    output [3:0] O2);
+  name: basic_logic
+  pipeline_stages: '0'
+  response: "module basic_logic (\n    input  [3:0] A,\n    input  [3:0] B,\n    output\
+    \ [3:0] O1,\n    output [3:0] O2\n);\n  assign O1 = A & B;\n  assign O2 = A |\
+    \ B;\nendmodule\n"
+- class: custom
+  instruction: Implement a 4-bit parity generator. parity_generator which calculates
+    the parity of a 4-bit input. The input, named data_in, is 4 bits wide. The output,
+    named parity_out, is a single bit representing the even parity of the input. The
+    even parity is generated such that the total number of '1' bits in the combined
+    input and output is even, where the output is high if the number of 1's in the
+    input is even, and low if the number of 1's in the input is odd.
+  interface: module parity_generator (input [3:0] data_in, output reg parity_out);
+  name: parity_generator
+  pipeline_stages: '0'
+  response: "module parity_generator (\n    input [3:0] data_in,\n    output reg parity_out\n\
+    );\n  always @(data_in) begin\n    parity_out <= ^data_in;\n  end\nendmodule\n\
+    \n\n"
+- class: custom
+  instruction: 'The module, sign_extender, performs sign extension on its input. It
+    takes an 8-bit number original and extends it to a 16-bit signed number sign_extended_original.
+    If the MSB of the original is 1, the sign_extended bits are all set to 1; if it''s
+    0, they are set to 0. Inputs: `original` (Size: 8 bits): The original number to
+    be sign-extended. Outputs: `sign_extended_original` (Size: 16 bits): The sign-extended
+    result.'
+  interface: module sign_extender (input [7:0] original, output reg [15:0] sign_extended_original);
+  name: sign_extender
+  pipeline_stages: '0'
+  response: "module sign_extender (\n    input [7:0] original,\n    output reg [15:0]\
+    \ sign_extended_original);\n  wire [7:0] sign_extend;\n  generate genvar i;\n\
+    \  for (i = 0; i < 8; i = i + 1) begin : gen_sign_extend\n    assign sign_extend[i]\
+    \ = (original[7]) ? 1'b1 : 1'b0;\n  end\n  endgenerate\n  always_comb begin\n\
+    \  sign_extended_original = {sign_extend, original};\n  end\nendmodule"
+- class: custom
+  instruction: Create an 8-bit adder using 4-bit adder module, module adder_4bit has
+    2 4-bit input `a`, `b` and one-bit `cin` as input and 4-bit `sum` and 1-bit `cout`
+    as output. You must also provide the implementation of the 4-bit adder as a submodule
+    to the 8-bit adder. The adder_8bit module has 8-bit input `a` and `b`, 1-bit `cin`
+    and 8-bit `sum` and 1-bit `cout` as output
+  interface: module adder_8bit (input  [7:0] a, input [7:0] b, input cin, output [7:0]
+    sum, output cout );
+  name: adder_8bit
+  pipeline_stages: '0'
+  response: "module adder_8bit (\n    input  [7:0] a,\n    b,  \n    input       \
+    \ cin,  \n    output [7:0] sum,  \n    output       cout  \n);\n\n  wire c4; \
+    \ \n\n  adder_4bit adderLSB (  \n      .a(a[3:0]),\n      .b(b[3:0]),\n      .cin(cin),\n\
+    \      .sum(sum[3:0]),\n      .cout(c4)\n  );\n\n  adder_4bit adderMSB (  \n \
+    \     .a(a[7:4]),\n      .b(b[7:4]),\n      .cin(c4),\n      .sum(sum[7:4]),\n\
+    \      .cout(cout)\n  );\n\nendmodule\n\nmodule adder_4bit (\n    input  [3:0]\
+    \ a,\n    input  [3:0] b,  \n    input        cin,  \n    output [3:0] sum,  \n\
+    \    output       cout  \n);\n\n  wire [3:0] c;  \n\n  assign {cout, sum} = a\
+    \ + b + cin;  \n\nendmodule\n\n\n\n\n"
+- class: custom
+  instruction: Create a 2-bit comparator  which will accept two 2-bit numbers as input
+    and generate the outputs less than, equal to, and greater than. The inputs are
+    2-bit `A` and `B`, the outputs are 1-bit `LT`, `EQ` and `GT`
+  interface: module comparator_2bit (input  [1:0] A,input  [1:0]  B,output LT,output
+    EQ,output GT);
+  name: comparator_2bit
+  pipeline_stages: '0'
+  response: "module comparator_2bit (\ninput  [1:0] A,\ninput  [1:0]  B,\noutput \
+    \   LT,\noutput    EQ,\noutput    GT\n);\n\n  assign LT = A < B;\n  assign EQ\
+    \ = A == B;\n  assign GT = A > B;\nendmodule\n\n"
+- class: custom
+  instruction: Design a 4 bit comparator which takes unsigned inputs A[3:0] and B[3:0]
+    and has output Y[1:0]. If A is greater than B then Y should be 1, if A is less
+    than B then Y should be 3, and if they are equal then Y should be 0.
+  interface: module comparator_4bit_1 (input [3:0] A, input [3:0] B, output signed
+    [1:0] Y );
+  name: comparator_4bit_1
+  pipeline_stages: '0'
+  response: "module comparator_4bit_1 (\n    input [3:0] A,  \n    input [3:0] B,\
+    \  \n    output signed [1:0] Y  \n);\n\n  always_comb begin\n    if (A > B) Y\
+    \ = 2'b01;  \n    else if (A < B) Y = 2'b11;  \n    else Y = 2'b00;  \n  end\n\
+    \nendmodule\n\n\n\n"
+- class: custom
+  instruction: Design a simple 8-bit comparator, the inputs are 2 8-bit `A` and `B`
+    the outputs are `AeqB`, 'AgtB', and 'AltB'. A comparator is a device that compares
+    two binary words and determines their relative magnitudes. The output of a comparator
+    has three states - `AeqB=1` for A==B (equal), `AgtB=1` for A>B (greater), `AltB=1`
+    for A<B (less than). The problem is to design an 8-bit comparator .
+  interface: module comparator_8bit (input  [7:0] A, input  [7:0] B, output AeqB,
+    output AltB, output AgtB);
+  name: comparator_8bit
+  pipeline_stages: '0'
+  response: "module comparator_8bit (\n    input  [7:0] A,\n    input  [7:0] B,\n\
+    \  output AeqB, output AltB, output AgtB\n);\n  assign AeqB = (A == B);  assign\
+    \ AltB = A < B; assign AgtB = A > B; \nendmodule\n\n\n\n\n"
+- class: custom
+  instruction: Design an 8-bit value comparator, the inputs are A[7:0] and B[7:0],
+    and the output is AeqB[1:0] which can assume either value 0, when A < B, value
+    1 when A == B, or value 2 when A > B.
+  interface: module comparator_8bit_2 (input  [7:0] A, input  [7:0] B, output [1:0]
+    AeqB);
+  name: comparator_8bit_2
+  pipeline_stages: '0'
+  response: "module comparator_8bit_2 (\n    input  [7:0] A,\n    input  [7:0] B,\n\
+    \    output [1:0] AeqB\n);\n  assign AeqB = (A > B) ? 2'b10 : (A == B) ? 2'b01\
+    \ : 2'b00;\nendmodule\n\n"
+- class: custom
+  instruction: 'Design a 4-bit comparator  that will compare two 4-bit numbers, `A`
+    and `B` and set output `equality` a "1" if they are equal, a "0" if they are not
+    equal, and output from `val_o` which number is larger (in the case of equality,
+    should still output the value). Inputs: A[3:0], B[3:0]. Outputs: equality, val_o[3:0]'
+  interface: module four_bit_equality_comparator (input [3:0] A, input [3:0] B,  output
+    [3:0] val_o,  output equality);
+  name: four_bit_equality_comparator
+  pipeline_stages: '0'
+  response: "module four_bit_equality_comparator (\n    input [3:0] A,\n    input\
+    \ [3:0] B,\n  output [3:0] val_o,\n  output equality\n);\n\n  assign equality\
+    \ = (A == B) ? 1 : 0;\n  assign val_o = A > B ? A : B;\nendmodule\n\n"
+- class: hdlbits
+  instruction: 'Design a four 4x1 Mux (Module name: four_mux). For the module, you
+    should have 16 inputs (16-bit `In_i`) in a single bus, four select lines 4-bit
+    `s`(S0 to S3), and one single bit output (Out_o) which is determined by the select
+    line. If ''s'' is zero, then bit zero of ''In_i'' should be connected to ''Out_o''
+    and if ''s'' is the max value 15, then the MSB of ''In_i'' should be connected
+    to ''Out_o''. One can extrapolate the rest of the connections from these two examples.
+    The default output value should be the MSB of ''In_i''.'
+  interface: module four_mux (input [15:0] In_i, input [3:0] S, output Out_o);
+  name: four_mux
+  pipeline_stages: '0'
+  response: "module four_mux (\n    input  [15:0] In_i,  \n    input  [ 3:0] S,  \
+    \ \n    output        Out_o  \n);\n\n  always_comb begin\n    case (S)\n     \
+    \ 4'b0000: Out_o = In_i[0];\n      4'b0001: Out_o = In_i[1];\n      4'b0010: Out_o\
+    \ = In_i[2];\n      4'b0011: Out_o = In_i[3];\n      4'b0100: Out_o = In_i[4];\n\
+    \      4'b0101: Out_o = In_i[5];\n      4'b0110: Out_o = In_i[6];\n      4'b0111:\
+    \ Out_o = In_i[7];\n      4'b1000: Out_o = In_i[8];\n      4'b1001: Out_o = In_i[9];\n\
+    \      4'b1010: Out_o = In_i[10];\n      4'b1011: Out_o = In_i[11];\n      4'b1100:\
+    \ Out_o = In_i[12];\n      4'b1101: Out_o = In_i[13];\n      4'b1110: Out_o =\
+    \ In_i[14];\n      4'b1111: Out_o = In_i[15];\n      default: Out_o = In_i[15];\n\
+    \    endcase\n  end\nendmodule\n\n\n\n\n"
+- class: custom
+  instruction: 'Design and implement a 4-bit ripple carry adder using 1-bit FullAdder(inputs:
+    `a`, `b` and `ci`. outputs: `sum` and `co`). A ripple carry adder is a digital
+    circuit that produces the arithmetic sum of two binary numbers. The inputs of
+    `RippleCarryAdder` are 4-bit `a` and `b` and the output is 5-bit `sum`'
+  interface: module RippleCarryAdder (input  [3:0] a, input  [3:0] b, output [4:0]
+    sum);
+  name: RippleCarryAdder
+  pipeline_stages: '0'
+  response: "module RippleCarryAdder (\n    input  [3:0] a,\n    input  [3:0] b,\n\
+    \    output [4:0] sum\n);\n\n  wire [3:0] co;\n  FullAdder FA0 (\n      .a  (a[0]),\n\
+    \      .b  (b[0]),\n      .ci (1'b0),\n      .sum(sum[0]),\n      .co (co[0])\n\
+    \  );\n\n  FullAdder FA1 (\n      .a  (a[1]),\n      .b  (b[1]),\n      .ci (co[0]),\n\
+    \      .sum(sum[1]),\n      .co (co[1])\n  );\n\n  FullAdder FA2 (\n      .a \
+    \ (a[2]),\n      .b  (b[2]),\n      .ci (co[1]),\n      .sum(sum[2]),\n      .co\
+    \ (co[2])\n  );\n\n  FullAdder FA3 (\n      .a  (a[3]),\n      .b  (b[3]),\n \
+    \     .ci (co[2]),\n      .sum(sum[3]),\n      .co (co[3])\n  );\n  assign sum[4]\
+    \ = co[3];\nendmodule\n\nmodule FullAdder (\n    input  a,\n    input  b,\n  \
+    \  input  ci,\n    output sum,\n    output co\n);\n\n  assign {co, sum    } =\
+    \ a + b + ci;\nendmodule"
+- class: custom
+  instruction: Design an 8-bit ripple carry adder. you have to design a submodule
+    named fulladder where the inputs are `a`, `b` and `cin`, the outputs are `sum`
+    and `cout`. module `ripple_carry_adder_8bit ` uses the fulladder module and has
+    3 inputs, 2 8-bit inputs `a`, `b` and one-bit `cin`. 8-bit output sun and obe-bit
+    `cout`
+  interface: module ripple_carry_adder_8bit (input [7:0] a,   input [7:0] b, input
+    cin, output [7:0] sum, output cout);
+  name: ripple_carry_adder_8bit
+  pipeline_stages: '0'
+  response: "module ripple_carry_adder_8bit (\n    input [7:0] a,\n   input [7:0]\
+    \ b,\n    input cin,\n    output [7:0] sum,\n    output cout\n);\n\n  wire [7:0]\
+    \ c;  \n\n  \n  fulladder fa0 (\n      .a(a[0]),\n      .b(b[0]),\n      .cin(cin),\n\
+    \      .sum(sum[0]),\n      .cout(c[0])\n  );\n  fulladder fa1 (\n      .a(a[1]),\n\
+    \      .b(b[1]),\n      .cin(c[0]),\n      .sum(sum[1]),\n      .cout(c[1])\n\
+    \  );\n  fulladder fa2 (\n      .a(a[2]),\n      .b(b[2]),\n      .cin(c[1]),\n\
+    \      .sum(sum[2]),\n      .cout(c[2])\n  );\n  fulladder fa3 (\n      .a(a[3]),\n\
+    \      .b(b[3]),\n      .cin(c[2]),\n      .sum(sum[3]),\n      .cout(c[3])\n\
+    \  );\n  fulladder fa4 (\n      .a(a[4]),\n      .b(b[4]),\n      .cin(c[3]),\n\
+    \      .sum(sum[4]),\n      .cout(c[4])\n  );\n  fulladder fa5 (\n      .a(a[5]),\n\
+    \      .b(b[5]),\n      .cin(c[4]),\n      .sum(sum[5]),\n      .cout(c[5])\n\
+    \  );\n  fulladder fa6 (\n      .a(a[6]),\n      .b(b[6]),\n      .cin(c[5]),\n\
+    \      .sum(sum[6]),\n      .cout(c[6])\n  );\n  fulladder fa7 (\n      .a(a[7]),\n\
+    \      .b(b[7]),\n      .cin(c[6]),\n      .sum(sum[7]),\n      .cout(cout)\n\
+    \  );\n\nendmodule\n\nmodule fulladder (\n input a,\n  input b,\n input cin, output\
+    \ sum,\n  output cout);\n  assign sum = a ^ b ^ cin;\n\n assign cout = (a & b)\
+    \ | (cin & (a ^ b)); endmodule\n\n\n"
+- class: custom
+  instruction: Design a 4-bit binary to gray-code encoder. Each time the binary inputs
+    change, the corresponding gray code output should be displayed. It has a 4-bit
+    `binary_input` and a 4-bit `gray_code`.
+  interface: module gray_encoder (input  [3:0] binary_input, output [3:0] gray_code);
+  name: gray_encoder
+  pipeline_stages: '0'
+  response: "module gray_encoder (\n    input  [3:0] binary_input,\n    output [3:0]\
+    \ gray_code\n);\n\n  \n  assign gray_code[3] = binary_input[3];\n\n  \n  assign\
+    \ gray_code[2] = binary_input[3] ^ binary_input[2];\n  assign gray_code[1] = binary_input[2]\
+    \ ^ binary_input[1];\n  assign gray_code[0] = binary_input[1] ^ binary_input[0];\n\
+    \nendmodule\n\n\n\n\n"
+- class: hdlbits
+  instruction: Design a 2:1 multiplexer it has 3 1-bit inputs `d0` and `d1` and a
+    select `s`, the 1-bit output is `y`  . A multiplexer (mux) is a device that selects
+    one of several analog or digital input signals and forwards the selected input
+    into a single line. Here, a 2:1 mux will select between two inputs, under the
+    control of a select line.
+  interface: module mux2to1 (input d0, input d1, input s, output reg y);
+  name: mux2to1
+  pipeline_stages: '0'
+  response: "module mux2to1 (\n    input d0,\n    input d1,\n    input s,\n    output\
+    \ reg y\n);\n\n  always_comb begin\n    case (s)\n      0: y = d0;\n      1: y\
+    \ = d1;\n      default: y = 0;\n    endcase\n  end\n\nendmodule\n\n"
+- class: hdlbits
+  instruction: Design and Implement a 2:1 Multiplexer using Behavioral Modeling the
+    inputs are `a` and `b` and `select`, and the output is `y`.
+  interface: module mux2x1_behavioral (input a, input b, input select, output reg
+    y);
+  name: mux2x1_behavioral
+  pipeline_stages: '0'
+  response: "module mux2x1_behavioral (\n    input a,\n    input b,\n    input select,\n\
+    \    output reg y\n);\n  always_comb begin\n    case (select)\n      0: y = a;\n\
+    \      1: y = b;\n      default: y = 0;\n    endcase\n  end\nendmodule\n\n"
+- class: hdlbits
+  instruction: Design a 4:1 Multiplexer(Mux). The inputs are in0, in1, in2, in3 and
+    2-bit `sel` one-bit output `out_o`.
+  interface: module mux4to1 (output out_o,input in0,input in1,input in2,input in3,input
+    [1:0] sel);
+  name: mux4to1
+  pipeline_stages: '0'
+  response: "module mux4to1 (\noutput    out_o,\ninput    in0,\ninput    in1,\ninput\
+    \    in2,\ninput    in3,\ninput [1:0]    sel\n);\n\n  always_comb begin\n    case\
+    \ (sel)\n      2'b00:   out_o = in0;\n      2'b01:   out_o = in1;\n      2'b10:\
+    \   out_o = in2;\n      2'b11:   out_o = in3;\n      default: out_o = 0;\n   \
+    \ endcase\n  end\nendmodule\n\n"
+- class: hdlbits
+  instruction: "Design a 4:1 Multiplexer, the inputs are a 4-bit `a` and 2-bit `s`\
+    \ and the output is 1-bit `y` .A multiplexer, also known as MUX, is a combinational\
+    \ circuit that selects binary information from one of the many input lines and\
+    \ directs it to a single output line. The selection of a particular input line\
+    \ is controlled by a set of selection lines. \n\nHere, the task is to design a\
+    \ 4:1 MUX which has four input lines, two selection lines, and one output line.\
+    \ The output line depends on the input selected by the selection line."
+  interface: module mux4to1_b (input [3:0] a, input [1:0] s, output reg y);
+  name: mux4to1_b
+  pipeline_stages: '0'
+  response: "module mux4to1_b (\n    input [3:0] a,\n    input [1:0] s,\n    output\
+    \ reg y\n);\n\n  always_comb begin\n    case (s)\n      2'b00:   y = a[0];  \n\
+    \      2'b01:   y = a[1];  \n      2'b10:   y = a[2];  \n      2'b11:   y = a[3];\
+    \  \n      default: y = a[0];\n    endcase\n  end\n\nendmodule\n\n\n\n\n"
+- class: custom
+  instruction: 'Design a circuit to convert 4-bit binary input into even and odd parity
+    .Problem Requirements: Design the circuit in such a way that it accepts a 4-bit
+    binary as an input (`abcd`). The circuit will generate two outputs, even parity
+    bit (`P1`) and odd parity bit (`P2`).'
+  interface: module parity_2 (input [3:0] abcd, output P1, output P2);
+  name: parity_2
+  pipeline_stages: '0'
+  response: "module parity_2 (\n    input [3:0] abcd,\n    output P1,\n    output\
+    \ P2\n);\n  assign P1 = abcd[3] ^ abcd[2] ^ abcd[1] ^ abcd[0];  \n  assign P2\
+    \ = ~(abcd[3] ^ abcd[2] ^ abcd[1] ^ abcd[0]);  \n\nendmodule\n\n\n\n\n"
+- class: custom
+  instruction: 'Defines a module named `inverseMixColumns`, which is a crucial part
+    of the AES (Advanced Encryption Standard) decryption process. The `inverseMixColumns`
+    function is the inverse operation of the `mixColumns` transformation used in AES
+    encryption rounds, designed to operate on the state array and reverse the mixing
+    effect applied during encryption. Inputs and Outputs: Input: `state_in` - A 128-bit
+    input representing the state array that has been transformed during the encryption
+    process. Output: `state_out` - A 128-bit output representing the restored state
+    array after the inverseMixColumns operation. Functionality: The `inverseMixColumns`
+    operation treats each column of the state as a four-term polynomial over the finite
+    field GF(2^8) and multiplies it modulo `x^4 + 1` with a fixed polynomial used
+    for the inverse operation in AES decryption. Key Components: Multiplication Functions:
+    The module defines functions to multiply a byte by `{0e}`, `{0d}`, `{0b}`, and
+    `{09}` in the finite field GF(2^8), which are necessary for the inverse mix columns
+    polynomial in AES decryption. These functions utilize a `multiply` function to
+    perform the multiplication by repeatedly applying multiplication by `{02}` (left
+    shift and conditional XOR with 0x1b for finite field reduction). The multiply
+    function takes an input byte `x` and an integer `n`, representing the number of
+    times to multiply `x` by `{02}`.'
+  interface: module inverseMixColumns(input [127:0] state_in, output [127:0] state_out);
+  name: inverseMixColumns
+  pipeline_stages: '0'
+  response: "module inverseMixColumns(state_in,state_out);\ninput [127:0] state_in;\n\
+    output [127:0] state_out;\n\nfunction[7:0] multiply(input [7:0]x,input integer\
+    \ n);\ninteger i;\nbegin\n for(i=0;i<n;i=i+1)begin\n if(x[7] == 1) x = ((x <<\
+    \ 1) ^ 8'h1b);\n else x = x << 1;\nend\n multiply=x;\nend\n\nendfunction\n\n\n\
+    function [7:0] mb0e; \ninput [7:0] x;\nbegin\nmb0e=multiply(x,3) ^ multiply(x,2)^\
+    \ multiply(x,1);\nend\nendfunction\n\nfunction [7:0] mb0d; \ninput [7:0] x;\n\
+    begin\n mb0d=multiply(x,3) ^ multiply(x,2)^ x;\nend\nendfunction\n\nfunction [7:0]\
+    \ mb0b; \ninput [7:0] x;\nbegin\n mb0b=multiply(x,3) ^ multiply(x,1)^ x;\nend\n\
+    endfunction\n\nfunction [7:0] mb09; \ninput [7:0] x;\nbegin\nmb09=multiply(x,3)\
+    \ ^  x;\nend\nendfunction\n\ngenvar i;\n\ngenerate\nfor(i=0;i< 4;i=i+1) begin\
+    \ : m_col\n\n assign state_out[(i*32 + 24)+:8]= mb0e(state_in[(i*32 + 24)+:8])\
+    \ ^ mb0b(state_in[(i*32 + 16)+:8]) ^ mb0d(state_in[(i*32 + 8)+:8]) ^ mb09(state_in[i*32+:8]);\n\
+    \ assign state_out[(i*32 + 16)+:8]= mb09(state_in[(i*32 + 24)+:8]) ^ mb0e(state_in[(i*32\
+    \ + 16)+:8]) ^ mb0b(state_in[(i*32 + 8)+:8]) ^ mb0d(state_in[i*32+:8]);\n assign\
+    \ state_out[(i*32 + 8)+:8]= mb0d(state_in[(i*32 + 24)+:8]) ^ mb09(state_in[(i*32\
+    \ + 16)+:8]) ^ mb0e(state_in[(i*32 + 8)+:8]) ^ mb0b(state_in[i*32+:8]);\n  assign\
+    \ state_out[i*32+:8]= mb0b(state_in[(i*32 + 24)+:8]) ^ mb0d(state_in[(i*32 + 16)+:8])\
+    \ ^ mb09(state_in[(i*32 + 8)+:8]) ^ mb0e(state_in[i*32+:8]);\n\nend\n\nendgenerate\n\
+    \n\nendmodule\n\n"
+- class: custom
+  instruction: 'Implement a `float_to_int_combinational` module, A single 32-bit input
+    (`input_a`), representing the single-precision floating-point number to be converted.
+    A single 32-bit output (`output_z`), which will hold the converted integer value,
+    define a module that accepts a 32-bit input representing a single-precision IEEE
+    754 floating-point number and outputs a 32-bit integer. Start by decomposing the
+    input into its sign, exponent, and mantissa. Adjust the exponent by subtracting
+    the bias (127) to find the actual exponent value. Normalize the mantissa by adding
+    an implicit ''1'' for non-zero exponents, resulting in a 24-bit value. Calculate
+    the amount to shift the normalized mantissa to convert it to an integer, considering
+    the actual exponent. Include logic to handle special cases: set the output to
+    0 for zero or denormalized inputs, and saturate the output at the maximum or minimum
+    integer values for overflow conditions. For normal cases, right-shift the normalized
+    mantissa by the calculated amount and apply the sign to determine the final integer
+    output. This module should use combinational logic to produce the output directly
+    from the input without any clocked operations.'
+  interface: module float_to_int_combinational(input [31:0] input_a, output reg [31:0]
+    output_z);
+  name: float_to_int_combinational
+  pipeline_stages: '0'
+  response: "module float_to_int_combinational(\n    input [31:0] input_a,\n    output\
+    \ reg [31:0] output_z\n);\n\n\nwire sign = input_a[31];\nwire [7:0] exponent =\
+    \ input_a[30:23];\nwire [22:0] mantissa = input_a[22:0];\n\n\nwire [8:0] actual_exponent\
+    \ = exponent - 8'd127;\n\n\nwire [23:0] normalized_mantissa = |exponent ? {1'b1,\
+    \ mantissa} : {1'b0, mantissa};\n\n\nwire [8:0] shift_amount = 9'd23 - actual_exponent;\n\
+    \n\nwire is_zero_or_denormalized = (exponent == 0);\nwire is_overflow = (actual_exponent\
+    \ >= 9'd31);\n\n\nwire [31:0] shifted_mantissa = normalized_mantissa >> shift_amount;\n\
+    \n\nalways @(*) begin\n    if (is_zero_or_denormalized) begin\n        \n    \
+    \    output_z = 32'd0;\n    end else if (is_overflow) begin\n        \n      \
+    \  output_z = sign ? 32'h80000000 : 32'h7FFFFFFF;\n    end else begin\n      \
+    \  \n        output_z = sign ? -shifted_mantissa : shifted_mantissa;\n    end\n\
+    end\n\nendmodule\n\n"
+- class: custom
+  instruction: 'Defines a module named `Addition_Subtraction_Comb` that performs floating-point
+    addition or subtraction on two 32-bit inputs based on the IEEE 754 standard. Inputs
+    and Outputs: It takes two 32-bit inputs `a` and `b`, which are the floating-point
+    numbers to be added or subtracted. The `add_sub_signal` input determines the operation:
+    if it''s `1`, the module performs addition; otherwise, it performs subtraction.
+    The output `res` is a 32-bit number representing the result of the operation.
+    The `exception` output signals an exceptional condition, such as overflow or underflow.
+    the `Addition_Subtraction_Comb` module encapsulates the complexities of floating-point
+    addition and subtraction, adhering to the IEEE 754 standard, and includes steps
+    like decomposition, alignment, arithmetic operation, normalization, and result
+    construction, ensuring accurate and standard-compliant results.'
+  interface: module Addition_Subtraction_Comb(input [31:0] a, input [31:0] b, input
+    add_sub_signal, output [31:0] res, output exception);
+  name: Addition_Subtraction_Comb
+  pipeline_stages: '0'
+  response: "module Addition_Subtraction_Comb(\n    input [31:0] a,\n    input [31:0]\
+    \ b,\n    input add_sub_signal, \n    output [31:0] res,\n    output exception\n\
+    );\n\n\nwire [7:0] exp_a = a[30:23];\nwire [7:0] exp_b = b[30:23];\nwire [22:0]\
+    \ mant_a = a[22:0];\nwire [22:0] mant_b = b[22:0];\nwire sign_a = a[31];\nwire\
+    \ sign_b = b[31];\n\n\nwire operation = sign_a ^ sign_b ^ add_sub_signal;\n\n\n\
+    wire [24:0] extended_mant_a = |exp_a ? {1'b1, mant_a} : {1'b0, mant_a};\nwire\
+    \ [24:0] extended_mant_b = |exp_b ? {1'b1, mant_b} : {1'b0, mant_b};\n\n\nwire\
+    \ [7:0] exp_diff = exp_a > exp_b ? exp_a - exp_b : exp_b - exp_a;\nwire [24:0]\
+    \ aligned_mant_a = exp_a >= exp_b ? extended_mant_a : extended_mant_a >> exp_diff;\n\
+    wire [24:0] aligned_mant_b = exp_b > exp_a ? extended_mant_b : extended_mant_b\
+    \ >> exp_diff;\nwire [7:0] aligned_exp = exp_a > exp_b ? exp_a : exp_b;\n\n\n\
+    wire [25:0] sum = operation ? aligned_mant_a + aligned_mant_b : aligned_mant_a\
+    \ - aligned_mant_b;\n\n\nwire [4:0] leading_zeros = count_leading_zeros(sum[24:0]);\
+    \ \nwire [24:0] normalized_mant = sum << leading_zeros;\nwire [7:0] normalized_exp\
+    \ = aligned_exp - leading_zeros;\n\n\nwire result_sign = operation ? sign_a :\
+    \ (exp_a > exp_b ? sign_a : sign_b);\n\n\nassign exception = &exp_a | &exp_b;\n\
+    \n\nassign res = {result_sign, normalized_exp[7:0], normalized_mant[22:0]};\n\n\
+    \nfunction [4:0] count_leading_zeros(input [24:0] value);\nbegin\n    \n    if\
+    \ (value[24]) count_leading_zeros = 0;\n    else if (value[23]) count_leading_zeros\
+    \ = 1;\n    else if (value[22]) count_leading_zeros = 2;\n    else if (value[21])\
+    \ count_leading_zeros = 3;\n    else if (value[20]) count_leading_zeros = 4;\n\
+    \    else if (value[19]) count_leading_zeros = 5;\n    else if (value[18]) count_leading_zeros\
+    \ = 6;\n    else if (value[17]) count_leading_zeros = 7;\n    else if (value[16])\
+    \ count_leading_zeros = 8;\n    else if (value[15]) count_leading_zeros = 9;\n\
+    \    else if (value[14]) count_leading_zeros = 10;\n    else if (value[13]) count_leading_zeros\
+    \ = 11;\n    else if (value[12]) count_leading_zeros = 12;\n    else if (value[11])\
+    \ count_leading_zeros = 13;\n    else if (value[10]) count_leading_zeros = 14;\n\
+    \    else if (value[9]) count_leading_zeros = 15;\n    else if (value[8]) count_leading_zeros\
+    \ = 16;\n    else if (value[7]) count_leading_zeros = 17;\n    else if (value[6])\
+    \ count_leading_zeros = 18;\n    else if (value[5]) count_leading_zeros = 19;\n\
+    \    else if (value[4]) count_leading_zeros = 20;\n    else if (value[3]) count_leading_zeros\
+    \ = 21;\n    else if (value[2]) count_leading_zeros = 22;\n    else if (value[1])\
+    \ count_leading_zeros = 23;\n    else if (value[0]) count_leading_zeros = 24;\n\
+    \    else count_leading_zeros = 25; \nend\nendfunction\n\nendmodule\n\n"
+- class: custom
+  instruction: Implement the `double_precision_fp_divider_combinational` module, start
+    by defining two 64-bit inputs, `input_a` and `input_b`, for the dividend and divisor,
+    respectively, and a 64-bit output `output_z` for the quotient. Decompose each
+    input into a sign bit, an 11-bit exponent, and a 52-bit mantissa, remembering
+    to account for the implicit leading '1' in normalized mantissas. Implement logic
+    to handle special cases, including NaN, infinity, and zero, based on IEEE 754
+    rules. For the division operation, simplify by dividing the extended mantissa
+    of `input_a` by the mantissa of `input_b`, and then construct the output using
+    the calculated sign, adjusted exponent, and the most significant bits of the division
+    result. Include caveats about the simplifications made, such as the lack of rounding
+    and precise handling of subnormal numbers.
+  interface: module double_precision_fp_divider_combinational(input [63:0] input_a,
+    input [63:0] input_b, output reg [63:0] output_z);
+  name: double_precision_fp_divider_combinational
+  pipeline_stages: '0'
+  response: "module double_precision_fp_divider_combinational(\n    input [63:0] input_a,\n\
+    \    input [63:0] input_b,\n    output reg [63:0] output_z\n);\n\n\nwire sign_a\
+    \ = input_a[63];\nwire [10:0] exponent_a = input_a[62:52];\nwire [51:0] mantissa_a\
+    \ = {1'b1, input_a[51:0]}; \n\nwire sign_b = input_b[63];\nwire [10:0] exponent_b\
+    \ = input_b[62:52];\nwire [51:0] mantissa_b = {1'b1, input_b[51:0]}; \n\n\n\n\
+    wire a_is_nan_or_inf = exponent_a == 11'h7FF;\nwire b_is_nan_or_inf = exponent_b\
+    \ == 11'h7FF;\nwire a_is_zero = exponent_a == 0 && mantissa_a == 0;\nwire b_is_zero\
+    \ = exponent_b == 0 && mantissa_b == 0;\n\n\n\n\n\n\nwire [105:0] division_result\
+    \ = {mantissa_a, 54'b0} / mantissa_b; \n\n\nwire result_sign = sign_a ^ sign_b;\n\
+    wire [10:0] result_exponent = exponent_a - exponent_b + 1023; \n\n\nalways @(*)\
+    \ begin\n    if (a_is_nan_or_inf || b_is_nan_or_inf) begin\n        \n       \
+    \ output_z = {1'b0, 11'h7FF, 52'h0}; \n    end else if (a_is_zero || b_is_zero)\
+    \ begin\n        \n        output_z = {result_sign, 11'h0, 52'h0}; \n    end else\
+    \ begin\n        \n        output_z = {result_sign, result_exponent, division_result[105:54]};\
+    \ \n    end\nend\n\nendmodule\n\n\n\n\n"
+- class: custom
+  instruction: 'The module, named `combinational_fp_divider`, is designed to perform
+    floating-point division on two 32-bit inputs (`input_a` and `input_b`), producing
+    a 32-bit output (`output_z`). The module is structured to handle the division
+    in a combinational manner, meaning it does not rely on clock cycles and produces
+    the output directly from the current inputs. Sign, Exponent, and Mantissa Extraction:
+    Each input is decomposed into its sign bit, 8-bit exponent, and 23-bit mantissa
+    (significand), following the IEEE 754 standard for single-precision floating-point
+    numbers. Simplified Division: The division is greatly simplified, ignoring many
+    complexities of real floating-point division, such as precision, rounding, and
+    range adjustments. The division uses an extended dividend (by appending 24 zeros
+    to `norm_mant_a`) for increased precision, and the quotient is directly calculated
+    from `norm_mant_a` divided by `norm_mant_b`. Mantissa Normalization: For normalized
+    numbers (non-zero exponent), an implicit ''1'' is prepended to the mantissa, while
+    for denormalized numbers (zero exponent), a ''0'' is prepended. This step ensures
+    that the division operation has a consistent starting point.  The sign of the
+    result is the XOR of the input signs, and the exponent is calculated by subtracting
+    the exponent of B from that of A and then normalizing to the bias (127 for IEEE
+    754 single-precision). Special Case Outputs: The module adjusts the output for
+    special cases like NaN, infinity, division by zero, and zero results, setting
+    the output to predefined values for these conditions. Overflow and Underflow:
+    It detects overflow (when the calculated exponent exceeds the representable range)
+    and underflow (when the result is too small to be represented) and sets the output
+    to infinity or zero, respectively. Normal Result: For a normal result, the module
+    constructs the output from the calculated sign, exponent, and the most significant
+    bits of the division result (after normalization and without rounding).'
+  interface: module combinational_fp_divider(input [31:0] input_a, input [31:0] input_b,
+    output [31:0] output_z);
+  name: combinational_fp_divider
+  pipeline_stages: '0'
+  response: "module combinational_fp_divider(\n    input [31:0] input_a,\n    input\
+    \ [31:0] input_b,\n    output [31:0] output_z\n);\n\n    \n    wire sign_a = input_a[31];\n\
+    \    wire [7:0] exp_a = input_a[30:23];\n    wire [22:0] mant_a = input_a[22:0];\n\
+    \n    wire sign_b = input_b[31];\n    wire [7:0] exp_b = input_b[30:23];\n   \
+    \ wire [22:0] mant_b = input_b[22:0];\n\n    \n    wire [23:0] norm_mant_a = {1'b1,\
+    \ mant_a};\n    wire [23:0] norm_mant_b = {1'b1, mant_b};\n\n    \n    \n    wire\
+    \ [47:0] div_result = {norm_mant_a, 24'b0} / norm_mant_b;\n\n    \n    wire result_sign\
+    \ = sign_a ^ sign_b;\n    wire [8:0] exp_diff = {1'b0, exp_a} - {1'b0, exp_b};\n\
+    \    wire [7:0] result_exp = exp_diff[7:0] + 127; \n\n    \n    assign output_z\
+    \ = {result_sign, result_exp, div_result[46:24]};\n\nendmodule\n\n\n\n\n"
+- class: custom
+  instruction: Implement a `double_adder_combinational` module for adding two 64-bit
+    IEEE 754 double-precision floating-point numbers, start by defining two 64-bit
+    inputs, `input_a` and `input_b`, and a 64-bit output, `output_z`. Decompose each
+    input into a sign bit, an 11-bit exponent, and a 52-bit mantissa, adding an implicit
+    '1' to the front of each mantissa to represent normalized numbers. Handle special
+    cases such as NaN, infinity, and zero based on IEEE 754 rules. For the arithmetic
+    operation, align the mantissas by shifting based on the exponent difference, then
+    add or subtract them depending on the signs. Normalize the result if necessary
+    by shifting the mantissa and adjusting the exponent. Construct the output from
+    the result sign (assumed to be the same as `input_a`'s sign for simplicity), the
+    adjusted exponent, and the normalized mantissa, omitting the implicit '1'. Note
+    that this implementation simplifies certain aspects, such as rounding and precise
+    handling of edge cases.
+  interface: module double_adder_combinational(input [63:0] input_a, input [63:0]
+    input_b, output reg [63:0] output_z);
+  name: double_adder_combinational
+  pipeline_stages: '0'
+  response: "module double_adder_combinational(\n    input [63:0] input_a,\n    input\
+    \ [63:0] input_b,\n    output reg [63:0] output_z\n);\n\n\nwire sign_a = input_a[63];\n\
+    wire [10:0] exp_a = input_a[62:52];\nwire [51:0] mant_a = {1'b1, input_a[51:0]};\
+    \  \n\nwire sign_b = input_b[63];\nwire [10:0] exp_b = input_b[62:52];\nwire [51:0]\
+    \ mant_b = {1'b1, input_b[51:0]};  \n\n\nwire is_a_nan = exp_a == 11'b11111111111\
+    \ && |mant_a[50:0];\nwire is_b_nan = exp_b == 11'b11111111111 && |mant_b[50:0];\n\
+    wire is_a_inf = exp_a == 11'b11111111111 && ~|mant_a[50:0];\nwire is_b_inf = exp_b\
+    \ == 11'b11111111111 && ~|mant_b[50:0];\nwire is_a_zero = exp_a == 0 && mant_a\
+    \ == 0;\nwire is_b_zero = exp_b == 0 && mant_b == 0;\n\n\nwire [10:0] exp_diff\
+    \ = exp_a > exp_b ? exp_a - exp_b : exp_b - exp_a;\nwire [51:0] aligned_mant_a\
+    \ = exp_a > exp_b ? mant_a : mant_a >> exp_diff;\nwire [51:0] aligned_mant_b =\
+    \ exp_b > exp_a ? mant_b : mant_b >> exp_diff;\n\n\nwire [52:0] sum_mantissa =\
+    \ sign_a == sign_b ? aligned_mant_a + aligned_mant_b : (aligned_mant_a > aligned_mant_b\
+    \ ? aligned_mant_a - aligned_mant_b : aligned_mant_b - aligned_mant_a);\nwire\
+    \ result_sign = sign_a;  \n\n\nwire [52:0] normalized_mantissa = sum_mantissa[52]\
+    \ ? sum_mantissa >> 1 : sum_mantissa;\nwire [10:0] adjusted_exp = sum_mantissa[52]\
+    \ ? (exp_a > exp_b ? exp_a + 1 : exp_b + 1) : (exp_a > exp_b ? exp_a : exp_b);\n\
+    \n\nalways @* begin\n    if (is_a_nan || is_b_nan) begin\n        output_z = {1'b1,\
+    \ 11'b11111111111, 1'b1, 50'd0};  \n    end else if (is_a_inf || is_b_inf) begin\n\
+    \        output_z = {result_sign, 11'b11111111111, 52'd0};  \n    end else if\
+    \ (is_a_zero && is_b_zero) begin\n        output_z = {sign_a & sign_b, 11'd0,\
+    \ 52'd0};  \n    end else begin\n        output_z = {result_sign, adjusted_exp,\
+    \ normalized_mantissa[51:0]};  \n    end\nend\n\nendmodule\n\n"
+- class: custom
+  instruction: 'Implement the `high_radix_multiplication` module, create a module
+    with two 16-bit inputs, `x` and `y`, for the operands, and a 32-bit output `out_o`
+    for the product. Begin by computing the two''s complement of `x` (`inv_x`) for
+    generating negative partial products. Use a generate block with a loop to iterate
+    over 2-bit segments of `y`, generating partial products according to the high-radix
+    Booth''s algorithm. Store these partial products in an array products. For each
+    segment of `y`, generate a partial product based on the value of the 2-bit segment:
+    `0` for `00` or `11`, `x` for `01`, and `-x` (`inv_x`) for `10`, shifting each
+    partial product left by twice the iteration index to align it properly. `Sum`
+    the partial products in pairs and store the intermediate sums in an array `sum`.
+    Continue summing the intermediate sums until you obtain the final product, which
+    should be assigned to `out_o`. Ensure that each step accounts for the sign and
+    position of the partial products to accurately represent the multiplication result.'
+  interface: module high_radix_multiplication(input [15:0] x, input [15:0] y, output
+    [31:0] out_o);
+  name: high_radix_multiplication
+  pipeline_stages: '0'
+  response: "module high_radix_multiplication(x, y, out_o);\n    input [15:0] x, y;\n\
+    \    output [31:0] out_o;\n\n    wire [15:0] inv_x = (~x) + 1'b1;\n    wire [31:0]\
+    \ product[0:7];\n    wire [31:0] sum[0:5];\n\n    \n    genvar i;\n    generate\n\
+    \      for (i = 0; i < 8; i = i + 1) begin : gen_partial_products\n        wire\
+    \ [1:0] y_bits = y[2*i+1:2*i];\n        always @(*) begin\n          case (y_bits)\n\
+    \            2'b00, 2'b11: products[i] = 32'b0;\n            2'b01: products[i]\
+    \ = {{16{x[15]}}, x } << (2*i);\n            2'b10: products[i] = {{16{inv_x[15]}},\
+    \ inv_x} << (2*i);\n        endcase end end endgenerate    \n    assign sum[0]\
+    \ = product[0] + product[1];\n    assign sum[1] = product[2] + product[3];\n \
+    \   assign sum[2] = product[4] + product[5];\n    assign sum[3] = product[6] +\
+    \ product[7];\n    assign sum[4] = sum[0] + sum[1];\n    assign sum[5] = sum[2]\
+    \ + sum[3];\n    assign out_o = sum[4] + sum[5]; \n\nendmodule\n\n"
+- class: custom
+  instruction: Implement the `fmultiplier_comb` module, create a module with two 32-bit
+    inputs, `a` and `b`, representing single-precision IEEE 754 floating-point numbers,
+    and a 32-bit output `z` for the multiplication result. Begin by extracting the
+    sign, exponent, and mantissa from each input, remembering to include an implicit
+    '1' for the mantissa of normalized numbers. Address special cases such as zero,
+    infinity, and NaN by checking the exponent and mantissa values. Calculate the
+    result exponent by adding the input exponents and adjusting for the bias. Multiply
+    the mantissas, normalize the product, and apply simplified rounding. Use combinational
+    logic to set `z` based on these calculations, handling NaN, infinity, and zero
+    appropriately, and combining the sign, exponent, and mantissa for other cases.
+    Ensure the module operates without clock signals, producing the output directly
+    from the inputs.
+  interface: module fmultiplier_comb(input [31:0] a, input [31:0] b, output reg [31:0]
+    z);
+  name: fmultiplier_comb
+  pipeline_stages: '0'
+  response: "module fmultiplier_comb(a, b, z);\n\n    input [31:0] a, b;\n    output\
+    \ reg [31:0] z;\n\n    \n    wire [7:0] a_exp, b_exp;\n    wire [23:0] a_mant,\
+    \ b_mant;\n    wire a_sign, b_sign;\n\n    assign a_sign = a[31];\n    assign\
+    \ b_sign = b[31];\n    assign a_exp = a[30:23];\n    assign b_exp = b[30:23];\n\
+    \    assign a_mant = {1'b1, a[22:0]}; \n    assign b_mant = {1'b1, b[22:0]};\n\
+    \n    \n    wire a_is_zero, b_is_zero, a_is_inf, b_is_inf, a_is_nan, b_is_nan;\n\
+    \    assign a_is_zero = (a_exp == 0) && (a[22:0] == 0);\n    assign b_is_zero\
+    \ = (b_exp == 0) && (b[22:0] == 0);\n    assign a_is_inf = (a_exp == 255) && (a[22:0]\
+    \ == 0);\n    assign b_is_inf = (b_exp == 255) && (b[22:0] == 0);\n    assign\
+    \ a_is_nan = (a_exp == 255) && (a[22:0] != 0);\n    assign b_is_nan = (b_exp ==\
+    \ 255) && (b[22:0] != 0);\n\n    \n    wire [8:0] exp_sum;\n    wire [7:0] z_exp;\n\
+    \    assign exp_sum = a_exp + b_exp - 127; \n    assign z_exp = exp_sum[7:0];\
+    \ \n\n    \n    wire [47:0] mant_product;\n    assign mant_product = a_mant *\
+    \ b_mant;\n\n    \n    wire [23:0] normalized_mant;\n    wire need_shift;\n  \
+    \  assign need_shift = mant_product[47];\n    assign normalized_mant = need_shift\
+    \ ? mant_product[47:24] : mant_product[46:23];\n\n    \n    wire [23:0] rounded_mant;\n\
+    \    wire round_bit;\n    assign round_bit = need_shift ? mant_product[23] : mant_product[22];\n\
+    \    assign rounded_mant = round_bit ? normalized_mant + 1 : normalized_mant;\n\
+    \n    always @(*) begin\n        if (a_is_nan || b_is_nan) begin\n           \
+    \ z = {1'b0, 8'hFF, 1'b1, 22'b0}; \n        end else if (a_is_inf || b_is_inf)\
+    \ begin\n            if (a_is_zero || b_is_zero) begin\n                z = {1'b0,\
+    \ 8'hFF, 1'b1, 22'b0}; \n            end else begin\n                z = {a_sign\
+    \ ^ b_sign, 8'hFF, 23'b0}; \n            end\n        end else if (a_is_zero ||\
+    \ b_is_zero) begin\n            z = {a_sign ^ b_sign, 31'b0}; \n        end else\
+    \ begin\n            \n            z[31] = a_sign ^ b_sign;\n            z[30:23]\
+    \ = z_exp;\n            z[22:0] = rounded_mant[22:0];\n        end\n    end\n\n\
+    endmodule\n\n"
+- class: custom
+  instruction: 'Please implement the `neuron_block` module, define a module with a
+    set of 8-bit inputs for the neuron''s parameters, including current potential
+    (`voltage_potential_i`), thresholds (`pos_threshold_i`, `neg_threshold_i`), leak
+    value (`leak_value_i`), weights (`weight_type1_i` to `weight_type4_i`), weight
+    selector (`weight_select_i`), resets (`pos_reset_i`, `neg_reset_i`), and an enable
+    signal (`enable_i`). The module should have an 8-bit output `new_potential_o`
+    for the updated potential and a binary output `spike_o` to indicate spiking. Use
+    combinational logic to select the weight based on `weight_select_i` and calculate
+    the new potential by adding the selected weight to the current potential and subtracting
+    the leak value, taking care to manage overflow and underflow. Check if the new
+    potential crosses any thresholds to determine spiking behavior and potential resets.
+    Ensure the neuron only updates when enabled, and resets its outputs when not enabled.
+    Inputs: The module should have several 8-bit inputs, each representing different
+    parameters of the neuron: `voltage_potential_i`: The current voltage potential
+    of the neuron. `pos_threshold_i`: The positive threshold voltage at which the
+    neuron fires a spike. `neg_threshold_i`: The negative threshold voltage at which
+    the neuron might inhibit firing. `leak_value_i`: The value representing the neuron''s
+    leakage, reducing its potential over time. `weight_type1_i` to `weight_type4_i`:
+    Four different types of synaptic weights that can be applied to the input signal.
+    `weight_select_i`: A selector for choosing which of the four weight types to apply.
+    `pos_reset_i`: The voltage potential to reset to after a positive spike. `neg_reset_i`:
+    The voltage potential to reset to after dropping below the negative threshold.
+    `enable_i`: An enable signal that allows the neuron to update its state. Outputs:
+    `new_potential_o`: The updated voltage potential of the neuron. `spike_o`: A binary
+    output indicating whether the neuron has fired a spike.'
+  interface: module neuron_block (input [7:0] voltage_potential_i, input [7:0] pos_threshold_i,
+    input [7:0] neg_threshold_i, input [7:0] leak_value_i, input [7:0] weight_type1_i,
+    input [7:0] weight_type2_i, input [7:0] weight_type3_i, input [7:0] weight_type4_i,
+    input [7:0] weight_select_i, input [7:0] pos_reset_i, input [7:0] neg_reset_i,
+    input enable_i, output reg [7:0] new_potential_o, output reg spike_o);
+  name: neuron_block
+  pipeline_stages: '0'
+  response: "module neuron_block (\n    input [7:0] voltage_potential_i, \n    input\
+    \ [7:0] pos_threshold_i,     \n    input [7:0] neg_threshold_i,     \n    input\
+    \ [7:0] leak_value_i,        \n    input [7:0] weight_type1_i,      \n    input\
+    \ [7:0] weight_type2_i,      \n    input [7:0] weight_type3_i,      \n    input\
+    \ [7:0] weight_type4_i,      \n    input [7:0] weight_select_i,     \n    input\
+    \ [7:0] pos_reset_i,         \n    input [7:0] neg_reset_i,         \n    input\
+    \ enable_i,                  \n    output reg [7:0] new_potential_o, \n    output\
+    \ reg spike_o               \n);\n\n    reg [7:0] selected_weight;\n    reg [8:0]\
+    \ potential_calc; \n\n    \n    always @(*) begin\n        case(weight_select_i)\n\
+    \            8'd0: selected_weight = weight_type1_i;\n            8'd1: selected_weight\
+    \ = weight_type2_i;\n            8'd2: selected_weight = weight_type3_i;\n   \
+    \         8'd3: selected_weight = weight_type4_i;\n            default: selected_weight\
+    \ = 8'b0;\n        endcase\n    end\n\n    \n    always @(*) begin\n        if\
+    \ (enable_i == 1) begin\n            \n            potential_calc = {1'b0, voltage_potential_i}\
+    \ + selected_weight - leak_value_i;\n\n            \n            if (potential_calc[8])\
+    \ new_potential_o = 8'b00000000; \n            else if (potential_calc > 8'b11111111)\
+    \ new_potential_o = 8'b11111111; \n            else new_potential_o = potential_calc[7:0];\n\
+    \n            \n            if (new_potential_o >= pos_threshold_i) begin\n  \
+    \              new_potential_o = pos_reset_i;\n                spike_o = 1;\n\
+    \            end else if (new_potential_o <= neg_threshold_i) begin\n        \
+    \        new_potential_o = neg_reset_i;\n                spike_o = 0;\n      \
+    \      end else begin\n                spike_o = 0;\n            end\n       \
+    \ end else begin\n            new_potential_o = 8'b0;\n            spike_o = 0;\n\
+    \        end\n    end\n\nendmodule\n\n\n\n"
+- class: custom
+  instruction: 'The module, named `AddressDecoder` for address decoding will have:
+    1-A 32-bit input for the address. 2-Outputs to indicate which module the address
+    corresponds to. 3-An output to represent the index in case of a param module.
+    Memory Map: 1: Address Range: `0x30000000 - 0x30003FFF`. Address Identification:
+    Bits `[14:13] = 2''b00`. 2: ** modules (32 modules, each of 12 bytes, but aligned
+    to 16 bytes):** Total Address Range for all `param` modules: `0x30004000 - 0x300040FF`
+    Address Identification for the param range: Bits `[14:13]` = `2''b01`. param0
+    : `0x30004000 - 0x3000400B`. param1 : `0x30004010 - 0x3000401B` ... param31 :
+    `0x3000401E0 - 0x3000401EB`. Specific `param` Identification: Bits `[8:4]`. This
+    will yield values ranging from `5''b00000` (0 in decimal) for `param0` to `5''b11111`
+    (31 in decimal) for `param31`. 3: Address Range: `0x30008000 - 0x30008003` Address
+    Identification: Bits `[14:13]` = `2''b10`. Decoder Identification Bits: To determine
+    the major block: Check bits `[14:13]`:/n `2''b00`: `synap_matrix` /n `2''b01`:
+    `param` modules/n `2''b10`: `neuron_spike_out`/n To determine the specific param:/n
+    If `[14:13]` indicates a `param` block, then bits `[8:4]` will give the specific
+    `param` index (from `param0` to `param31`)./n With this setup, the memory map
+    provides an efficient way to decode addresses for each block using bitwise operations. '
+  interface: module AddressDecoder (input [31:0] addr, output reg synap_matrix, output
+    reg [4:0] param_num, output reg neuron_spike_out, output reg param);
+  name: AddressDecoder
+  pipeline_stages: '0'
+  response: "module AddressDecoder (\n    input [31:0] addr,\n    output reg synap_matrix,\n\
+    \    output reg [4:0] param_num, \n    output reg neuron_spike_out,\n    output\
+    \ reg param\n);\n\n    always @(addr) begin\n    synap_matrix = 0;\n        param\
+    \ = 0;\n        param_num = 5'b0;\n        neuron_spike_out = 0;\n\n       case(addr[14:13])\n\
+    \            2'b00: synap_matrix = 1;\n            2'b01: begin\n            \
+    \    param = 1;\n                param_num = addr[8:4];\n            end\n   \
+    \         2'b10: neuron_spike_out = 1;\n            default: ; \n        endcase\n\
+    \    end\n\nendmodule\n"
+- class: custom
+  instruction: We're making some code which verifies that our 4-bit segment address
+    is within safe bounds as defined by some 8-bit T/F encoded values (SEGEXE_H and
+    SEGEXE_L for the high and low 8 values respectively - '1' means it is safe). Can
+    you write me a combinational module which takes in the 4-bit segment, the SEGEXE
+    values, and returns a one-bit illegal_segment_address if the corresponding SEGEXE
+    value is 0? the module name is `SegmentCheck`, `illegal_segment_address` will
+    be set to 1 when the corresponding bit in the `SEGEXE` input is 0.
+  interface: module SegmentCheck( input wire [3:0] seg_addr, input wire [7:0] SEGEXE_H,
+    input wire [7:0] SEGEXE_L, output reg illegal_segment_address);
+  name: SegmentCheck
+  pipeline_stages: '0'
+  response: "module SegmentCheck(\n  input wire [3:0] seg_addr,\n  input wire [7:0]\
+    \ SEGEXE_H,\n  input wire [7:0] SEGEXE_L,\n  output reg illegal_segment_address\n\
+    );\n  \n  always @(*) begin\n    if (seg_addr < 8) begin\n      illegal_segment_address\
+    \ = SEGEXE_L[seg_addr] == 1'b0;\n    end\n    else if (seg_addr < 16) begin\n\
+    \      illegal_segment_address = SEGEXE_H[seg_addr-8] == 1'b0;\n    end\n    else\
+    \ begin\n      illegal_segment_address = 1'b1;  // By default, indicate illegal\
+    \ if out of 16\n    end\n  end\n\nendmodule"
+- class: custom
+  instruction: Design module named isa_to_alu_opcode that translates 8-bit ISA instructions
+    into 4-bit ALU opcodes for an 8-bit accumulator-based microcontroller, taking
+    an 8-bit input isa_instr and outputting a 4-bit alu_opcode; the translation process
+    involves specific 8-bit instructions directly mapping to ALU opcodes for operations
+    like shifting, rotating, decrementing, clearing, and inverting, while subsets
+    of 4-bit and 3-bit patterns in the instruction's most significant bits define
+    default and other operations like add, subtract, bitwise AND, OR, XOR, with unmatched
+    patterns defaulting to a specific operation, enabling the microcontroller to correctly
+    interpret and execute a broad range of instructions by translating them into specific
+    ALU operations based on current instruction patterns.
+  interface: module isa_to_alu_opcode (input [7:0] isa_instr, output reg [3:0] alu_opcode);
+  name: isa_to_alu_opcode
+  pipeline_stages: '0'
+  response: "module isa_to_alu_opcode (\n    input [7:0] isa_instr,\n    output reg\
+    \ [3:0] alu_opcode\n);\n\n    \n    wire [7:0] opcode_8bit = isa_instr[7:0];\n\
+    \    wire [3:0] opcode_4bit = isa_instr[7:4];\n    wire [2:0] opcode_3bit = isa_instr[7:5];\n\
+    \n    always @* begin\n        case (opcode_8bit)\n            8'b11110110: alu_opcode\
+    \ = 4'b0101; \n            8'b11110111: alu_opcode = 4'b0110; \n            8'b11111000:\
+    \ alu_opcode = 4'b0111; \n            8'b11111001: alu_opcode = 4'b1000; \n  \
+    \          8'b11111010: alu_opcode = 4'b1001; \n            8'b11111100: alu_opcode\
+    \ = 4'b1010; \n            8'b11111110: alu_opcode = 4'b1011; \n            8'b11111101:\
+    \ alu_opcode = 4'b1100; \n\n            default: begin\n                case (opcode_4bit)\n\
+    \                    4'b1110: alu_opcode = 4'b0000; \n\n                    default:\
+    \ begin\n                        case (opcode_3bit)\n                        \
+    \    3'b010: alu_opcode = 4'b0000; \n                            3'b011: alu_opcode\
+    \ = 4'b0001; \n                            3'b100: alu_opcode = 4'b0010; \n  \
+    \                          3'b101: alu_opcode = 4'b0011; \n                  \
+    \          3'b110: alu_opcode = 4'b0100; \n\n                            default:\
+    \ alu_opcode = 4'b0000; \n                        endcase\n                  \
+    \  end\n                endcase\n            end\n        endcase\n    end\n\n\
+    endmodule\n\n\n\n"
+- class: custom
+  instruction: Design module named `alu_simple` that performs various arithmetic and
+    logic operations based on the inputs and a 4-bit opcode. The module takes two
+    8-bit inputs, `A` and `B`, and a 4-bit opcode, then produces an 8-bit output `Y`.
+    The operations include addition, subtraction, bitwise AND, OR, XOR, shift left
+    by 4 positions (applied only to `B`), shift `A` left by 1, shift `A` right by
+    1, rotate `A` left (with MSB wrapping around), rotate `A` right (with LSB wrapping
+    around), decrement `A` by 1, invert all bits of `A`, and a default case that sets
+    `Y` to 0. The ALU supports basic arithmetic operations like add and subtract,
+    bitwise operations including AND, OR, XOR, logical and arithmetic shifts, rotates,
+    decrement, and bit inversion, allowing it to execute a wide range of instructions
+    for arithmetic and logic processing in an 8-bit accumulator-based architecture.
+    The module interface is defined as `module alu(input wire [7:0] A, input wire
+    [7:0] B, input wire [3:0] opcode, output reg [7:0] Y);`, where the opcode determines
+    the operation to be performed.
+  interface: module alu_simple (input wire [7:0] A, input wire [7:0] B, input wire
+    [3:0] opcode, output reg [7:0] Y);
+  name: alu_simple
+  pipeline_stages: '0'
+  response: "module alu_simple (\n    input wire [7:0] A,\n    input wire [7:0] B,\n\
+    \    input wire [3:0] opcode,\n    output reg [7:0] Y\n);\n\nalways @(*) begin\n\
+    \    case (opcode)\n        4'b0000: Y = A + B;               \n        4'b0001:\
+    \ Y = A - B;               \n        4'b0010: Y = A & B;               \n    \
+    \    4'b0011: Y = A | B;               \n        4'b0100: Y = A ^ B;         \
+    \      \n        4'b0101: Y = B << 4;              \n        4'b0110: Y = A <<\
+    \ 1;              \n        4'b0111: Y = A >> 1;              \n        4'b1000:\
+    \ Y = A[6:0] | A[7] << 7;  \n        4'b1001: Y = A[0] << 7 | A[7:1];  \n    \
+    \    4'b1010: Y = A - 1;               \n        4'b1011: Y = ~A;            \
+    \      \n        default: Y = 8'b00000000;         \n    endcase\nend\n\nendmodule\n\
+    \n\n\n"
+- class: custom
+  instruction: 'Defines a modular approach to performing floating-point division in
+    a digital system, focusing on the `division` module''s orchestration of the division
+    process with submodules for specific arithmetic tasks. The `division` module inputs
+    two 32-bit floating-point numbers, `a` as the dividend and `b` as the divisor,
+    and outputs a 32-bit result `res`, representing the quotient, along with an `exception`
+    flag for special conditions like division by zero or operations with NaN or infinity.
+    The process includes normalization of the divisor for precision, iterative refinement
+    of the quotient using submodules `Multiplication`, `Addition_Subtraction`, and
+    `Iteration`, and final adjustment of the quotient based on the dividend''s exponent.
+    The `Multiplication` submodule performs floating-point multiplication, addressing
+    sign determination, normalization, rounding, and exceptional conditions. The `Addition_Subtraction`
+    submodule conducts floating-point addition or subtraction, based on a control
+    signal, including operand alignment, operation execution, and result normalization.
+    The `Iteration` submodule refines the quotient iteratively through a sequence
+    of multiplication and addition/subtraction steps, using a specific algorithm for
+    division. These components interact to progressively refine the quotient, ensuring
+    the result is correctly scaled to the original dividend''s exponent. This description
+    emphasizes the division module''s role in coordinating the division process, the
+    iterative refinement technique for accuracy, and the involvement of each submodule
+    in achieving an IEEE 754 compliant floating-point division operation. 1. **Normalization**:
+    Initially, the division normalizes the divisor `b` to enhance the precision of
+    the division. This involves calculating the shift needed to adjust `b`''s exponent
+    to a predefined value, ensuring the divisor is suitably scaled for the division
+    operation.2. **Iterative Refinement**: The core of the division operation is iterative
+    refinement, employing a Newton-Raphson method or similar to converge upon an accurate
+    quotient. This process is realized through repeated applications of `Multiplication`,
+    `Addition_Subtraction`, and `Iteration` submodules:   - **Multiplication**: Takes
+    two 32-bit floating-point numbers and performs multiplication, adjusting for the
+    signs of the operands, normalizing the product, and handling special cases like
+    overflow and underflow. It is crucial for both adjusting the initial divisor and
+    in each iteration step to refine the quotient.   - **Addition_Subtraction**: Capable
+    of executing addition or subtraction on floating-point numbers, this module aligns
+    the operands based on their exponents, carries out the desired operation, and
+    normalizes the result. It''s invoked to adjust intermediate values during iterative
+    refinement.   - **Iteration**: This submodule encapsulates the iterative step
+    of the refinement process, applying a combination of multiplication and addition/subtraction
+    to improve the quotient''s accuracy. It represents a mathematical approach to
+    division, with each iteration designed to get closer to the accurate quotient.
+    3. **Exponent Adjustment**: After completing the necessary iterations, the division
+    module adjusts the final quotient''s exponent. This adjustment ensures the quotient
+    is correctly scaled, taking into account the original exponent of the dividend
+    and the normalization shifts applied throughout the division process. 4. **Exception
+    Handling**: The module includes logic to detect and signal exceptional conditions,
+    such as division by zero and operations involving NaN or infinity, compliant with
+    IEEE 754 standards. The division module showcases a comprehensive approach to
+    floating-point division, leveraging the IEEE 754 format and iterative refinement
+    for accuracy. Each submodule plays a pivotal role in achieving the precise quotient,
+    emphasizing the modular design''s flexibility and efficiency in handling floating-point
+    arithmetic operations within digital systems.'
+  interface: module division(input [31:0] a, input [31:0] b, output exception, output
+    [31:0] res);
+  name: division
+  pipeline_stages: '0'
+  response: "module division(\n input [31:0] a,\n input [31:0] b,\n output exception,\n\
+    \ output [31:0] res\n);\n\nwire sign;\nwire [7:0] shift;\nwire [7:0] exp_a;\n\
+    wire [31:0] divisor;\nwire [31:0] op_a;\nwire [31:0] Intermediate_X0;\nwire [31:0]\
+    \ Iteration_X0;\nwire [31:0] Iteration_X1;\nwire [31:0] Iteration_X2;\nwire [31:0]\
+    \ Iteration_X3;\nwire [31:0] solution;\n\nwire [31:0] denominator;\nwire [31:0]\
+    \ op_a_change;\n\nassign exception = (&a[30:23]) | (&b[30:23]);\n\nassign sign\
+    \ = a[31] ^ b[31];\n\nassign shift = 8'd126 - b[30:23];\n\nassign divisor = {1'b0,8'd126,b[22:0]};\n\
+    \nassign denominator = divisor;\n\nassign exp_a = a[30:23] + shift;\n\nassign\
+    \ op_a = {a[31],exp_a,a[22:0]};\n\nassign op_a_change = op_a;\n\n\nMultiplication\
+    \ x0(32'hC00B_4B4B,divisor,,,,Intermediate_X0);\n\n\nAddition_Subtraction X0(Intermediate_X0,32'h4034_B4B5,1'b0,,Iteration_X0);\n\
+    \nIteration X1(Iteration_X0,divisor,Iteration_X1);\n\nIteration X2(Iteration_X1,divisor,Iteration_X2);\n\
+    \nIteration X3(Iteration_X2,divisor,Iteration_X3);\n\nMultiplication END(Iteration_X3,op_a,,,,solution);\n\
+    \nassign res = {sign,solution[30:0]};\nendmodule\n\nmodule priority_encoder(\n\
+    \ input [24:0] significand,\n input [7:0] exp_a,\n output reg [24:0] Significand,\n\
+    \ output [7:0] exp_sub\n);\n\nreg [4:0] shift;\n\nalways @(significand)\nbegin\n\
+    \ casex (significand)\n 25'b1_1xxx_xxxx_xxxx_xxxx_xxxx_xxxx : begin\n Significand\
+    \ = significand;\n shift = 5'd0;\n end\n 25'b1_01xx_xxxx_xxxx_xxxx_xxxx_xxxx :\
+    \ begin\n Significand = significand << 1;\n shift = 5'd1;\n end\n 25'b1_001x_xxxx_xxxx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 2;\n shift = 5'd2;\n end\n\n 25'b1_0001_xxxx_xxxx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 3;\n shift = 5'd3;\n end\n\n 25'b1_0000_1xxx_xxxx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 4;\n shift = 5'd4;\n end\n\n 25'b1_0000_01xx_xxxx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 5;\n shift = 5'd5;\n end\n\n 25'b1_0000_001x_xxxx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 6;\n shift = 5'd6;\n end\n\n 25'b1_0000_0001_xxxx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 7;\n shift = 5'd7;\n end\n\n 25'b1_0000_0000_1xxx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 8;\n shift = 5'd8;\n end\n\n 25'b1_0000_0000_01xx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 9;\n shift = 5'd9;\n end\n\n 25'b1_0000_0000_001x_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 10;\n shift = 5'd10;\n end\n\n 25'b1_0000_0000_0001_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 11;\n shift = 5'd11;\n end\n\n 25'b1_0000_0000_0000_1xxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 12;\n shift = 5'd12;\n end\n\n 25'b1_0000_0000_0000_01xx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 13;\n shift = 5'd13;\n end\n\n 25'b1_0000_0000_0000_001x_xxxx_xxxx\
+    \ : begin\n Significand = significand << 14;\n shift = 5'd14;\n end\n\n 25'b1_0000_0000_0000_0001_xxxx_xxxx\
+    \  : begin\n Significand = significand << 15;\n shift = 5'd15;\n end\n\n 25'b1_0000_0000_0000_0000_1xxx_xxxx\
+    \ : begin\n Significand = significand << 16;\n shift = 5'd16;\n end\n\n 25'b1_0000_0000_0000_0000_01xx_xxxx\
+    \ : begin\n Significand = significand << 17;\n shift = 5'd17;\n end\n\n 25'b1_0000_0000_0000_0000_001x_xxxx\
+    \ : begin\n Significand = significand << 18;\n shift = 5'd18;\n end\n\n 25'b1_0000_0000_0000_0000_0001_xxxx\
+    \ : begin\n Significand = significand << 19;\n shift = 5'd19;\n end\n\n 25'b1_0000_0000_0000_0000_0000_1xxx\
+    \ : begin\n Significand = significand << 20;\n shift = 5'd20;\n end\n\n 25'b1_0000_0000_0000_0000_0000_01xx\
+    \ : begin\n Significand = significand << 21;\n shift = 5'd21;\n end\n\n 25'b1_0000_0000_0000_0000_0000_001x\
+    \ : begin\n Significand = significand << 22;\n shift = 5'd22;\n end\n\n 25'b1_0000_0000_0000_0000_0000_0001\
+    \ : begin\n Significand = significand << 23;\n shift = 5'd23;\n end\n\n 25'b1_0000_0000_0000_0000_0000_0000\
+    \ : begin\n Significand = significand << 24;\n shift = 5'd24;\n end\n default\
+    \ : begin\n Significand = (~significand) + 1'b1;\n shift = 8'd0;\n end\n\n endcase\n\
+    end\nassign exp_sub = exp_a - shift;\n\nendmodule\n\nmodule Addition_Subtraction(\n\
+    input [31:0] a,b,\ninput add_sub_signal,\noutput exception,\noutput [31:0] res\n\
+    );\n\nwire operation_add_sub_signal;\nwire enable;\nwire output_sign;\n\nwire\
+    \ [7:0] exp_a, exp_b; \nwire perform;\n\nwire [31:0] op_a,op_b;\nwire [23:0] significand_a,significand_b;\n\
+    wire [7:0] exponent_diff;\n\n\nwire [23:0] significand_b_add_sub;\nwire [7:0]\
+    \ exp_b_add_sub;\n\nwire [24:0] significand_add;\nwire [30:0] add_sum;\n\nwire\
+    \ [23:0] significand_sub_complement;\nwire [24:0] significand_sub;\nwire [30:0]\
+    \ sub_diff;\nwire [24:0] subtraction_diff;\nwire [7:0] exp_sub;\n\nassign {enable,op_a,op_b}\
+    \ = (a[30:0] < b[30:0]) ? {1'b1,b,a} : {1'b0,a,b};\n\nassign exp_a = op_a[30:23];\n\
+    assign exp_b = op_b[30:23];\nassign perform = (op_a[30:23] == exp_b_add_sub);\n\
+    \nassign exception = (&op_a[30:23]) | (&op_b[30:23]);\n\nassign output_sign =\
+    \ add_sub_signal ? enable ? !op_a[31] : op_a[31] : op_a[31] ;\n\nassign operation_add_sub_signal\
+    \ = add_sub_signal ? op_a[31] ^ op_b[31] : ~(op_a[31] ^ op_b[31]);\n\nassign significand_a\
+    \ = (|op_a[30:23]) ? {1'b1,op_a[22:0]} : {1'b0,op_a[22:0]};\nassign significand_b\
+    \ = (|op_b[30:23]) ? {1'b1,op_b[22:0]} : {1'b0,op_b[22:0]};\n\nassign exponent_diff\
+    \ = op_a[30:23] - op_b[30:23];\n\nassign significand_b_add_sub = significand_b\
+    \ >> exponent_diff;\n\nassign exp_b_add_sub = op_b[30:23] + exponent_diff;\n\n\
+    assign significand_add = (perform & operation_add_sub_signal) ? (significand_a\
+    \ + significand_b_add_sub) : 25'd0;\n\nassign add_sum[22:0] = significand_add[24]\
+    \ ? significand_add[23:1] : significand_add[22:0];\n\nassign add_sum[30:23] =\
+    \ significand_add[24] ? (1'b1 + op_a[30:23]) : op_a[30:23];\n\n\nassign significand_sub_complement\
+    \ = (perform & !operation_add_sub_signal) ? ~(significand_b_add_sub) + 24'd1 :\
+    \ 24'd0 ;\n\nassign significand_sub = perform ? (significand_a + significand_sub_complement)\
+    \ : 25'd0;\n\npriority_encoder pe(significand_sub,op_a[30:23],subtraction_diff,exp_sub);\n\
+    \nassign sub_diff[30:23] = exp_sub;\n\nassign sub_diff[22:0] = subtraction_diff[22:0];\n\
+    \n\n\nassign res = exception ? 32'b0 : ((!operation_add_sub_signal) ? {output_sign,sub_diff}\
+    \ : {output_sign,add_sum});\n\nendmodule\n\nmodule Multiplication(\n input [31:0]\
+    \ a,\n input [31:0] b,\n output exception,overflow,underflow,\n output [31:0]\
+    \ res\n);\n\nwire sign,product_round,normalised,zero;\nwire [8:0] exponent,sum_exponent;\n\
+    wire [22:0] product_mantissa;\nwire [23:0] op_a,op_b;\nwire [47:0] product,product_normalised;\n\
+    \n\nassign sign = a[31] ^ b[31];\n\nassign exception = (&a[30:23]) | (&b[30:23]);\n\
+    \n\n\n\nassign op_a = (|a[30:23]) ? {1'b1,a[22:0]} : {1'b0,a[22:0]};\n\nassign\
+    \ op_b = (|b[30:23]) ? {1'b1,b[22:0]} : {1'b0,b[22:0]};\n\nassign product = op_a\
+    \ * op_b;\n\nassign product_round = |product_normalised[22:0];\n\nassign normalised\
+    \ = product[47] ? 1'b1 : 1'b0;\n\nassign product_normalised = normalised ? product\
+    \ : product << 1;\n\nassign product_mantissa = product_normalised[46:24] + {21'b0,(product_normalised[23]\
+    \ & product_round)};\n\nassign zero = exception ? 1'b0 : (product_mantissa ==\
+    \ 23'd0) ? 1'b1 : 1'b0;\n\nassign sum_exponent = a[30:23] + b[30:23];\n\nassign\
+    \ exponent = sum_exponent - 8'd127 + normalised;\n\nassign overflow = ((exponent[8]\
+    \ & !exponent[7]) & !zero) ;\n\nassign underflow = ((exponent[8] & exponent[7])\
+    \ & !zero) ? 1'b1 : 1'b0;\n\nassign res = exception ? 32'd0 : zero ? {sign,31'd0}\
+    \ : overflow ? {sign,8'hFF,23'd0} : underflow ? {sign,31'd0} : {sign,exponent[7:0],product_mantissa};\n\
+    \n\nendmodule\n\nmodule Iteration(\n input [31:0] operand_1,\n input [31:0] operand_2,\n\
+    \ output [31:0] solution\n);\n\nwire [31:0] Intermediate_Value1,Intermediate_Value2;\n\
+    \nMultiplication M1(operand_1,operand_2,,,,Intermediate_Value1);\n\n\nAddition_Subtraction\
+    \ A1(32'h4000_0000,{1'b1,Intermediate_Value1[30:0]},1'b0,,Intermediate_Value2);\n\
+    \nMultiplication M2(operand_1,Intermediate_Value2,,,,solution);\n\nendmodule\n\
+    \n\n\n"
+- class: custom
+  instruction: "I am implementing a Multiplier Unit with the following specifications:\
+    \ \n- recv_msg: A 64-bit input divided into two parts; the first 32 bits are the\
+    \ first operand, and the second 32 bits are the second operand for the multiplication\
+    \ operation. \n- recv_val: A signal indicating that the operands provided are\
+    \ valid for processing. \n- recv_rdy: A signal that denotes the Multiplier Unit's\
+    \ readiness to receive new operands, directly tied to the send_rdy signal to indicate\
+    \ the unit is ready to receive new data when the next unit is ready to receive\
+    \ the result. \n- send_msg: A 32-bit output that holds the product of the multiplication\
+    \ of the two operands. This output is determined in a purely combinational manner,\
+    \ ensuring no latches are inferred in the design. \n- send_val: A signal that\
+    \ is set to indicate the result of the multiplication is valid and ready to be\
+    \ sent out, which mirrors the state of send_rdy to synchronize the output validity\
+    \ with the readiness of the next unit in the data chain. \n- send_rdy: An input\
+    \ signal indicating that the downstream unit is prepared to accept the result\
+    \ of the multiplication. The design ensures that the Multiplier Unit operates\
+    \ in a flow-controlled manner, producing outputs only when they can be accepted\
+    \ downstream, thereby facilitating a smooth data processing flow without bottlenecks.\
+    \ \nThis description ensures the Multiplier Unit is implemented as a purely combinational\
+    \ logic design, with direct assignments for send_msg, recv_rdy, and send_val based\
+    \ on the inputs and the readiness signal from the next unit (send_rdy), effectively\
+    \ preventing latch inference and adhering to the requirements for a combinational\
+    \ logic implementation."
+  interface: module MultiplierUnit (input logic [63:0] recv_msg, input logic recv_val,
+    output logic recv_rdy, output logic [31:0] send_msg, output logic send_val, input
+    logic send_rdy);
+  name: MultiplierUnit
+  pipeline_stages: '0'
+  response: "module MultiplierUnit (\n    input logic [63:0] recv_msg,\n    input\
+    \ logic recv_val,\n    output logic recv_rdy,\n    output logic [31:0] send_msg,\n\
+    \    output logic send_val,\n    input logic send_rdy\n);\n    assign send_msg\
+    \ = recv_msg[31:0] * recv_msg[63:32];\n    assign recv_rdy = send_rdy;\n    assign\
+    \ send_val = send_rdy;\nendmodule"
+- class: custom
+  instruction: The module named comparison_unit is designed to perform various comparison
+    operations on two inputs, in1 and in2, based on a 4-bit control signal. This module
+    is parameterized with a default WIDTH of 32 bits for the inputs, allowing for
+    flexibility in operand size. The module outputs a single bit, predicate, which
+    represents the result of the comparison dictated by the control signal. The comparisons
+    include checking if in1 is equal to zero, not equal to zero, a constant true condition,
+    signed and unsigned comparisons between in1 and in2 (greater than or equal, less
+    than, equal, not equal), utilizing the $signed system function for signed comparisons
+    when appropriate. The control signal's specific values dictate the performed comparison,
+    with the default case resulting in a predicate value of 0. This module abstracts
+    the comparison logic required for predicate register instructions within a vector
+    processing unit, allowing for conditional execution based on the results of these
+    comparisons. The module is purely combinational, with the predicate output directly
+    determined by the current inputs and control signal, ensuring immediate response
+    to input changes without inferring any storage elements or latches.
+  interface: module comparison_unit(input logic [WIDTH-1:0] in1, input logic [WIDTH-1:0]
+    in2, input logic [3:0] control, output logic predicate);
+  name: comparison_unit
+  pipeline_stages: '0'
+  response: "module comparison_unit #(parameter WIDTH = 32)(\n    input logic [WIDTH-1:0]\
+    \ in1,\n    input logic [WIDTH-1:0] in2,\n    input logic [3:0] control,\n   \
+    \ output logic predicate\n);\n\nalways_comb begin\n    case (control)\n      \
+    \  4'b0000: predicate = (in1 == 0);         4'b0001: predicate = (in1 != 0); \
+    \ 4'b0010: predicate = 1;       4'b0011: predicate = ($signed(in1) >= $signed(in2));\
+    \        4'b0100: predicate = ($signed(in1) < $signed(in2));      4'b0101: predicate\
+    \ = (in1 >= in2);     4'b0110: predicate = (in1 < in2);   4'b0111: predicate =\
+    \ (in1 == in2);  4'b1000: predicate = (in1 != in2);   default: predicate = 0;\
+    \    endcase\nend\n\nendmodule"
+- class: custom
+  instruction: "I want to implement the following multiplier from this specification:\
+    \ \n    Adder/Subtracter Unit\n        recv_msg: A 64-bit input, where the first\
+    \ 32 bits represent the first operand and the second 32 bits represent the second\
+    \ operand.\n        recv_val: A signal indicating that the operands are valid.\n\
+    \        recv_rdy: A signal indicating that the unit is ready to receive operands.\n\
+    \        send_msg: A 32-bit output representing the result of the addition/subtraction.\n\
+    \        send_val: A signal indicating that the result is valid.\n        send_rdy:\
+    \ A signal indicating that the next unit is ready to receive the result.\n\n \
+    \   Multiplier Unit\n        Similar to the Adder/Subtracter Unit, but performs\
+    \ multiplication instead of addition/subtraction.\n\nCan you please implement\
+    \ a floating-point multiplier called FPMultiplierUnit, just implement everything\
+    \ combinationally, please.\nyou need a synthesizable version of the floating-point\
+    \ multiplier. Here's a simplified version of a floating-point multiplier that\
+    \ handles different exponents, NaNs, infinities, and over/underflows.\n\nThis\
+    \ version assumes IEEE 754 single-precision floating-point format, where the first\
+    \ bit is the sign bit, the next 8 bits are the exponent, and the remaining 23\
+    \ bits are the fraction (also known as the significand or mantissa)\n In the IEEE\
+    \ 754 single-precision floating-point format, the fraction is assumed to have\
+    \ an implied leading 1. This means that the actual value represented by the fraction\
+    \ is 1.fraction, not just fraction.\n\nTo take this into account, we can add a\
+    \ leading 1 to the fractions before multiplying them, and then normalize the result.\n\
+    This version adds a leading 1 to the fractions before multiplying them, and then\
+    \ normalizes the result by shifting it right and incrementing the exponent if\
+    \ the result is greater than 2. This should give a more accurate result than the\
+    \ previous version. However, it still does not handle rounding or denormalized\
+    \ numbers. You might need to add additional logic to handle these cases if they\
+    \ are relevant to your application\n\n\n\n\nThe `FPMultiplierUnit` module is designed\
+    \ to perform floating-point multiplication on two 32-bit IEEE 754 standard floating-point\
+    \ numbers. These numbers are received as a 64-bit input message, with each operand\
+    \ occupying 32 bits. The module outputs the result of the multiplication as a\
+    \ 32-bit floating-point number, also adhering to the IEEE 754 standard. Here's\
+    \ a breakdown of its functionality and interface:\n\n### Module Name\n- `FPMultiplierUnit`\n\
+    \n### Inputs\n- `recv_msg` (64 bits): Encapsulates two 32-bit floating-point numbers\
+    \ to be multiplied. The first operand is in the lower 32 bits, and the second\
+    \ operand is in the upper 32 bits.\n- `recv_val` (1 bit): Indicates that the received\
+    \ message is valid.\n- `send_rdy` (1 bit): Indicates that the downstream component\
+    \ is ready to receive the result.\n\n### Outputs\n- `recv_rdy` (1 bit): Indicates\
+    \ that the module is ready to receive a new input message.\n- `send_msg` (32 bits):\
+    \ Contains the result of the multiplication in IEEE 754 floating-point format.\n\
+    - `send_val` (1 bit): Indicates that the result is valid and ready to be sent.\n\
+    \n### Functionality\n1. **Operand Extraction**: The operands are extracted from\
+    \ the `recv_msg` input.\n2. **Sign Calculation**: The sign of the result is determined\
+    \ by XORing the signs of the two operands.\n3. **Exponent Calculation**: The exponents\
+    \ of the operands are added, and the bias (127 for 32-bit floating-point) is subtracted\
+    \ to adjust for the IEEE 754 format.\n4. **Mantissa Calculation**: The mantissas\
+    \ (with the implied leading 1) of the operands are multiplied, producing a 48-bit\
+    \ result.\n5. **Normalization**: The result is normalized to fit into the 32-bit\
+    \ result format. If the most significant bit of the mantissa is 1, the mantissa\
+    \ is right-shifted, and the exponent is incremented.\n6. **Special Cases Handling**:\
+    \ The module handles special cases such as NaN (Not a Number), infinity, overflow,\
+    \ and underflow, according to the IEEE 754 standard rules.\n7. **Result Formation**:\
+    \ The sign, exponent, and the 22 least significant bits of the mantissa are combined\
+    \ to form the final result.\n\n### Special Case Handling\n- NaN or infinity: Identified\
+    \ by an exponent of `8'hFF`. If either operand is NaN (indicated by a non-zero\
+    \ fraction part), the result is set to NaN; otherwise, it's set to infinity.\n\
+    - Overflow: If the calculated exponent exceeds the maximum value, the result is\
+    \ set to infinity.\n- Underflow: If the calculated exponent is less than the minimum,\
+    \ the result is set to zero.\n "
+  interface: module FPMultiplierUnit( input logic [63:0] recv_msg, input logic recv_val,
+    output logic recv_rdy, output logic [31:0] send_msg, output logic send_val, input
+    logic send_rdy);
+  name: FPMultiplierUnit
+  pipeline_stages: '0'
+  response: "module FPMultiplierUnit (\n    input logic [63:0] recv_msg,\n    input\
+    \ logic recv_val,\n    output logic recv_rdy,\n    output logic [31:0] send_msg,\n\
+    \    output logic send_val,\n    input logic send_rdy\n);\n\n    wire [31:0] operand1\
+    \ = recv_msg[31:0];\n    wire [31:0] operand2 = recv_msg[63:32];\n    wire sign1\
+    \ = operand1[31];\n    wire sign2 = operand2[31];\n    wire [7:0] exponent1 =\
+    \ operand1[30:23];\n    wire [7:0] exponent2 = operand2[30:23];\n    wire [22:0]\
+    \ fraction1 = operand1[22:0];\n    wire [22:0] fraction2 = operand2[22:0];\n \
+    \   wire [23:0] mantissa1 = {1'b1, fraction1};\n    wire [23:0] mantissa2 = {1'b1,\
+    \ fraction2};\n\n    wire result_sign = sign1 ^ sign2;\n    wire [47:0] raw_mantissa\
+    \ = mantissa1 * mantissa2;\n    reg [8:0] adjusted_exponent;\n    reg [47:0] adjusted_mantissa;\n\
+    \n     always @(*) begin\n        if (raw_mantissa[47]) begin\n            adjusted_mantissa\
+    \ = raw_mantissa >> 1;\n            adjusted_exponent = exponent1 + exponent2\
+    \ - 126;   end else begin\n            adjusted_mantissa = raw_mantissa;\n   \
+    \         adjusted_exponent = exponent1 + exponent2 - 127;   end\n\n        if\
+    \ (exponent1 == 8'hFF || exponent2 == 8'hFF) begin\n            adjusted_exponent\
+    \ = 8'hFF;\n            adjusted_mantissa[22:0] = (fraction1 != 0 || fraction2\
+    \ != 0) ? 23'h1 : 23'h0;   end else if (adjusted_exponent > 8'hFE) begin\n   \
+    \         adjusted_exponent = 8'hFF;     adjusted_mantissa[22:0] = 23'h0;\n  \
+    \      end else if (adjusted_exponent < 8'h01) begin\n            adjusted_exponent\
+    \ = 0;          adjusted_mantissa = 0;\n        end\n    end\n\n  assign send_msg\
+    \ = {result_sign, adjusted_exponent[7:0], adjusted_mantissa[22:0]};\n    assign\
+    \ recv_rdy = send_rdy;\n    assign send_val = recv_val;\n\nendmodule\n\n"
+- class: custom
+  instruction: 'The provided code defines a module named `crossbar_switch` that acts
+    as a configurable crossbar switch for routing data between multiple inputs and
+    outputs in a vector coprocessor or similar digital system. It is parameterized
+    by `WIDTH` (the bit width of each data path), `NUM_INPUTS` (the number of input
+    channels), and `NUM_OUTPUTS` (the number of output channels). The module interfaces
+    include: - `recv_msg_flat`: A flattened input vector that contains all input data
+    concatenated together. - `src_idx` and `dst_idx`: 5-bit inputs specifying the
+    source and destination indices for routing. - `recv_val`: A signal indicating
+    the validity of the input data and indices. - `recv_rdy`: A signal indicating
+    that the crossbar is ready to receive data. - `send_msg_flat`: A flattened output
+    vector that represents the data transferred to the specified output channel. -
+    `send_val` and `send_rdy`: Output signals indicating the validity of the output
+    data and readiness of the next unit to receive data, respectively. The module
+    performs the following operations: 1. **Unpacking the Received Message**: It unpacks
+    the flattened `recv_msg_flat` input vector into individual `recv_msg` wires, each
+    corresponding to one of the input channels. 2. **Routing**: Based on the `src_idx`
+    and `dst_idx`, it routes the data from the specified input channel to the specified
+    output channel, given that `recv_val` and `recv_rdy` are asserted and the indices
+    are within valid ranges. 3. **Sending the Message**: It packs the routed data
+    back into a flattened `send_msg_flat` output vector, with the routed data positioned
+    according to the `dst_idx`. 4. **Signal Control**: It manages `send_val` and `send_rdy`
+    signals to reflect the validity and readiness of the data being sent. This module
+    is designed for combinational logic operation without internal state (i.e., everything
+    is done within a single clock cycle without latches or flip-flops for state holding),
+    ensuring fast and efficient data routing between the functional units of a vector
+    coprocessor or similar systems. The parameters allow for flexibility in adapting
+    the crossbar''s size to fit the needs of different system configurations.'
+  interface: "module crossbar_switch (\n    input wire [WIDTH-1:0] recv_msg[NUM_INPUTS-1:0],\n\
+    \    input wire [4:0] src_idx,\n    input wire [4:0] dst_idx,\n    input wire\
+    \ recv_val,\n    input wire recv_rdy,\n    output wire [WIDTH-1:0] send_msg[NUM_OUTPUTS-1:0],\n\
+    \    output wire send_val,\n    output wire send_rdy\n);"
+  name: crossbar_switch
+  pipeline_stages: '0'
+  response: "module crossbar_switch #(\n    parameter WIDTH = 32,\n    parameter NUM_INPUTS\
+    \ = 32,\n    parameter NUM_OUTPUTS = 32\n)(\n    input wire [(WIDTH*NUM_INPUTS)-1:0]\
+    \ recv_msg_flat,\n    input wire [4:0] src_idx,\n    input wire [4:0] dst_idx,\n\
+    \    input wire recv_val,\n    input wire recv_rdy,\n    output wire [(WIDTH*NUM_OUTPUTS)-1:0]\
+    \ send_msg_flat,\n    output wire send_val,\n    output wire send_rdy\n);\n\n\
+    \    wire [WIDTH-1:0] recv_msg[NUM_INPUTS-1:0];\n    wire [WIDTH-1:0] send_msg[NUM_OUTPUTS-1:0];\n\
+    \n    \n    genvar i;\n    generate\n        for (i = 0; i < NUM_INPUTS; i = i\
+    \ + 1) begin : unpack_recv\n            assign recv_msg[i] = recv_msg_flat[(i+1)*WIDTH-1\
+    \ -: WIDTH];\n        end\n    endgenerate\n\n    \n    assign send_val = recv_val\
+    \ && recv_rdy && (src_idx < NUM_INPUTS) && (dst_idx < NUM_OUTPUTS);\n    assign\
+    \ send_rdy = recv_rdy; \n\n    \n    reg [(WIDTH*NUM_OUTPUTS)-1:0] send_msg_flat_reg\
+    \ = 0;\n    always @(*) begin\n        send_msg_flat_reg = {WIDTH*NUM_OUTPUTS{1'b0}};\
+    \ \n        if (send_val) begin\n            send_msg_flat_reg[(dst_idx+1)*WIDTH-1\
+    \ -: WIDTH] = recv_msg[src_idx];\n        end\n    end\n\n    \n    assign send_msg_flat\
+    \ = send_msg_flat_reg;\n\nendmodule\n\n"
+- class: custom
+  instruction: "We are making a vector processor and need to implement the following\
+    \ functional unit:\n    Adder/Subtracter Unit\n        recv_msg: A 64-bit input,\
+    \ where the first 32 bits represent the first operand and the second 32 bits represent\
+    \ the second operand.\n        recv_val: A signal indicating that the operands\
+    \ are valid.\n        recv_rdy: A signal indicating that the unit is ready to\
+    \ receive operands.\n        send_msg: A 32-bit output representing the result\
+    \ of the addition/subtraction.\n        send_val: A signal indicating that the\
+    \ result is valid.\n        send_rdy: A signal indicating that the next unit is\
+    \ ready to receive the result.\n\nCan you please implement this for floating point\
+    \ addition and subtraction, combinational, so the latency is one cycle.\na fully\
+    \ compliant IEEE 754 floating-point adder/subtractor is a complex task that requires\
+    \ handling a variety of special cases, including infinities, NaNs, denormal numbers,\
+    \ and rounding modes.\nThis version of the module handles the following special\
+    \ cases:\n\n    If either operand is NaN, the result is NaN.\n    If both operands\
+    \ are infinity, the result is infinity if they have the same sign, or NaN if they\
+    \ have different signs and the operation is subtraction.\n    If one operand is\
+    \ infinity and the other is not, the result is infinity with the sign of the infinite\
+    \ operand.\n    If the result overflows (the exponent is greater than 255), the\
+    \ result is infinity with the sign of the result.\n    If the result underflows\
+    \ (the exponent is less than 0), the result is zero with the sign of the result.\n\
+    Remember, you are implementing a floating point adder/subtractor!\n\n\nThe module\
+    \ `FPAddSubUnit` is designed to perform floating-point addition or subtraction\
+    \ on two 32-bit IEEE 754 floating-point numbers encapsulated within a 64-bit input\
+    \ message. It handles the calculation based on the specified operation (addition\
+    \ or subtraction), taking into account various special cases such as NaN (Not\
+    \ a Number), infinity, overflow, and underflow. Here's a high-level description:\n\
+    \n### Module Name\n- `FPAddSubUnit`\n\n### Inputs\n- `recv_msg` (64 bits): Contains\
+    \ two 32-bit floating-point numbers to be processed. The higher 32 bits (`[63:32]`)\
+    \ represent the first operand, and the lower 32 bits (`[31:0]`) represent the\
+    \ second operand.\n- `recv_val` (1 bit): A valid signal indicating that the `recv_msg`\
+    \ data is valid and ready to be processed.\n- `send_rdy` (1 bit): A ready signal\
+    \ indicating that the downstream component is ready to accept data.\n- `operation`\
+    \ (1 bit): Specifies the operation to be performed; 0 for addition and 1 for subtraction.\n\
+    \n### Outputs\n- `recv_rdy` (1 bit): Indicates that the module is ready to receive\
+    \ data. This is typically connected to a signal indicating the readiness of the\
+    \ module to accept new input.\n- `send_msg` (32 bits): The result of the floating-point\
+    \ operation, formatted as a 32-bit IEEE 754 floating-point number.\n- `send_val`\
+    \ (1 bit): A valid signal indicating that the `send_msg` data is valid and ready\
+    \ to be sent to the next component.\n\n### Functionality\n1. **Operand Extraction**:\
+    \ The module first extracts the two operands from the `recv_msg` input.\n2. **Ready\
+    \ Signal Management**: It synchronizes the `recv_rdy` and `send_val` signals with\
+    \ `send_rdy` and `recv_val` respectively to manage data flow.\n3. **Operation\
+    \ Decoding**: Depending on the `operation` signal, it performs either addition\
+    \ or subtraction.\n4. **Special Cases Handling**:\n   - NaN (Not a Number): If\
+    \ any operand is NaN, the result is set to that NaN operand.\n   - Infinity: Operations\
+    \ involving infinity are handled according to IEEE 754 rules, including cases\
+    \ for addition or subtraction of infinities.\n   - Overflow and Underflow: The\
+    \ module checks for overflow and underflow conditions, adjusting the result accordingly.\n\
+    5. **Normalization**: The result is normalized to ensure it fits within the 32-bit\
+    \ IEEE 754 format, adjusting the exponent and mantissa as necessary.\n"
+  interface: module FPAddSubUnit(input wire [63:0] recv_msg, input wire recv_val,
+    output wire recv_rdy, output wire [31:0] send_msg, output wire send_val, input
+    wire send_rdy, input wire operation );
+  name: FPAddSubUnit
+  pipeline_stages: '0'
+  response: "module FPAddSubUnit(\n    input wire [63:0] recv_msg,\n    input wire\
+    \ recv_val,\n    output wire recv_rdy,\n    output reg [31:0] send_msg,\n    output\
+    \ wire send_val,\n    input wire send_rdy,\n    input wire operation \n);\n\n\
+    \    wire [31:0] operand1 = recv_msg[63:32];\n    wire [31:0] operand2 = recv_msg[31:0];\n\
+    \n    assign recv_rdy = send_rdy;\n    assign send_val = recv_val;\n\n    wire\
+    \ [7:0] exponent1 = operand1[30:23];\n    wire [7:0] exponent2 = operand2[30:23];\n\
+    \    wire [22:0] mantissa1 = {1'b1, operand1[22:0]};\n    wire [22:0] mantissa2\
+    \ = {1'b1, operand2[22:0]};\n    wire sign1 = operand1[31];\n    wire sign2 =\
+    \ operand2[31];\n\n    wire signed [8:0] exponent_diff = exponent1 - exponent2;\n\
+    \    wire [47:0] aligned_mantissa1 = mantissa1 << exponent_diff;\n    wire [47:0]\
+    \ aligned_mantissa2 = mantissa2 << (-exponent_diff);\n\n    wire [47:0] result_mantissa_temp;\n\
+    \    wire result_sign_temp;\n    wire [7:0] result_exponent_temp;\n\n    always\
+    \ @(*) begin\n        \n        if ((sign1 == sign2 && operation == 0) || (sign1\
+    \ != sign2 && operation == 1)) begin\n           \n            result_mantissa_temp\
+    \ = (exponent_diff >= 0) ? (aligned_mantissa1 + mantissa2) : (aligned_mantissa2\
+    \ + mantissa1);\n            result_exponent_temp = (exponent_diff >= 0) ? exponent1\
+    \ : exponent2;\n            result_sign_temp = (exponent_diff >= 0) ? sign1 :\
+    \ sign2;\n        end else begin\n        \n            if (aligned_mantissa1\
+    \ > aligned_mantissa2) begin\n                result_mantissa_temp = aligned_mantissa1\
+    \ - aligned_mantissa2;\n                result_sign_temp = sign1;\n          \
+    \      result_exponent_temp = exponent1;\n            end else begin\n       \
+    \         result_mantissa_temp = aligned_mantissa2 - aligned_mantissa1;\n    \
+    \            result_sign_temp = sign2;\n                result_exponent_temp =\
+    \ exponent2;\n            end\n        end\n        \n        \n        if (result_mantissa_temp[47])\
+    \ begin\n            result_mantissa_temp = result_mantissa_temp >> 1;\n     \
+    \       result_exponent_temp = result_exponent_temp + 1;\n        end\n\n    \
+    \       if (exponent1 == 8'hFF || exponent2 == 8'hFF) begin\n            if (mantissa1\
+    \ != 0 || mantissa2 != 0) send_msg = 32'h7FC00000; \n            else if (sign1\
+    \ == sign2) send_msg = {sign1, 8'hFF, 22'h0}; \n            else send_msg = 32'h7FC00000;\
+    \ \n        end else if (result_exponent_temp >= 8'hFF) begin\n            send_msg\
+    \ = {result_sign_temp, 8'hFF, 22'h0}; \n        end else if (result_exponent_temp\
+    \ <= 0) begin\n            send_msg = {result_sign_temp, 8'h00, 22'h0}; \n   \
+    \     end else begin\n            send_msg = {result_sign_temp, result_exponent_temp,\
+    \ result_mantissa_temp[22:0]}; \n        end\n    end\n\nendmodule\n\n"
+- class: custom
+  instruction: "Generate me an IEEE754 Adder/Subtractor called fp_addsub with input\
+    \ ports named a, b, and subtract, and an output port named y.\n\n\nThis module,\
+    \ named `fp_addsub`, performs floating-point addition or subtraction on two 32-bit\
+    \ inputs based on the IEEE 754 standard for floating-point arithmetic. The module\
+    \ has three inputs and one output:\n\n- **Inputs**:\n  - `a` and `b`: Two 32-bit\
+    \ inputs representing floating-point numbers.\n  - `subtract`: A control signal\
+    \ that determines the operation. When `subtract` is high (1), the operation is\
+    \ subtraction; when low (0), it is addition.\n\n- **Output**:\n  - `y`: A 32-bit\
+    \ output representing the result of the floating-point addition or subtraction.\n\
+    \n**High-Level Description**:\n\n1. **Negation of Input B**: If the operation\
+    \ is subtraction, input `b` is negated. This is done by inverting the sign bit\
+    \ of `b` and leaving the rest of the bits unchanged.\n\n2. **Extraction and Adjustment\
+    \ of Components**: The module extracts the sign, exponent, and fraction (mantissa)\
+    \ parts of both inputs, adjusting the fractions by adding an implicit leading\
+    \ 1 (per IEEE 754 for normalized numbers).\n\n3. **Operation Based on Exponent\
+    \ Comparison**:\n   - If the exponents are different, the number with the smaller\
+    \ exponent is shifted right until the exponents match, and then the fractions\
+    \ are added or subtracted based on the operation and signs of the inputs.\n  \
+    \ - If the exponents are the same, the fractions are directly added or subtracted\
+    \ without shifting.\n\n4. **Normalization**: After the addition or subtraction,\
+    \ the result may need to be normalized. This involves finding the most significant\
+    \ 1 in the fraction (using a priority encoder to determine how much the result\
+    \ needs to be shifted) and adjusting the fraction and exponent accordingly to\
+    \ maintain the normalized form.\n\n5. **Handling Special Cases**:\n   - **Zero**:\
+    \ If both inputs are zero, the output is zero.\n   - **Infinity**: The module\
+    \ handles cases where inputs are infinity (represented by an exponent of all 1s\
+    \ and a fraction of all 0s) according to IEEE 754 rules, including producing NaN\
+    \ (Not a Number) under certain conditions.\n   - **Normalization and Packing**:\
+    \ The normalized fraction and adjusted exponent are then packed into the 32-bit\
+    \ output, along with the calculated result sign.\n\nThis module effectively implements\
+    \ floating-point addition or subtraction with special handling for cases like\
+    \ infinity and normalization of the result, ensuring compliance with the IEEE\
+    \ 754 standard.\n"
+  interface: "module fp_addsub (\n    input logic [31:0] a,\n    input logic [31:0]\
+    \ b,\n    input logic subtract,\n    output logic [31:0] y\n);"
+  name: fp_addsub
+  pipeline_stages: '0'
+  response: "module fp_addsub (\n    input logic [31:0] a,\n    input logic [31:0]\
+    \ b,\n    input logic subtract,\n    output logic [31:0] y\n);\n\nlogic [31:0]\
+    \ b_neg;\nlogic a_sign, b_sign;\nlogic [7:0] a_exp, b_exp;\nlogic [23:0] a_frac,\
+    \ b_frac;  \nlogic y_sign;\nlogic [7:0] y_exp;\nlogic [23:0] y_frac; \nlogic [47:0]\
+    \ y_frac_intermediate;  \nlogic [7:0] y_exp_intermediate; \nlogic [5:0] shift_amount;\
+    \  \n\n assign b_neg = subtract ? {b[31] ^ 1'b1, b[30:0]} : b;\n\nalways_comb\
+    \ begin\n    a_sign = a[31];\n    b_sign = b_neg[31];\n    a_exp = a[30:23];\n\
+    \    b_exp = b_neg[30:23];\n    a_frac = {1'b1, a[22:0]};\n    b_frac = {1'b1,\
+    \ b_neg[22:0]};\nend\n\nfunction automatic [5:0] priority_encoder(input [47:0]\
+    \ in);\n    integer i;\n    priority_encoder = 6'd0; \n    for (i = 47; i >= 0;\
+    \ i = i - 1) begin\n        if (in[i]) begin\n            priority_encoder = i[5:0];\n\
+    \              \n        end\n    end\n   \nendfunction\n\n\nalways_comb begin\n\
+    \    if (a_exp > b_exp) begin\n        y_exp_intermediate = a_exp;\n        if\
+    \ (b_sign ^ a_sign) begin\n            y_frac_intermediate = a_frac - (b_frac\
+    \ >> (a_exp - b_exp));\n        end else begin\n            y_frac_intermediate\
+    \ = a_frac + (b_frac >> (a_exp - b_exp));\n        end\n        y_sign = a_sign;\n\
+    \    end else if (a_exp < b_exp) begin\n        y_exp_intermediate = b_exp;\n\
+    \        if (b_sign ^ a_sign) begin\n            y_frac_intermediate = b_frac\
+    \ - (a_frac >> (b_exp - a_exp));\n        end else begin\n            y_frac_intermediate\
+    \ = (a_frac >> (b_exp - a_exp)) + b_frac;\n        end\n        y_sign = b_sign;\n\
+    \    end else begin\n        y_exp_intermediate = a_exp;\n        if (a_frac >=\
+    \ b_frac) begin\n            if (b_sign ^ a_sign) begin\n                y_frac_intermediate\
+    \ = a_frac - b_frac;\n            end else begin\n                y_frac_intermediate\
+    \ = a_frac + b_frac;\n            end\n            y_sign = a_sign;\n        end\
+    \ else begin\n            if (b_sign ^ a_sign) begin\n                y_frac_intermediate\
+    \ = b_frac - a_frac;\n            end else begin\n                y_frac_intermediate\
+    \ = b_frac + a_frac;\n            end\n            y_sign = b_sign;\n        end\n\
+    \    end\n\n    if (a == 32'b0 && b == 32'b0) begin\n        shift_amount = 6'b000000;\n\
+    \    end else begin\n        shift_amount = y_frac_intermediate[47] ? 6'b000000\
+    \ : priority_encoder(y_frac_intermediate);\n    end\n\n    if (shift_amount[5])\
+    \ begin\n        y_frac = y_frac_intermediate >> -shift_amount;\n    end else\
+    \ begin\n        y_frac = y_frac_intermediate << shift_amount;\n    end\n    y_exp\
+    \ = y_exp_intermediate - {{2{shift_amount[5]}}, shift_amount};\nend\n\nalways_comb\
+    \ begin\n    if ((a[30:23] == 8'hFF && a[22:0] == 23'b0) && (b_neg[30:23] == 8'hFF\
+    \ && b_neg[22:0] == 23'b0)) begin\n        if (subtract && (a_sign ^ b_sign))\
+    \ begin\n            y = {1'b0, 8'hFF, 23'h400000};\n        end else if (a_sign\
+    \ ^ b_sign) begin\n            y = {a_sign, 8'hFF, 23'b0};\n        end else begin\n\
+    \            y = {y_sign, y_exp, y_frac[22:0]};\n        end\n    end else if\
+    \ ((a[30:23] == 8'hFF && a[22:0] == 23'b0) || (b_neg[30:23] == 8'hFF && b_neg[22:0]\
+    \ == 23'b0)) begin\n        y = {a_sign | b_sign, 8'hFF, 23'b0};\n    end else\
+    \ if (y_frac_intermediate == 48'b0) begin\n        y = 32'b0;\n    end else begin\n\
+    \        y = {y_sign, y_exp, y_frac[22:0]};\n    end\nend\n\nendmodule\n\n"
+- class: custom
+  instruction: The module `AddSubUnit` acts as a combinational logic unit within a
+    vector processor, designed to perform either addition or subtraction based on
+    a control signal. It accepts a 64-bit `recv_msg` input, divided into two 32-bit
+    operands (`operand1` and `operand2`), and an `operation` signal that determines
+    the operation mode (addition or subtraction). The `recv_val` input indicates the
+    validity of the operands, and the unit outputs a 32-bit `send_msg` as the result.
+    The `recv_rdy` output, which signals the unit's readiness to receive new data,
+    is linked to the `send_rdy` input, ensuring flow control between units. The result's
+    validity is indicated by the `send_val` output, which mirrors the `recv_val` input
+    state. This setup guarantees that the output result, `send_msg`, is immediately
+    updated based on the current inputs and operation mode, achieving a one-cycle
+    latency for its operations. The module seamlessly integrates into the vector processor's
+    pipeline, providing efficient arithmetic operations essential for data processing
+    tasks.
+  interface: module AddSubUnit( input wire [63:0] recv_msg, input wire recv_val, output
+    wire recv_rdy, output wire [31:0] send_msg, output wire send_val, input wire send_rdy,
+    input wire operation);
+  name: AddSubUnit
+  pipeline_stages: '0'
+  response: "module AddSubUnit(\n    input wire [63:0] recv_msg,\n    input wire recv_val,\n\
+    \    output wire recv_rdy,\n    output reg [31:0] send_msg, \n    output wire\
+    \ send_val,\n    input wire send_rdy,\n    input wire operation \n);\n\n    wire\
+    \ [31:0] operand1, operand2;\n    assign operand1 = recv_msg[63:32];\n    assign\
+    \ operand2 = recv_msg[31:0];\n\n    assign recv_rdy = send_rdy;\n    assign send_val\
+    \ = recv_val;\n\n    always @* begin \n        if (operation) begin\n        \
+    \    send_msg = operand1 - operand2;\n        end else begin\n            send_msg\
+    \ = operand1 + operand2;\n        end\n    end\nendmodule\n\n"
+- class: custom
+  instruction: The `fp_multiplier` module performs floating-point multiplication following
+    IEEE 754 single-precision format. It takes two 32-bit inputs `a` and `b`, representing
+    floating-point numbers, and outputs a 32-bit result `y`. The operation decomposes
+    inputs into sign, exponent, and mantissa components. The sign of the output is
+    the XOR of the input signs, reflecting that the result is negative if exactly
+    one of the inputs is negative. The mantissas are extended with an implicit leading
+    `1` and multiplied, generating a 48-bit product to handle overflow. The output
+    exponent is calculated by summing the input exponents, adjusting for the bias
+    (127), and correcting based on the multiplication result's leading bit. Normalization
+    is applied as necessary, and rounding is managed by considering significant bits
+    beyond the mantissa's 23-bit capacity. Special cases, including operations involving
+    infinity, NaN, and zero, adhere to IEEE 754 rules. NaN is represented with an
+    exponent of `8'hFF` and a mantissa of `23'h400000`. Rounding incorporates the
+    `r` and `sticky_bit` signals for precision. The module dynamically adjusts for
+    negative exponent scenarios and assembles the output `y` by combining the calculated
+    sign, exponent, and mantissa, ensuring compliance with floating-point arithmetic
+    standards.
+  interface: module fp_multiplier( input logic [31:0] a,  input logic [31:0] b, output
+    logic [31:0] y);
+  name: fp_multiplier
+  pipeline_stages: '0'
+  response: "module fp_multiplier(\n    input logic [31:0] a, \n    input logic [31:0]\
+    \ b, \n    output logic [31:0] y \n);\n    logic [7:0] a_exponent, b_exponent,\
+    \ y_exponent_temp, y_exponent;\n    logic [23:0] a_mantissa, b_mantissa;\n   \
+    \ logic [47:0] mult_result;\n    logic [22:0] y_mantissa_temp, y_mantissa;\n \
+    \   logic a_sign, b_sign, y_sign;\n    logic sticky_bit;\n    logic r;\n\n   \
+    \  assign a_sign = a[31];\n    assign a_exponent = a[30:23];\n    assign a_mantissa\
+    \ = {1'b1, a[22:0]};\n\n    assign b_sign = b[31];\n    assign b_exponent = b[30:23];\n\
+    \    assign b_mantissa = {1'b1, b[22:0]};\n\n    assign y_sign = a_sign ^ b_sign;\n\
+    \    assign mult_result = a_mantissa * b_mantissa;\n    assign y_exponent_temp\
+    \ = a_exponent + b_exponent - 127 + mult_result[47];\n    assign y_mantissa_temp\
+    \ = mult_result[47] ? mult_result[46:24] : mult_result[45:23];\n    assign sticky_bit\
+    \ = mult_result[47] ? |mult_result[22:0] : |mult_result[21:0];\n    assign r =\
+    \ mult_result[47] ? mult_result[23] : mult_result[22];\n\n  always_comb begin\n\
+    \        if ((a_exponent == 8'hFF && a_mantissa[22:0] != 0) || (b_exponent ==\
+    \ 8'hFF && b_mantissa[22:0] != 0)) begin\n             y_exponent = 8'hFF;\n \
+    \           y_mantissa = 23'h400000;    end else if ((a == 32'b0 && b_exponent\
+    \ == 8'hFF && b_mantissa[22:0] == 0) || (b == 32'b0 && a_exponent == 8'hFF &&\
+    \ a_mantissa[22:0] == 0)) begin\n              y_exponent = 8'hFF;\n         \
+    \   y_mantissa = 23'h400000;      end else if (a == 32'b0 || b == 32'b0) begin\n\
+    \          y_exponent = 8'h00;\n            y_mantissa = 23'h0;\n        end else\
+    \ if ((a_exponent == 8'hFF && a_mantissa[22:0] == 0) && (b_exponent == 8'hFF &&\
+    \ b_mantissa[22:0] == 0)) begin\n                      y_exponent = 8'hFF;\n \
+    \           y_mantissa = 23'h0;\n        end else if (a_exponent + b_exponent\
+    \ == 0) begin\n             y_exponent = 0;\n            y_mantissa = y_mantissa_temp\
+    \ >> -y_exponent_temp;\n        end else begin\n                 y_exponent =\
+    \ y_exponent_temp;\n            y_mantissa = y_mantissa_temp + (r & sticky_bit);\
+    \    end\n    end\n\n       assign y = {y_sign, y_exponent, y_mantissa};\nendmodule"
+- class: custom
+  instruction: 'The provided module named `alu` functions as an Arithmetic Logic Unit
+    (ALU) for an 8-bit accumulator-based architecture. The ALU supports various operations
+    defined by a 4-bit opcode, which includes basic arithmetic operations like addition,
+    subtraction, bitwise AND, OR, XOR, as well as shift and rotate instructions. Specifically,
+    the ALU takes two 8-bit inputs, `A` and `B`, and an opcode that dictates the operation
+    to perform, producing an 8-bit output `Y`. The operations are: addition (`0000`),
+    subtraction (`0001`), bitwise AND (`0010`), bitwise OR (`0011`), bitwise XOR (`0100`),
+    left shift `B` by 4 bits (`0101`), left shift `A` by 1 (`0110`), right shift `A`
+    by 1 (`0111`), rotate `A` left (`1000`), rotate `A` right (`1001`), decrement
+    `A` by 1 (`1010`), bitwise NOT of `A` (`1011`), with a default case returning
+    zero. This ALU is designed to operate in conjunction with a set of instructions
+    that include both immediate and variable-data operand instructions, control/status
+    register manipulations, fixed control, and branching instructions, as well as
+    other data manipulation instructions. The opcode expansion to 5 bits in the comment
+    appears to be a discrepancy as the actual code and described ISA utilize a 4-bit
+    opcode. The instructions cover a wide range of operations from loading and storing
+    in memory, arithmetic operations based on memory contents or immediate values,
+    to more complex branching and control flow operations. This comprehensive set
+    of instructions and the ALU''s capabilities allow for versatile programming and
+    control within this 8-bit accumulator-based architecture.'
+  interface: module alu (input wire [7:0] A, input wire [7:0] B, input wire [3:0]
+    opcode, output reg [7:0] Y);
+  name: alu
+  pipeline_stages: '0'
+  response: "module alu (\n    input wire [7:0] A,\n    input wire [7:0] B,\n    input\
+    \ wire [3:0] opcode,\n    output reg [7:0] Y\n);\n\nalways @(*) begin\n    case\
+    \ (opcode)\n        4'b0000: Y = A + B;               \n        4'b0001: Y = A\
+    \ - B;               \n        4'b0010: Y = A & B;               \n        4'b0011:\
+    \ Y = A | B;               \n        4'b0100: Y = A ^ B;               \n    \
+    \    4'b0101: Y = B << 4;              \n        4'b0110: Y = A << 1;        \
+    \      \n        4'b0111: Y = A >> 1;              \n        4'b1000: Y = A[6:0]\
+    \ | A[7] << 7;  \n        4'b1001: Y = A[0] << 7 | A[7:1];  \n        4'b1010:\
+    \ Y = A - 1;               \n        4'b1011: Y = ~A;                  \n    \
+    \    default: Y = 8'b00000000;         \n    endcase\nend\n\nendmodule\n\n\n\n"
+- class: custom
+  instruction: 'Defines a floating-point division operation within a digital system,
+    where the `division_fp` module acts as the top-level module. This module orchestrates
+    the division process by coordinating various submodules, each responsible for
+    a specific aspect of floating-point arithmetic. Below is a detailed description
+    of the `division` module and its relationship with the submodules: Top-Level Module:
+    division: Functionality: The division module performs floating-point division
+    of two 32-bit inputs, `a` (dividend) and `b` (divisor), to produce a 32-bit result
+    `res`, which represents the quotient. The module also outputs an `exception` flag
+    to indicate special conditions like division by zero or operations involving NaN
+    (Not a Number) or infinity, as per IEEE 754 standards. Submodules Interaction:
+    The division process begins by normalizing the divisor to enhance the precision
+    of the division operation. This involves adjusting the exponent of the divisor
+    and aligning it for the division process. The module uses iterative refinement
+    techniques, potentially involving submodules like `Multiplication`, `Addition_Subtraction`,
+    and `Iteration`, to converge on an accurate quotient. After completing the iterations,
+    the module adjusts the final quotient based on the original exponent of the dividend
+    to ensure the result is correctly scaled. Submodules: Multiplication: Functionality:
+    Performs floating-point multiplication between two inputs. It handles sign determination,
+    product normalization, rounding, and checks for overflow, underflow, and exceptional
+    conditions. Relation to `division`: Used within the division process for iterative
+    refinement of the quotient and initial normalization of the divisor. Addition_Subtraction:
+    Functionality: Capable of performing either addition or subtraction on two floating-point
+    numbers, based on a control signal. It aligns the operands based on their exponents,
+    performs the operation, and normalizes the result. Relation to `division`: Employed
+    to adjust the intermediate values during the division''s iterative refinement
+    steps and for final result adjustment. Iteration: Functionality: Conducts a series
+    of operations involving multiplication and addition/subtraction to refine the
+    quotient iteratively. This module likely encapsulates a specific mathematical
+    approach or algorithm tailored for division. Relation to `division`: Acts as a
+    critical component in the iterative process to converge on the final quotient.
+    The division module may invoke this submodule multiple times, each time with updated
+    operands to progressively refine the quotient. priority_encoder (If used within
+    division) Functionality: Normalizes a significand by shifting it until the MSB
+    is 1, adjusting the exponent accordingly. This is essential for maintaining the
+    floating-point number in a normalized form. Relation to `division`: While not
+    explicitly called within the division module from the provided code snippet, a
+    priority encoder is typically used in floating-point operations to normalize results
+    after arithmetic operations. It might be utilized within Multiplication, Addition_Subtraction,
+    or directly in division to normalize intermediate values or the final result.
+    Please make sure that implement all modules and the top-module will be the first
+    one.'
+  interface: module division_fp(input [31:0] a, input [31:0] b, output exception,
+    output [31:0] res);
+  name: division_fp
+  pipeline_stages: '0'
+  response: "module division_fp(\n input [31:0] a,\n input [31:0] b,\n output exception,\n\
+    \ output [31:0] res\n);\n\nwire sign;\nwire [7:0] shift;\nwire [7:0] exp_a;\n\
+    wire [31:0] divisor;\nwire [31:0] op_a;\nwire [31:0] Intermediate_X0;\nwire [31:0]\
+    \ Iteration_X0;\nwire [31:0] Iteration_X1;\nwire [31:0] Iteration_X2;\nwire [31:0]\
+    \ Iteration_X3;\nwire [31:0] solution;\n\nwire [31:0] denominator;\nwire [31:0]\
+    \ op_a_change;\n\nassign exception = (&a[30:23]) | (&b[30:23]);\n\nassign sign\
+    \ = a[31] ^ b[31];\n\nassign shift = 8'd126 - b[30:23];\n\nassign divisor = {1'b0,8'd126,b[22:0]};\n\
+    \nassign denominator = divisor;\n\nassign exp_a = a[30:23] + shift;\n\nassign\
+    \ op_a = {a[31],exp_a,a[22:0]};\n\nassign op_a_change = op_a;\n\n\nMultiplication\
+    \ x0(32'hC00B_4B4B,divisor,,,,Intermediate_X0);\n\n\nAddition_Subtraction X0(Intermediate_X0,32'h4034_B4B5,1'b0,,Iteration_X0);\n\
+    \nIteration X1(Iteration_X0,divisor,Iteration_X1);\n\nIteration X2(Iteration_X1,divisor,Iteration_X2);\n\
+    \nIteration X3(Iteration_X2,divisor,Iteration_X3);\n\nMultiplication END(Iteration_X3,op_a,,,,solution);\n\
+    \nassign res = {sign,solution[30:0]};\nendmodule\n\nmodule priority_encoder(\n\
+    \ input [24:0] significand,\n input [7:0] exp_a,\n output reg [24:0] Significand,\n\
+    \ output [7:0] exp_sub\n);\n\nreg [4:0] shift;\n\nalways @(significand)\nbegin\n\
+    \ casex (significand)\n 25'b1_1xxx_xxxx_xxxx_xxxx_xxxx_xxxx : begin\n Significand\
+    \ = significand;\n shift = 5'd0;\n end\n 25'b1_01xx_xxxx_xxxx_xxxx_xxxx_xxxx :\
+    \ begin\n Significand = significand << 1;\n shift = 5'd1;\n end\n 25'b1_001x_xxxx_xxxx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 2;\n shift = 5'd2;\n end\n\n 25'b1_0001_xxxx_xxxx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 3;\n shift = 5'd3;\n end\n\n 25'b1_0000_1xxx_xxxx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 4;\n shift = 5'd4;\n end\n\n 25'b1_0000_01xx_xxxx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 5;\n shift = 5'd5;\n end\n\n 25'b1_0000_001x_xxxx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 6;\n shift = 5'd6;\n end\n\n 25'b1_0000_0001_xxxx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 7;\n shift = 5'd7;\n end\n\n 25'b1_0000_0000_1xxx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 8;\n shift = 5'd8;\n end\n\n 25'b1_0000_0000_01xx_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 9;\n shift = 5'd9;\n end\n\n 25'b1_0000_0000_001x_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 10;\n shift = 5'd10;\n end\n\n 25'b1_0000_0000_0001_xxxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 11;\n shift = 5'd11;\n end\n\n 25'b1_0000_0000_0000_1xxx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 12;\n shift = 5'd12;\n end\n\n 25'b1_0000_0000_0000_01xx_xxxx_xxxx\
+    \ : begin\n Significand = significand << 13;\n shift = 5'd13;\n end\n\n 25'b1_0000_0000_0000_001x_xxxx_xxxx\
+    \ : begin\n Significand = significand << 14;\n shift = 5'd14;\n end\n\n 25'b1_0000_0000_0000_0001_xxxx_xxxx\
+    \  : begin\n Significand = significand << 15;\n shift = 5'd15;\n end\n\n 25'b1_0000_0000_0000_0000_1xxx_xxxx\
+    \ : begin\n Significand = significand << 16;\n shift = 5'd16;\n end\n\n 25'b1_0000_0000_0000_0000_01xx_xxxx\
+    \ : begin\n Significand = significand << 17;\n shift = 5'd17;\n end\n\n 25'b1_0000_0000_0000_0000_001x_xxxx\
+    \ : begin\n Significand = significand << 18;\n shift = 5'd18;\n end\n\n 25'b1_0000_0000_0000_0000_0001_xxxx\
+    \ : begin\n Significand = significand << 19;\n shift = 5'd19;\n end\n\n 25'b1_0000_0000_0000_0000_0000_1xxx\
+    \ : begin\n Significand = significand << 20;\n shift = 5'd20;\n end\n\n 25'b1_0000_0000_0000_0000_0000_01xx\
+    \ : begin\n Significand = significand << 21;\n shift = 5'd21;\n end\n\n 25'b1_0000_0000_0000_0000_0000_001x\
+    \ : begin\n Significand = significand << 22;\n shift = 5'd22;\n end\n\n 25'b1_0000_0000_0000_0000_0000_0001\
+    \ : begin\n Significand = significand << 23;\n shift = 5'd23;\n end\n\n 25'b1_0000_0000_0000_0000_0000_0000\
+    \ : begin\n Significand = significand << 24;\n shift = 5'd24;\n end\n default\
+    \ : begin\n Significand = (~significand) + 1'b1;\n shift = 8'd0;\n end\n\n endcase\n\
+    end\nassign exp_sub = exp_a - shift;\n\nendmodule\n\nmodule Addition_Subtraction(\n\
+    input [31:0] a,b,\ninput add_sub_signal,\noutput exception,\noutput [31:0] res\n\
+    );\n\nwire operation_add_sub_signal;\nwire enable;\nwire output_sign;\n\nwire\
+    \ [7:0] exp_a, exp_b; \nwire perform;\n\nwire [31:0] op_a,op_b;\nwire [23:0] significand_a,significand_b;\n\
+    wire [7:0] exponent_diff;\n\n\nwire [23:0] significand_b_add_sub;\nwire [7:0]\
+    \ exp_b_add_sub;\n\nwire [24:0] significand_add;\nwire [30:0] add_sum;\n\nwire\
+    \ [23:0] significand_sub_complement;\nwire [24:0] significand_sub;\nwire [30:0]\
+    \ sub_diff;\nwire [24:0] subtraction_diff;\nwire [7:0] exp_sub;\n\nassign {enable,op_a,op_b}\
+    \ = (a[30:0] < b[30:0]) ? {1'b1,b,a} : {1'b0,a,b};\n\nassign exp_a = op_a[30:23];\n\
+    assign exp_b = op_b[30:23];\nassign perform = (op_a[30:23] == exp_b_add_sub);\n\
+    \nassign exception = (&op_a[30:23]) | (&op_b[30:23]);\n\nassign output_sign =\
+    \ add_sub_signal ? enable ? !op_a[31] : op_a[31] : op_a[31] ;\n\nassign operation_add_sub_signal\
+    \ = add_sub_signal ? op_a[31] ^ op_b[31] : ~(op_a[31] ^ op_b[31]);\n\nassign significand_a\
+    \ = (|op_a[30:23]) ? {1'b1,op_a[22:0]} : {1'b0,op_a[22:0]};\nassign significand_b\
+    \ = (|op_b[30:23]) ? {1'b1,op_b[22:0]} : {1'b0,op_b[22:0]};\n\nassign exponent_diff\
+    \ = op_a[30:23] - op_b[30:23];\n\nassign significand_b_add_sub = significand_b\
+    \ >> exponent_diff;\n\nassign exp_b_add_sub = op_b[30:23] + exponent_diff;\n\n\
+    assign significand_add = (perform & operation_add_sub_signal) ? (significand_a\
+    \ + significand_b_add_sub) : 25'd0;\n\nassign add_sum[22:0] = significand_add[24]\
+    \ ? significand_add[23:1] : significand_add[22:0];\n\nassign add_sum[30:23] =\
+    \ significand_add[24] ? (1'b1 + op_a[30:23]) : op_a[30:23];\n\n\nassign significand_sub_complement\
+    \ = (perform & !operation_add_sub_signal) ? ~(significand_b_add_sub) + 24'd1 :\
+    \ 24'd0 ;\n\nassign significand_sub = perform ? (significand_a + significand_sub_complement)\
+    \ : 25'd0;\n\npriority_encoder pe(significand_sub,op_a[30:23],subtraction_diff,exp_sub);\n\
+    \nassign sub_diff[30:23] = exp_sub;\n\nassign sub_diff[22:0] = subtraction_diff[22:0];\n\
+    \n\n\nassign res = exception ? 32'b0 : ((!operation_add_sub_signal) ? {output_sign,sub_diff}\
+    \ : {output_sign,add_sum});\n\nendmodule\n\nmodule Multiplication(\n input [31:0]\
+    \ a,\n input [31:0] b,\n output exception,overflow,underflow,\n output [31:0]\
+    \ res\n);\n\nwire sign,product_round,normalised,zero;\nwire [8:0] exponent,sum_exponent;\n\
+    wire [22:0] product_mantissa;\nwire [23:0] op_a,op_b;\nwire [47:0] product,product_normalised;\n\
+    \n\nassign sign = a[31] ^ b[31];\n\nassign exception = (&a[30:23]) | (&b[30:23]);\n\
+    \n\n\n\nassign op_a = (|a[30:23]) ? {1'b1,a[22:0]} : {1'b0,a[22:0]};\n\nassign\
+    \ op_b = (|b[30:23]) ? {1'b1,b[22:0]} : {1'b0,b[22:0]};\n\nassign product = op_a\
+    \ * op_b;\n\nassign product_round = |product_normalised[22:0];\n\nassign normalised\
+    \ = product[47] ? 1'b1 : 1'b0;\n\nassign product_normalised = normalised ? product\
+    \ : product << 1;\n\nassign product_mantissa = product_normalised[46:24] + {21'b0,(product_normalised[23]\
+    \ & product_round)};\n\nassign zero = exception ? 1'b0 : (product_mantissa ==\
+    \ 23'd0) ? 1'b1 : 1'b0;\n\nassign sum_exponent = a[30:23] + b[30:23];\n\nassign\
+    \ exponent = sum_exponent - 8'd127 + normalised;\n\nassign overflow = ((exponent[8]\
+    \ & !exponent[7]) & !zero) ;\n\nassign underflow = ((exponent[8] & exponent[7])\
+    \ & !zero) ? 1'b1 : 1'b0;\n\nassign res = exception ? 32'd0 : zero ? {sign,31'd0}\
+    \ : overflow ? {sign,8'hFF,23'd0} : underflow ? {sign,31'd0} : {sign,exponent[7:0],product_mantissa};\n\
+    \n\nendmodule\n\nmodule Iteration(\n input [31:0] operand_1,\n input [31:0] operand_2,\n\
+    \ output [31:0] solution\n);\n\nwire [31:0] Intermediate_Value1,Intermediate_Value2;\n\
+    \nMultiplication M1(operand_1,operand_2,,,,Intermediate_Value1);\n\n\nAddition_Subtraction\
+    \ A1(32'h4000_0000,{1'b1,Intermediate_Value1[30:0]},1'b0,,Intermediate_Value2);\n\
+    \nMultiplication M2(operand_1,Intermediate_Value2,,,,solution);\n\nendmodule\n\
+    \n\n\n"
+- class: efabless
+  instruction: 'sha256sig0: a specific function named `SHA256SIG0`, which takes two
+    arguments: `rs1` and `rd`. These arguments are intended to be register indices
+    where rs1 is the source register and rd is the destination register. The function
+    performed by this function is part of the SHA-256 hashing algorithm, specifically
+    the(sigma_0) transformation. The function works as follows: It reads a 32-bit
+    input value from the source register rs1. It applies the (sigma_0) function to
+    this input. The (sigma_0) function is defined as a combination of right rotations
+    and right shifts on the input value: Right rotate the input value by 7 bits (ror32(inb,
+    7)). Right rotate the input value by 18 bits (ror32(inb, 18)). Right shift the
+    input value by 3 bits (inb >> 3). The results of these functions are then XOR''d
+    together to produce the final result. This final result is then extended to the
+    appropriate size (if necessary) and written back to the destination register rd.
+    The function concludes by signaling successful execution with RETIRE_SUCCESS.'
+  interface: module SHA256SIG0( input [31:0] rs1, output reg [31:0] rd);
+  name: SHA256SIG0
+  pipeline_stages: '0'
+  response: "module SHA256SIG0(\n    input [31:0] rs1,\n    output reg [31:0] rd\n\
+    );\n\nfunction [31:0] ror32;\n    input [31:0] value;\n    input integer bits;\n\
+    \    begin\n        ror32 = (value >> bits) | (value << (32 - bits));\n    end\n\
+    endfunction\n\nwire [31:0] rotate_right_7;\nwire [31:0] rotate_right_18;\nwire\
+    \ [31:0] shift_right_3;\nwire [31:0] result;\n\nassign rotate_right_7 = ror32(rs1,\
+    \ 7);\nassign rotate_right_18 = ror32(rs1, 18);\nassign shift_right_3 = rs1 >>\
+    \ 3;\n\nassign result = rotate_right_7 ^ rotate_right_18 ^ shift_right_3;\n\n\
+    always @(rs1) begin\n    rd <= result;\nend\n\nendmodule\n\n"
+- class: efabless
+  instruction: '`AES32ESMI` function, which is designed for use within the encryption
+    process of the AES (Advanced Encryption Standard) cryptographic algorithm, specifically
+    for the mix columns step following an S-box transformation. The function takes
+    four parameters: inputs: bs, rs2, rs1, and output: rd, which serve to determine
+    the byte position for transformation, specify the source registers, and designate
+    the destination register for the outcome. The function performs the following
+    functions: Shift Amount Calculation (shamt): It computes a shift amount (shamt)
+    by concatenating 0b000 to the bits of bs, effectively achieving bs*8. This value
+    determines the byte''s position within a 32-bit word for the S-box transformation.
+    S-Box Input Preparation (si): An 8-bit segment is extracted from rs2 by shifting
+    its 32-bit value right by shamt and then isolating the lowest 8 bits (si). This
+    segment serves as the input for the forward (encryption) S-Box lookup. S-Box Transformation
+    (so): The si value is transformed using the AES S-box (aes_sbox_fwd(si)), resulting
+    in a transformed 8-bit value (so). MixColumn Transformation (mixed): Applies the
+    AES mix column function (aes_mixcolumn_byte_fwd) on so, expanding it into a 32-bit
+    value. This step is part of the AES encryption process, enhancing diffusion by
+    mixing the bytes of each column in the state. Combination with rs1 and Rotation:
+    The 32-bit value from rs1 is combined with the mix column transformed value (mixed)
+    through XOR, after which the result is rotated left (rol32) by an amount determined
+    by shamt (converted to an unsigned integer). This aligns the transformed byte
+    to its appropriate position in the 32-bit word. The result will store in rd. the
+    AES forward S-box transformation. It takes an 8-bit input and theoretically returns
+    an 8-bit transformed output. Currently, it simply returns a fixed value (0xFF)
+    and does not perform any actual transformation.'
+  interface: module AES32ESMI(input [31:0] rs1, input [31:0] rs2, input [4:0] bs,
+    output reg [31:0] rd);
+  name: AES32ESMI
+  pipeline_stages: '0'
+  response: "module AES32ESMI(\n    input [31:0] rs1, rs2,\n    input [4:0] bs,\n\
+    \    output reg [31:0] rd\n);\n\nfunction [7:0] aes_sbox_fwd;\n    input [7:0]\
+    \ in;\n    begin\n        aes_sbox_fwd = 8'hff;\n    end\nendfunction\n\nfunction\
+    \ [31:0] aes_mixcolumn_byte_fwd;\n    input [7:0] in;\n    begin\n        aes_mixcolumn_byte_fwd\
+    \ = {24'hffffff, in};\n    end\nendfunction\n\nwire [4:0] shamt = {bs, 3'b000};\n\
+    wire [7:0] si = (rs2 >> shamt) & 8'hFF;\nwire [7:0] so = aes_sbox_fwd(si);\nwire\
+    \ [31:0] mixed = aes_mixcolumn_byte_fwd(so);\nwire [31:0] result = rs1 ^ (mixed\
+    \ << shamt | mixed >> (32 - shamt));\n\nalways @(rs1, mixed, shamt) begin\n  \
+    \  rd <= result;\nend\n\nendmodule\n\n"
+- class: efabless
+  instruction: '`SHA256SUM0`: It specifies a function clause that operates on two
+    parameters: rs1 (source register index) and rd (destination register index). The
+    function performs a specified transformation on a 32-bit input from the source
+    register (rs1), then stores the result into the destination register (rd).Here''s
+    an overview of its functionality: Extract 32-bit Input: It extracts a 32-bit value
+    (inb) from the source register indicated by rs1. Compute Result: The function
+    computes the result by applying the following functions to inb: Rotate Right 2
+    Bits (ror32(inb, 2)): Performs a bitwise rotation to the right by 2 bits. Rotate
+    Right 13 Bits (ror32(inb, 13)): Performs a bitwise rotation to the right by 13
+    bits. Rotate Right 22 Bits (ror32(inb, 22)): Performs a bitwise rotation to the
+    right by 22 bits. The result is the XOR of these three functions'' outputs.Store
+    Result: The 32-bit computed result is sign-extended (EXTS(result)) and stored
+    in the destination register specified by rd.'
+  interface: module SHA256SUM0( input [31:0] rs1, output reg [31:0] rd);
+  name: SHA256SUM0
+  pipeline_stages: '0'
+  response: "module SHA256SUM0(\n    input [31:0] rs1,\n    output reg [31:0] rd\n\
+    );\n\n\nfunction [31:0] ror32;\n    input [31:0] value;\n    input integer bits;\n\
+    \    begin\n        ror32 = (value >> bits) | (value << (32 - bits));\n    end\n\
+    endfunction\n\n\nwire [31:0] rotate_right_2;\nwire [31:0] rotate_right_13;\nwire\
+    \ [31:0] rotate_right_22;\nwire [31:0] result;\n\nassign rotate_right_2 = ror32(rs1,\
+    \ 2);\nassign rotate_right_13 = ror32(rs1, 13);\nassign rotate_right_22 = ror32(rs1,\
+    \ 22);\n\nassign result = rotate_right_2 ^ rotate_right_13 ^ rotate_right_22;\n\
+    \nalways @(rs1) begin\n    rd <= result;\nend\n\nendmodule\n\n"
+- class: efabless
+  instruction: '`AES32DSI`, which is intended for use in the decryption process of
+    the AES (Advanced Encryption Standard) cryptographic algorithm, This specific
+    function involves applying the AES inverse S-box transformation to a segment of
+    data, indicated by the input parameters. It takes four parameters: bs, rs2, rs1,
+    and rd, which are used to select a specific byte from the input, to specify the
+    source registers, and to indicate the destination register for the result. The
+    key functions performed by this function are as follows: Shift Amount Calculation
+    (shamt): Calculates a shift amount (shamt) by appending 0b000 to the lower three
+    bits of bs, effectively multiplying bs by 8. This determines the byte position
+    within a 32-bit word for the inverse S-Box lookup. S-Box Input Calculation (si):
+    Extracts an 8-bit value from rs2 by first shifting the 32-bit value from rs2 right
+    by shamt, then taking the lowest 8 bits. This value (si) is the input for the
+    inverse S-Box lookup. Inverse S-Box Lookup and Extension (so): Performs an inverse
+    S-Box lookup on si to obtain the transformed byte, which is then zero-extended
+    to a 32-bit value (so). Combination with rs1 and Rotation: XORs the 32-bit value
+    from rs1 with the rotated (rol32) version of so, using shamt (converted to an
+    unsigned integer) as the rotation amount. This function combines the AES inverse
+    S-Box transformation result with another input (rs1) and rotates it to align with
+    the original position of the S-Box input byte. The result will store in rd. the
+    AES forward S-box transformation, It takes an 8-bit input and theoretically returns
+    an 8-bit transformed output. Currently, it simply returns a fixed value (0xFF)
+    and does not perform any actual transformation.'
+  interface: module AES32DSI( input [31:0] rs1, input [31:0] rs2, input [4:0] bs,
+    output reg [31:0] rd);
+  name: AES32DSI
+  pipeline_stages: '0'
+  response: "module AES32DSI(\n    input [31:0] rs1, rs2,\n    input [4:0] bs,\n \
+    \   output reg [31:0] rd\n);\n\nfunction [7:0] aes_sbox_inv;\n    input [7:0]\
+    \ in;\n    begin\n        aes_sbox_inv = 8'hff;\n    end\nendfunction\n\nwire\
+    \ [4:0] shamt;\nwire [7:0] si;\nwire [7:0] so;\nwire [31:0] so_ext; \nwire [31:0]\
+    \ result;\n\nassign shamt = {bs, 3'b000};\nassign si = (rs2 >> shamt) & 8'hFF;\n\
+    assign so = aes_sbox_inv(si);\nassign so_ext = {24'b0, so};\n\nassign result =\
+    \ rs1 ^ (so_ext << shamt | so_ext >> (32 - shamt));\n\nalways @(rs1, so_ext, shamt)\
+    \ begin\n    rd <= result;\nend\n\nendmodule\n\n"
+- class: efabless
+  instruction: '`SHA512SIG0H` which is a part of the SHA-512 cryptographic hash function.
+    The function takes three parameters: rs2, rs1, and rd, which are indices of source
+    registers and a destination register. This function performs a series of bitwise
+    manipulations on the 64-bit values contained in registers rs1 and rs2, and then
+    stores the result in the destination register rd. The core functions are as follows:
+    Bitwise Shifts and Rotations on rs1: It applies three different right shift functions
+    on the value from rs1: Shift right by 1 bit (X(rs1) >> 1). Shift right by 7 bits
+    (X(rs1) >> 7). Shift right by 8 bits (X(rs1) >> 8). Bitwise Shifts on rs2: It
+    also performs two left shift functions on the value from rs2: Shift left by 31
+    bits (X(rs2) << 31). Shift left by 24 bits (X(rs2) << 24). Combination of Results:
+    The results of these five functions (three from rs1 and two from rs2) are combined
+    using the XOR (^) function. Store the Result: The final result of these functions
+    is then sign-extended (EXTS()) to ensure proper bit length and stored in the destination
+    register rd.'
+  interface: module SHA512SIG0H(input [63:0] rs1,input [63:0] rs2, output reg [63:0]
+    rd);
+  name: SHA512SIG0H
+  pipeline_stages: '0'
+  response: "module SHA512SIG0H(\n    input [63:0] rs1, rs2,\n    output reg [63:0]\
+    \ rd\n);\n\nwire [63:0] rs1_right_shift_1;\nwire [63:0] rs1_right_shift_7;\nwire\
+    \ [63:0] rs1_right_shift_8;\nwire [63:0] rs2_left_shift_31;\nwire [63:0] rs2_left_shift_24;\n\
+    \nassign rs1_right_shift_1 = rs1 >> 1;\nassign rs1_right_shift_7 = rs1 >> 7;\n\
+    assign rs1_right_shift_8 = rs1 >> 8;\n\nassign rs2_left_shift_31 = (rs2 << 31)\
+    \ & 64'hFFFFFFFFFFFFFFFF;\nassign rs2_left_shift_24 = (rs2 << 24) & 64'hFFFFFFFFFFFFFFFF;\n\
+    \nalways @(rs1 or rs2) begin\n    rd <= rs1_right_shift_1 ^ rs1_right_shift_7\
+    \ ^ rs1_right_shift_8 ^\n          rs2_left_shift_31 ^ rs2_left_shift_24;\nend\n\
+    \nendmodule\n\n"
+- class: efabless
+  instruction: 'zip: Place upper/lower halves of the source register into odd/even
+    bits of the destination respectivley. This function places bits in the low half
+    of the source register into the even bit positions of the destination, and bits
+    in the high half of the source register into the odd bit positions of the destination.
+    sourse is `rs` and destination is `rd`.'
+  interface: module Zip( input [31:0] rs, output reg [31:0] rd);
+  name: Zip
+  pipeline_stages: '0'
+  response: "module Zip(\n    input [31:0] rs,\n    output reg [31:0] rd\n);\n\ninteger\
+    \ i;\n\nalways @(rs) begin\n    for (i = 0; i < 16; i = i + 1) begin\n       \
+    \ rd[2*i] = rs[i];\n        rd[2*i + 1] = rs[i + 16];\n    end\nend\n\nendmodule\n\
+    \n"
+- class: efabless
+  instruction: "clmulh(Carry-less multiply (high-part)): clmulh produces the upper\
+    \ half of the 2\xB7XLEN carry-less product. the inputs are `rs1`, `rs2` and the\
+    \ result will be saved in `rd`. clmulh (Carry-less multiply, high part) function,\
+    \ which calculates the upper half of the 2*XLEN carry-less product of two inputs.\
+    \ This code iteratively shifts and conditionally XORs based on the bits of rs2,\
+    \ focusing on producing the upper half of the result."
+  interface: module clmulh(  input [31:0] rs1, input [31:0] rs2, output reg [31:0]
+    rd);
+  name: clmulh
+  pipeline_stages: '0'
+  response: "module clmulh(\n    input [31:0] rs1,\n    input [31:0] rs2,\n    output\
+    \ reg [31:0] rd\n);\n\ninteger i;\n\nalways @(*) begin\n    rd = 0;\n    for (i\
+    \ = 1; i < 32; i = i + 1) begin\n        if ((rs2 >> i) & 1) begin\n         \
+    \   rd = rd ^ (rs1 << i);\n        end\n    end\nend\n\nendmodule\n\n"
+- class: efabless
+  instruction: 'ror(Rotate Right): I need a function that performs a rotate right
+    of `rs1` by the amount in least-significant log2(XLEN) bits of `rs2`. the result
+    will be saved in `rd`.'
+  interface: module ror(input [31:0] rs1, input [31:0] rs2, output reg [31:0] rd);
+  name: ror
+  pipeline_stages: '0'
+  response: "module ror(\n    input [31:0] rs1,\n    input [31:0] rs2,\n    output\
+    \ reg [31:0] rd\n);\n\nwire [4:0] rotation_amount = rs2[4:0];\n\nalways @(*) begin\n\
+    \    rd = (rs1 >> rotation_amount) | (rs1 << (32 - rotation_amount));\nend\n\n\
+    endmodule\n\n"
+- class: efabless
+  instruction: 'unzip: This function places the even bits of the source register into
+    the low half of the destination, and the odd bits of the source into the high
+    bits of the destination and the result will be saved in `rd`.  sourse is `rs`
+    and destination is `rd`.'
+  interface: module unzip(input [31:0] rs,  output reg [31:0] rd);
+  name: unzip
+  pipeline_stages: '0'
+  response: "module unzip(\n    input [31:0] rs,\n    output reg [31:0] rd\n);\n\n\
+    integer i;\n\nalways @(rs) begin\n    rd = 32'b0;\n    for (i = 0; i < 16; i =\
+    \ i + 1) begin\n        rd[i] = rs[2*i];\n        rd[i+16] = rs[2*i+1]; \n   \
+    \ end\nend\n\nendmodule\n\n"
+- class: efabless
+  instruction: 'packh(Pack the low bytes of rs1 and rs2 into rd): the packh function
+    packs the least-significant bytes of `rs1` and `rs2` into the 16 least-significant
+    bits of `rd`, zero extending the rest of `rd` the result will be saved in `rd`.'
+  interface: module packh(input [31:0] rs1,input [31:0] rs2,output reg [31:0] rd);
+  name: packh
+  pipeline_stages: '0'
+  response: "module packh(\n    input [31:0] rs1,\n    input [31:0] rs2,\n    output\
+    \ reg [31:0] rd\n);\n\nalways @(*) begin\n    rd = {16'b0, rs2[7:0], rs1[7:0]};\n\
+    end\n\nendmodule\n\n"
+- class: efabless
+  instruction: 'rol(Rotate Left (Register)): I need a function that performs a rotate
+    left of rs1 by the amount in least-significant log2(XLEN) bits of rs2. The result
+    will be saved in `rd`.'
+  interface: module rol(input [31:0] rs1, input [31:0] rs2, output reg [31:0] rd);
+  name: rol
+  pipeline_stages: '0'
+  response: "module rol(\n    input [31:0] rs1,\n    input [31:0] rs2,\n    output\
+    \ reg [31:0] rd\n);\n\nwire [4:0] rotation_amount = rs2[4:0];\n\nalways @(*) begin\n\
+    \    rd = (rs1 << rotation_amount) | (rs1 >> (32 - rotation_amount));\nend\n\n\
+    endmodule\n\n"
+- class: efabless
+  instruction: "clmul(Carry-less multiply (low-part)): `clmul` produces the lower\
+    \ half of the 2\xB7XLEN carry-less product. the inputs are `rs1`, `rs2` and the\
+    \ result will be saved in `rd`. To implement the clmul (Carry-less multiply, low\
+    \ part) function, which calculates the lower half of the 2*XLEN carry-less product\
+    \ of two inputs (rs1 and rs2). This function iteratively shifts and conditionally\
+    \ XORs based on the bits of rs2."
+  interface: module clmul(input [31:0] rs1, input [31:0] rs2, output reg [31:0] rd);
+  name: clmul
+  pipeline_stages: '0'
+  response: "module clmul(\n    input [31:0] rs1,\n    input [31:0] rs2,\n    output\
+    \ reg [31:0] rd\n);\n\ninteger i;\n\nalways @(*) begin\n    rd = 0;\n    for (i\
+    \ = 0; i < 32; i = i + 1) begin\n        if ((rs2 >> i) & 1'b1) begin\n      \
+    \      rd = rd ^ (rs1 << i);\n        end\n    end\nend\n\nendmodule\n\n"
+- class: efabless
+  instruction: '`SHA512SIG1L` which forms part of the SHA-512 cryptographic hash algorithm.
+    This function targets two source registers (rs2 and rs1) and a destination register
+    (rd), performing a series of bitwise functions on 64-bit values from rs1 and rs2,
+    then storing the resulting value in rd. Key steps include: Bitwise functions on
+    rs1: Left shift the value from rs1 by 3 bits (X(rs1) << 3). Right shift the value
+    from rs1 by 6 bits (X(rs1) >> 6). Right shift the value from rs1 by 19 bits (X(rs1)
+    >> 19). Bitwise functions on rs2: Right shift the value from rs2 by 29 bits (X(rs2)
+    >> 29). Left shift the value from rs2 by 26 bits (X(rs2) << 26). Left shift the
+    value from rs2 by 13 bits (X(rs2) << 13). Combining Results: The results from
+    the above functions on both rs1 and rs2 are combined using XOR (^) functions.
+    Store the Result: The combined result is sign-extended (EXTS()) to adjust for
+    any sign bit extension required and stored in the destination register rd.'
+  interface: module SHA512SIG1L( input [63:0] rs1, input [63:0] rs2, output reg [63:0]
+    rd);
+  name: SHA512SIG1L
+  pipeline_stages: '0'
+  response: "module SHA512SIG1L(\n    input [63:0] rs1, rs2,\n    output reg [63:0]\
+    \ rd\n);\n\nwire [63:0] rs1_left_shift_3;\nwire [63:0] rs1_right_shift_6;\nwire\
+    \ [63:0] rs1_right_shift_19;\nwire [63:0] rs2_right_shift_29;\nwire [63:0] rs2_left_shift_26;\n\
+    wire [63:0] rs2_left_shift_13;\n\nassign rs1_left_shift_3 = rs1 << 3;\nassign\
+    \ rs1_right_shift_6 = rs1 >> 6;\nassign rs1_right_shift_19 = rs1 >> 19;\n\nassign\
+    \ rs2_right_shift_29 = rs2 >> 29;\nassign rs2_left_shift_26 = (rs2 << 26) & 64'hFFFFFFFFFFFFFFFF;\n\
+    assign rs2_left_shift_13 = (rs2 << 13) & 64'hFFFFFFFFFFFFFFFF;\n\nalways @(rs1\
+    \ or rs2) begin\n    rd <= rs1_left_shift_3 ^ rs1_right_shift_6 ^ rs1_right_shift_19\
+    \ ^\n          rs2_right_shift_29 ^ rs2_left_shift_26 ^ rs2_left_shift_13;\nend\n\
+    \nendmodule\n\n"
+- class: efabless
+  instruction: 'brev8(Reverse the bits in each byte of a source register):  it reverses
+    the order of the bits in every byte of a register. the sourse register is `rs`
+    and the result will be saved in `rd`.'
+  interface: module brev8( input [31:0] rs, output reg [31:0] rd);
+  name: brev8
+  pipeline_stages: '0'
+  response: "module brev8(\n    input [31:0] rs,\n    output reg [31:0] rd\n);\n\n\
+    function [7:0] reverse_bits;\n    input [7:0] in_byte;\n    integer i;\n    begin\n\
+    \        reverse_bits = 0;\n        for(i = 0; i < 8; i = i + 1) begin\n     \
+    \       reverse_bits = reverse_bits | ((in_byte >> i) & 1) << (7-i);\n       \
+    \ end\n    end\nendfunction\n\nalways @(*) begin\n    rd[7:0] = reverse_bits(rs[7:0]);\n\
+    \    rd[15:8] = reverse_bits(rs[15:8]);\n    rd[23:16] = reverse_bits(rs[23:16]);\n\
+    \    rd[31:24] = reverse_bits(rs[31:24]);\nend\n\nendmodule\n\n"
+- class: efabless
+  instruction: 'rolw(Rotate Left Word (Register)): I need a function that performs
+    a rotate left on the least-significant word of `rs1` by the amount in least-significant
+    5 bits of `rs2`. The resulting word value is sign-extended by copying bit 31 to
+    all of the more-significant bits. The result will be saved in `rd`.'
+  interface: module rolw( input [31:0] rs1, input [31:0] rs2, output reg [31:0] rd);
+  name: rolw
+  pipeline_stages: '0'
+  response: "module rolw(\n    input [31:0] rs1,\n    input [31:0] rs2,\n    output\
+    \ reg [31:0] rd\n);\n\nwire [4:0] rotate_amount = rs2[4:0];\nwire [31:0] rotated_word;\n\
+    \nassign rotated_word = (rs1 << rotate_amount) | (rs1 >> (32-rotate_amount));\n\
+    \nalways @(*) begin\n    rd[31:0] = rotated_word;\n    rd[31:16] = rotated_word[15]\
+    \ ? {16{1'b1}} : {16{1'b0}};\nend\n\nendmodule\n\n"
+- class: efabless
+  instruction: 'roriw(Rotate Right Word by Immediate): I need a function that performs
+    a rotate right on the least-significant word of `rs1` by the amount in the leastsignificant
+    log2(XLEN) bits of `shamt`. The resulting word value is sign-extended by copying
+    bit 31 to all of the more-significant bits. The result will be saved in `rd`.'
+  interface: module roriw(input [31:0] rs1, input [4:0] shamt, output reg [31:0] rd);
+  name: roriw
+  pipeline_stages: '0'
+  response: "module roriw(\n    input [31:0] rs1,\n    input [4:0] shamt,\n    output\
+    \ reg [31:0] rd\n);\n\nwire [31:0] rotated_word;\n\nassign rotated_word = (rs1\
+    \ >> shamt) | (rs1 << (32 - shamt));\n\nalways @(*) begin\n    rd[31:0] = rotated_word;\n\
+    end\n\nendmodule\n\n"
+- class: efabless
+  instruction: 'rev8(Byte-reverse register): This function reverses the order of the
+    bytes in `rs`. the input is rs and the result will be saved in `rd`.'
+  interface: module rev8( input [31:0] rs, output reg [31:0] rd);
+  name: rev8
+  pipeline_stages: '0'
+  response: "module rev8(\n    input [31:0] rs,\n    output reg [31:0] rd\n);\n\n\
+    always @(rs) begin\n    rd = {rs[7:0], rs[15:8], rs[23:16], rs[31:24]};\nend\n\
+    \nendmodule\n\n"
+- class: efabless
+  instruction: 'SHA256SIG1: the SHA256SIG1 function, a component of the SHA-256 cryptographic
+    hash function. The function takes two parameters: rs1 and rd, representing source
+    and destination register indices, respectively. It performs a specific transformation
+    on a 32-bit input value from the source register (rs1), then stores the transformed
+    result into the destination register (rd). Here''s a breakdown of its functions:
+    Extract 32-bit Input: It retrieves a 32-bit input value (inb) from the source
+    register specified by rs1. Compute Result: The transformation applied to inb involves
+    three functions: Rotate Right 17 Bits (ror32(inb, 17)): Performs a bitwise rotation
+    to the right by 17 bits. Rotate Right 19 Bits (ror32(inb, 19)): Performs a bitwise
+    rotation to the right by 19 bits. Shift Right 10 Bits (inb >> 10): Performs a
+    bitwise right shift by 10 bits. The final result is obtained by XOR-ing the outputs
+    of these three functions. Store Result: The computed 32-bit result is then sign-extended
+    (EXTS(result)) and stored in the destination register specified by rd.'
+  interface: module SHA256SIG1(input [31:0] rs1, output reg [31:0] rd);
+  name: SHA256SIG1
+  pipeline_stages: '0'
+  response: "module SHA256SIG1(\n    input [31:0] rs1,\n    output reg [31:0] rd\n\
+    );\n\nfunction [31:0] ror32;\n    input [31:0] value;\n    input integer bits;\n\
+    \    begin\n        ror32 = (value >> bits) | (value << (32 - bits));\n    end\n\
+    endfunction\n\nwire [31:0] rotate_right_17;\nwire [31:0] rotate_right_19;\nwire\
+    \ [31:0] shift_right_10;\nwire [31:0] result;\n\nassign rotate_right_17 = ror32(rs1,\
+    \ 17);\nassign rotate_right_19 = ror32(rs1, 19);\nassign shift_right_10 = rs1\
+    \ >> 10;\n\nassign result = rotate_right_17 ^ rotate_right_19 ^ shift_right_10;\n\
+    \nalways @(rs1) begin\n    rd <= result;\nend\n\nendmodule\n\n"
+- class: efabless
+  instruction: 'andn (AND with inverted operand): I need a function that performs
+    the bitwise logical AND function between `rs1` and the bitwise inversion of `rs2`.
+    The result will be saved in `rd`.'
+  interface: module andn( input [31:0] rs1, input [31:0] rs2, output reg [31:0] rd);
+  name: andn
+  pipeline_stages: '0'
+  response: "module andn(\n    input [31:0] rs1,\n    input [31:0] rs2,\n    output\
+    \ reg [31:0] rd\n);\n\nalways @(*) begin\n    rd = rs1 & ~rs2;\nend\n\nendmodule\n\
+    \n"
+- class: efabless
+  instruction: 'rorw(Rotate Right Word (Register)): I need a function that performs
+    a rotate right on the least-significant word of `rs1` by the amount in least-significant
+    5 bits of `rs2`. The resultant word is sign-extended by copying bit 31 to all
+    of the more-significant bits. The result will be saved in `rd`.'
+  interface: module rorw( input [31:0] rs1, input [31:0] rs2, output reg [31:0] rd);
+  name: rorw
+  pipeline_stages: '0'
+  response: "module rorw(\n    input [31:0] rs1,\n    input [31:0] rs2,\n    output\
+    \ reg [31:0] rd\n);\n\nwire [4:0] rotate_amount = rs2[4:0];\nwire [31:0] rotated_word;\n\
+    \nassign rotated_word = (rs1 >> rotate_amount) | (rs1 << (32 - rotate_amount));\n\
+    \nalways @(*) begin\n    rd[31:0] = rotated_word;\nend\n\nendmodule\n\n"
+- class: efabless
+  instruction: 'packw(Pack the low 16-bits of rs1 and rs2 into rd): This function
+    packs the low 16 bits of `rs1` and `rs2` into the 32 least-significant bits of
+    rd, sign extending the 32-bit result to the rest of `rd` . the result will be
+    saved in `rd`.'
+  interface: module packw( input [31:0] rs1, input [31:0] rs2, output reg [31:0] rd);
+  name: packw
+  pipeline_stages: '0'
+  response: "module packw(\n    input [31:0] rs1,\n    input [31:0] rs2,\n    output\
+    \ reg [31:0] rd\n);\n\nalways @(*) begin\n    rd = {rs2[15:0], rs1[15:0]};\nend\n\
+    \nendmodule\n\n"
+- class: efabless
+  instruction: 'orn(OR with inverted operand): I need a function that performs the
+    bitwise logical OR function between rs1 and the bitwise inversion of rs2 and the
+    result will be saved in `rd`.'
+  interface: module orn( input [31:0] rs1, input [31:0] rs2, output reg [31:0] rd);
+  name: orn
+  pipeline_stages: '0'
+  response: "module orn(\n    input [31:0] rs1,\n    input [31:0] rs2,\n    output\
+    \ reg [31:0] rd\n);\n\nalways @(*) begin\n    rd = rs1 | ~rs2;\nend\n\nendmodule\n\
+    \n"
+- class: efabless
+  instruction: 'rori(Rotate Right (Immediate)): I need a function that performs a
+    rotate right of rs1 by the amount in the least-significant log2(XLEN) bits of
+    `shamt`. The encodings corresponding to shamt[5]=1 are reserved. The result will
+    be saved in `rd`.'
+  interface: module rori( input [31:0] rs1, input [5:0] shamt, output reg [31:0] rd);
+  name: rori
+  pipeline_stages: '0'
+  response: "module rori(\n    input [31:0] rs1,\n    input [5:0] shamt,\n    output\
+    \ reg [31:0] rd\n);\n\nwire [4:0] rotation_amount = shamt[4:0];\n\nalways @(*)\
+    \ begin\n    if (shamt[5] == 1'b1) begin\n        rd <= 32'b0;\n    end else begin\n\
+    \        rd <= (rs1 >> rotation_amount) | (rs1 << (32 - rotation_amount));\n \
+    \   end\nend\n\nendmodule\n\n"
+- class: efabless
+  instruction: 'pack(Pack the low halves of rs1 and rs2 into rd.): The pack function
+    packs the XLEN/2-bit lower halves of rs1 and rs2 into rd, with rs1 in the lower
+    half and rs2 in the upper half. The result will be saved in `rd`.'
+  interface: module pack( input [31:0] rs1, input [31:0] rs2, output reg [31:0] rd);
+  name: pack
+  pipeline_stages: '0'
+  response: "module pack(\n    input [31:0] rs1,\n    input [31:0] rs2,\n    output\
+    \ reg [31:0] rd\n);\n\nalways @(*) begin\n    rd = {rs2[15:0], rs1[15:0]};\nend\n\
+    \nendmodule\n\n"

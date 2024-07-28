@@ -8,6 +8,7 @@ from importlib import resources
 import os
 from hdeval import HDEvalInterface
 
+
 def start(args):
     if args.help:
         print("\n\nStart a new structured spec file out of a plain problem explanation")
@@ -36,12 +37,13 @@ def bench(args):
         print("ERROR: Benchmarks can not invoke --skip_completed and --update at the same time")
         exit()
 
-#    for f in args.bench_list:
- #       print(f"BENCHMARKING... {f}(to be added)")
+    for f in args.bench_list:
+        print(f"BENCHMARKING... {f}(to be added)")
     spath      = resources.files('resources')
     my_handler = Handler()
     my_handler.set_comp_iter(args.comp_limit)
     my_handler.create_agents(spath=str(spath), llms=args.llm, lang=args.lang, use_spec=True, temperature= None, w_dir=args.w_dir, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
+
     if len(args.file_list) == 0: # Check current directory to build
         files = os.listdir(args.w_dir)
         args.file_list = [file for file in files if file.endswith("spec.yaml")]
@@ -53,6 +55,7 @@ def bench(args):
     else:
         for f in args.file_list:
             my_handler.spec_run(target_spec=f, iterations=args.comp_limit)
+
 
 def build(args):
     if args.help:
@@ -182,9 +185,8 @@ def add_start_command(subparsers):
 def add_bench_command(subparsers):
     parser = subparsers.add_parser("bench", help="Benchmark the existing hdlagent setup", add_help=False)
     add_shared_args(parser)
-    parser.add_argument('--skip_completed', action="store_false", default= False, help='Skip generated already generated tests')
-   # parser.add_argument("bench_list", nargs="+", help="List of files to clean")
-    parser.add_argument('--bench_config', type=str, help='Path to the benchmark configuration file')
+    parser.add_argument('--skip_completed',        action="store_false", help='Skip generated already generated tests')
+    parser.add_argument("bench_list", nargs="+", help="List of files to clean")
 
     return parser
 
