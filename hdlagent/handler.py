@@ -265,6 +265,7 @@ class Handler:
     #
     # Intended use: user-facing code and test generation
     def spec_run(self, target_spec: str, iterations: int):
+        print(f"Processing spec file: {target_spec}")
         if not os.path.exists(target_spec):
             print(f"Error: {target_spec} not found, exiting...")
             exit()
