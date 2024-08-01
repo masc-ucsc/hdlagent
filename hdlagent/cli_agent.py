@@ -44,19 +44,12 @@ def bench(args):
     my_handler.create_agents(spath=str(spath), llms=args.llm, lang=args.lang, use_spec=True, temperature= None, w_dir=args.w_dir, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
     for f in args.bench_list:
         print(f"BENCHMARKING file... {f}")
-#        my_handler.spec_run(target_spec=f, iterations=args.comp_limit)
+        my_handler.spec_run(target_spec=f, iterations=args.comp_limit)
 
     if len(args.bench_list) == 0: # Check current directory to build
         files = os.listdir(args.w_dir)
         args.bench_list = [file for file in files if file.endswith("spec.yaml")]
 
-    if args.help:
-        print("\n\nOnce help is disabled, it will build the following spec files:")
-        for f in args.bench_list:
-            print(f"spec:{f}")
-    else:
-        for f in args.bench_list:
-            my_handler.spec_run(target_spec=f, iterations=args.comp_limit)
 
 
 def build(args):
