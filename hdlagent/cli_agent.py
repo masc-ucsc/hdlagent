@@ -37,6 +37,7 @@ def bench(args):
         print("ERROR: Benchmarks can not invoke --skip_completed and --update at the same time")
         exit()
 
+    print("This example will show how you can run a yaml file: `poetry run hdlagent/cli_agent.py bench sample/RCA_spec.yaml`\n")
 
     spath      = resources.files('resources')
     my_handler = Handler()
