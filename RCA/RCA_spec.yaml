@@ -2619,3 +2619,5 @@ verilog_problems:
   response: "module pack(\n    input [31:0] rs1,\n    input [31:0] rs2,\n    output\
     \ reg [31:0] rd\n);\n\nalways @(*) begin\n    rd = {rs2[15:0], rs1[15:0]};\nend\n\
     \nendmodule\n\n"
+
+in_directory: True
