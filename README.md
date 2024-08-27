@@ -1,8 +1,19 @@
 
+AI Coding Agent for specification to hardware code.
+
+It uses self-reflection, context, and grounding with EDA tools.
+
+
 ## Installation instructions
 
 Install with python poetry:
 ```
+poetry install
+```
+
+If updating hdlagent, you may need to update poetry dependencies too:
+```
+poetry lock
 poetry install
 ```
 

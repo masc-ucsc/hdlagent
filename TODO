@@ -1,9 +1,33 @@
 
 -Convert bench to new API (bench xxx)
+  +Use remote hdeval prompt support
 
--Use remote hdeval prompt support
+-Create some unit test for hdlagent
+  +Use some llm-ollama local model in hdlagent and pull tests from hdeval
+  +We can run the test in hdlagent in llmhdl server
 
 -Add LLMs APIs to use llm (https://llm.datasette.io/en/stable/plugins/directory.html#remote-apis)
- +Keep original, but use llm as alternative and access to claude and VertexAI
- +Seems to support all but octoai
+  +Keep original, but use llm as alternative and access to claude and VertexAI
+  +Seems to support all but octoai
+
+-Add the "requirement" field in yaml (similar to what Changyang)
+  +https://arxiv.org/abs/2408.00994
+
+-Add samba Nova API
+
+-Gen multiple options (one prompt), add some majority vote (or agent to decide between top-x solutions)
+
+-Do Self-reflect stage:
+  +https://arxiv.org/abs/2304.07590: "Requirement Analyst" vs "Developer" vs "Tester"
+
+-Check/Eval prompt change to:
+  +Add reflection. First, you are an expert coder... then Always: ". You are an
+    expert code reviewer: check the code carefully for style and correctness, and
+    give constructive feedback on how to improve it.", then reprompt giving
+    problem, generated code, and reflection to generate the new code.
+
+-Add comment to failing line of code before iterating
+  + https://arxiv.org/abs/2312.17485 uses the following prompt:
+    +"Fix the following buggy code snippet according to the suggestion in the "//<Comment> " line. In your response, output the fixed code only"
+    + It inserts a comment on the Line of code with the problem
 
