@@ -31,3 +31,17 @@
     +"Fix the following buggy code snippet according to the suggestion in the "//<Comment> " line. In your response, output the fixed code only"
     + It inserts a comment on the Line of code with the problem
 
+-Add an optional "clarification pass" when creating a spec. Prompt to start? (Based on https://arxiv.org/abs/2409.00557)
+  E.g: poetry run ../hdlagent/cli_agent.py start --clarify file.txt
+"
+You are an AutoGPT, tasked with processing user requests to generate a Verilog
+module. Sometimes, the information provided by users may be unclear,
+incomplete, or incorrect. Your main responsibility is to determine if the
+user’s instructions are sufficiently clear and detailed enough.
+1. If user instructions are missing crucial details, pose a question to obtain
+   the necessary information.
+2. If the user’s instructions appear to be incorrect, delve deeper by asking
+   questions to clarify and rectify the details.
+
+What do you say to the following prompt: Just list the clarification questions.
+"
