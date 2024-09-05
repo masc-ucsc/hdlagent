@@ -1,20 +1,19 @@
 
--Convert bench to new API (bench xxx)
+# Unit testing/Checks
+
+-Test bench new API (bench xxx)
   +Use remote hdeval prompt support
 
 -Create some unit test for hdlagent
   +Use some llm-ollama local model in hdlagent and pull tests from hdeval
   +We can run the test in hdlagent in llmhdl server
 
--Add LLMs APIs to use llm (https://llm.datasette.io/en/stable/plugins/directory.html#remote-apis)
-  +Keep original, but use llm as alternative and access to claude and VertexAI
-  +Seems to support all but octoai
+# SPEC improvements
 
 -Add the "requirement" field in yaml (similar to what Changyang)
   +https://arxiv.org/abs/2408.00994
 
--Add samba Nova API
-
+# Reflection Internals
 -Gen multiple options (one prompt), add some majority vote (or agent to decide between top-x solutions)
 
 -Do Self-reflect stage:
@@ -26,10 +25,6 @@
     give constructive feedback on how to improve it.", then reprompt giving
     problem, generated code, and reflection to generate the new code.
 
--Add comment to failing line of code before iterating
-  + https://arxiv.org/abs/2312.17485 uses the following prompt:
-    +"Fix the following buggy code snippet according to the suggestion in the "//<Comment> " line. In your response, output the fixed code only"
-    + It inserts a comment on the Line of code with the problem
 
 -Add an optional "clarification pass" when creating a spec. Prompt to start? (Based on https://arxiv.org/abs/2409.00557)
   E.g: poetry run ../hdlagent/cli_agent.py start --clarify file.txt
@@ -45,3 +40,56 @@ user’s instructions are sufficiently clear and detailed enough.
 
 What do you say to the following prompt: Just list the clarification questions.
 "
+
+# Grounding Internals
+
+-Add comment to failing line of code before iterating
+  + https://arxiv.org/abs/2312.17485 uses the following prompt:
+    +"Fix the following buggy code snippet according to the suggestion in the "//<Comment> " line. In your response, output the fixed code only"
+    + It inserts a comment on the Line of code with the problem
+
+# Model APIs changes
+
+-Add LLMs APIs to use llm (https://llm.datasette.io/en/stable/plugins/directory.html#remote-apis)
+  +Keep original, but use llm as alternative and access to claude and VertexAI
+  +Seems to support all but octoai
+
+-Change the google from the complex SDK code to google.generativeai
+```
+import google.generativeai as genai
+import os
+
+genai.configure(api_key=os.environ["GOOGLE_STUDIO_KEY"])
+
+model = genai.GenerativeModel("gemini-1.5-flash")
+response = model.generate_content("Write a story about a magic backpack.")
+print(response.text)
+```
+or
+```
+model = genai.GenerativeModel("gemini-1.5-flash")
+response = model.generate_content(
+    "Tell me a story about a magic backpack.",
+    generation_config=genai.types.GenerationConfig(
+        # Only one candidate for now.
+        candidate_count=1,
+        stop_sequences=["x"],
+        max_output_tokens=20,
+        temperature=1.0,
+    ),
+)
+
+print(response.text)
+```
+or
+```
+model=genai.GenerativeModel(
+  model_name="gemini-1.5-flash",
+  system_instruction="You are a cat. Your name is Neko.")
+response = model.generate_content("Good morning! How are you?")
+print(response.text)
+```
+
+-Add samba Nova API
+
+
