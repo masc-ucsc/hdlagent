@@ -75,7 +75,7 @@ def load_config(ctx, param, value):
 
 
 @click.command()
-@click.option('--list_models', is_flag=True, default=False, help='List all available models (OpenAI, OctoAI, VertexAI), some may have too short context.')
+@click.option('--list_models', is_flag=True, default=False, help='List all available models (OpenAI, OctoAI, VertexAI, SambaNova), some may have too short context.')
 @click.option('--config', type=click.Path(exists=True), callback=load_config, expose_value=False, is_eager=True, help='Path to a configuration YAML file.')
 
 @click.option('--llm', type=str, multiple=True, default=["gpt-3.5-turbo-0613"], help='Specify one of more LLM models. Use --list_models to list models.')
@@ -145,6 +145,16 @@ def process_args(ctx, list_models:bool, llm, lang:str, parallel:bool, bench:str,
             for m in models:
                 print(" ", m)
             print("\n")
+
+        if "SAMBANOVA_API_KEY" in os.environ:
+            models = agent.list_sambanova_models()
+            if len(models):
+                print("SambaNova models:")
+                for m in models:
+                        print(" ", m)
+                print("\n")
+        else:
+            print("SambaNova unavailable unless SAMBANOVA_API_KEY is set")
 
     elif bench is not None:
         spath      = resources.files('resources')
