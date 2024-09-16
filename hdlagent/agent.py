@@ -62,6 +62,20 @@ vertexai_models = ["gemini-1.0-pro-002", "gemini-1.0-pro-001", "gemini-1.0-pro",
 def list_vertexai_models():
     return vertexai_models
 
+SAMBANOVA_API_URL = "https://fast-api.snova.ai/v1"
+SAMBANOVA_API_KEY = os.environ.get("SAMBANOVA_API_KEY")
+
+def list_sambanova_models(warn: bool = True):
+    sambanova_models = ["llama3-8b", "llama3-70b", "llama3-405b"]
+    if "SAMBANOVA_API_KEY" in os.environ:
+        return sambanova_models
+    else:
+        if warn:
+            print("Warning: SAMBANOVA_API_KEY not set")
+        return []
+    
+
+
 def md_to_convo(md_file):
     with open(md_file, 'r') as f:
         lines = f.readlines()
@@ -185,6 +199,16 @@ class Agent:
         elif model in list_openai_models(False):
             self.chat_completion = self.openai_chat_completion
             self.client          = OpenAI()
+        elif model in list_sambanova_models():
+            self.chat_completion = self.sambanova_chat_completion
+            self.client = OpenAI(
+                base_url=SAMBANOVA_API_URL,
+                api_key=SAMBANOVA_API_KEY,
+                default_headers={
+                    "Authorization": f"Basic {SAMBANOVA_API_KEY}",
+                    "Content-Type": "application/json"
+                }
+            )
         elif model in list_vertexai_models():
             self.chat_completion = self.vertexai_chat_completion
             try:
@@ -642,6 +666,24 @@ class Agent:
             completion = self.client.chat.completions.create(
                 model=self.model,
                 messages=conversation,
+            )
+        else:
+            completion = self.client.chat.completions.create(
+                model=self.model,
+                messages=conversation,
+                temperature=self.temp,
+            )
+        self.prompt_tokens     += completion.usage.prompt_tokens
+        self.completion_tokens += completion.usage.completion_tokens
+        return completion.choices[0].message.content
+    
+    def sambanova_chat_completion(self, conversation, compile_convo: bool = False, **kwargs,):
+        if self.temp is None:
+            completion = self.client.chat.completions.create(
+                model="llama3-405b",
+                messages=conversation,
+                # stream=True,
+                **kwargs,
             )
         else:
             completion = self.client.chat.completions.create(
