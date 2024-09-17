@@ -83,5 +83,5 @@ def comment_filter_function(lec_feedback: str, limit: int = -1):
         return str(test_count) + "\n "
     for entry in limited_list:
         i += 1
-        res_string += (f"Testcase failed:\n".format(i=i,test_count=test_count)) + entry + "\n\n"
+        res_string += ("Testcase failed:\n".format()) + entry + "\n\n"
     return str(test_count) + "\n" + res_string

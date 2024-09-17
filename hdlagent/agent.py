@@ -1,5 +1,4 @@
 import importlib
-import markdown
 import openai
 from openai import OpenAI
 import os
@@ -15,7 +14,6 @@ import yaml
 
 from hdlang import get_hdlang
 
-from importlib import resources
 
 from enum import Enum
 
@@ -28,7 +26,7 @@ def list_openai_models(warn: bool = True):
     if "OPENAI_API_KEY" in os.environ:
         try:
             response = openai.models.list()
-        except Exception as e:
+        except Exception:
             if warn:
                 print("Warning: could not connect to OpenAI, Skipping")
             return []

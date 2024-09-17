@@ -8,7 +8,6 @@ from handler import Handler
 from importlib import resources
 import multiprocessing
 import os
-from agent import Agent
 from pathlib import Path
 import yaml
 

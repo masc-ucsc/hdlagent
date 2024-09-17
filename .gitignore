@@ -1,6 +1,7 @@
 *.log
 *.swp
 __pycache__
+env/
 tmp
 logs
 dist
@@ -10,3 +11,4 @@ hdlagent/tests
 hdlagent/*.yaml
 hdlagent/*.md
 hdlagent/out
+*aider

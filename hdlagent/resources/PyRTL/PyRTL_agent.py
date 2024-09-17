@@ -1,6 +1,4 @@
-import os
 import re
-import subprocess
 
 def custom_check_errors(compiler_output):
     res_string = (str(compiler_output.stderr))[2:-1].replace("\\n", "\n").replace('\\','')

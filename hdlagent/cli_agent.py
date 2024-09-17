@@ -6,7 +6,6 @@ import argparse
 from handler import Handler
 from importlib import resources
 import os
-from hdeval import HDEvalInterface
 
 
 def start(args):
@@ -167,7 +166,7 @@ def check_args(args):
         exit(5)
 
     for x in args.llm:
-        if not (x in l):
+        if x not in l:
             print(f"ERROR: model {x} is not in list-models available")
             exit(3)
 
