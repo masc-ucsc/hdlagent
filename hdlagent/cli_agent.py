@@ -6,7 +6,7 @@ import argparse
 from handler import Handler
 from importlib import resources
 import os
-
+import glob
 
 def start(args):
     if args.help:
@@ -30,6 +30,51 @@ def start(args):
 def log(args):
     print("Log command invoked.")
     print(f"Output file: {args.output_file}")
+
+    # Base directory for outputs, resolving the home directory if needed
+    base_output_dir = os.path.expanduser('~/hdlagent/hdlagent/out')
+
+    if hasattr(args, 'benchmark_name') and args.benchmark_name:
+        logs_dir_pattern = os.path.join(base_output_dir, args.benchmark_name, 'logs')
+    else:
+        logs_dir_pattern = os.path.join(base_output_dir, '*', 'logs')
+
+    # Find all matching log directories (glob returns a list)
+    log_directories = glob.glob(logs_dir_pattern)
+
+    # Check if any log directories were found
+    if not log_directories:
+        print(f"No logs directory found matching pattern {logs_dir_pattern}.")
+        return
+
+    results_lines = []
+
+    # Iterate over each found log directory
+    for logs_dir in log_directories:
+        # Pattern to match compile log files within the benchmark's log directory
+        compile_log_pattern = os.path.join(logs_dir, '*_compile_log.md')
+        compile_logs = glob.glob(compile_log_pattern)
+
+        # Iterate over each compile log file
+        for log_file in compile_logs:
+            with open(log_file, 'r') as file:
+                lines = file.readlines()
+                # Search for the RESULTS line from the end of the file
+                for line in reversed(lines):
+                    if line.startswith('RESULTS :'):
+                        results_lines.append(line.strip() + '\n')  # Ensure each result is on a new line
+                        break  # Stop after finding the last RESULTS line
+
+    if not results_lines:
+        print("No RESULTS lines found in the compile logs.")
+        return
+
+    # Save the collected RESULTS lines to the specified output file
+    output_file = args.output_file if args.output_file else 'all_results.txt'
+    with open(output_file, 'w') as file:
+        file.writelines(results_lines)
+
+    print(f"Collected RESULTS lines have been saved to {output_file}")
 
 def bench(args):
     if args.help:
