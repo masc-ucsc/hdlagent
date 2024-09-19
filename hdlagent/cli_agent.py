@@ -7,6 +7,7 @@ from handler import Handler
 from importlib import resources
 import os
 import glob
+import datetime
 
 def start(args):
     if args.help:
@@ -28,10 +29,20 @@ def start(args):
             my_handler.sequential_entrypoint(spath=str(spath), llms=args.llm, lang=args.lang, update=args.update, w_dir=args.w_dir, gen_spec=f, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
 
 def log(args):
+    if args.list_runs:
+        base_output_dir = os.path.expanduser('~/hdlagent/hdlagent/out')
+        benchmark_dirs = glob.glob(os.path.join(base_output_dir, '*'))
+
+        print("Available Runs:\n")
+        for idx, bench_dir in enumerate(benchmark_dirs, start=1):
+            last_modified = datetime.datetime.fromtimestamp(os.path.getmtime(bench_dir)).strftime('%Y-%m-%d %H:%M:%S')
+            bench_name = os.path.basename(bench_dir)
+            print(f"{idx}. {bench_name} - Run on {last_modified}")
+        return
+
     print("Log command invoked.")
     print(f"Output file: {args.output_file}")
 
-    # Base directory for outputs, resolving the home directory if needed
     base_output_dir = os.path.expanduser('~/hdlagent/hdlagent/out')
 
     if hasattr(args, 'benchmark_name') and args.benchmark_name:
@@ -39,27 +50,21 @@ def log(args):
     else:
         logs_dir_pattern = os.path.join(base_output_dir, '*', 'logs')
 
-    # Find all matching log directories (glob returns a list)
     log_directories = glob.glob(logs_dir_pattern)
 
-    # Check if any log directories were found
     if not log_directories:
         print(f"No logs directory found matching pattern {logs_dir_pattern}.")
         return
 
     results_lines = []
 
-    # Iterate over each found log directory
     for logs_dir in log_directories:
-        # Pattern to match compile log files within the benchmark's log directory
         compile_log_pattern = os.path.join(logs_dir, '*_compile_log.md')
         compile_logs = glob.glob(compile_log_pattern)
 
-        # Iterate over each compile log file
         for log_file in compile_logs:
             with open(log_file, 'r') as file:
                 lines = file.readlines()
-                # Search for the RESULTS line from the end of the file
                 for line in reversed(lines):
                     if line.startswith('RESULTS :'):
                         results_lines.append(line.strip() + '\n')  # Ensure each result is on a new line
@@ -69,7 +74,6 @@ def log(args):
         print("No RESULTS lines found in the compile logs.")
         return
 
-    # Save the collected RESULTS lines to the specified output file
     output_file = args.output_file if args.output_file else 'all_results.txt'
     with open(output_file, 'w') as file:
         file.writelines(results_lines)
@@ -252,6 +256,8 @@ def add_log_command(subparsers):
     parser = subparsers.add_parser('log', help="Collect and save RESULTS lines from previous runs.", add_help=False)
     add_shared_args(parser)
     parser.add_argument('--output-file', help="The output file to save collected RESULTS lines.")
+    parser.add_argument('--list-runs', action='store_true', help="List all available runs and their timestamps.")
+
 
     return parser
 
