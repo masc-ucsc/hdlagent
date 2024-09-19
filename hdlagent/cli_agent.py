@@ -27,6 +27,10 @@ def start(args):
         else:
             my_handler.sequential_entrypoint(spath=str(spath), llms=args.llm, lang=args.lang, update=args.update, w_dir=args.w_dir, gen_spec=f, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
 
+def log(args):
+    print("Log command invoked.")
+    print(f"Output file: {args.output_file}")
+
 def bench(args):
     if args.help:
         print("\n\nPerformance against benchmarks")
@@ -199,6 +203,13 @@ def add_list_models_command(subparsers):
 
     return parser
 
+def add_log_command(subparsers):
+    parser = subparsers.add_parser('log', help="Collect and save RESULTS lines from previous runs.", add_help=False)
+    add_shared_args(parser)
+    parser.add_argument('--output-file', help="The output file to save collected RESULTS lines.")
+
+    return parser
+
 def cli_agent():
 
     parser     = argparse.ArgumentParser(description = "hdlagent: A Hardware Description Language Agent", add_help=False)
@@ -208,6 +219,7 @@ def cli_agent():
     parser_build       = add_build_command(subparsers)
     parser_list_models = add_list_models_command(subparsers)
     parser_start       = add_start_command(subparsers)
+    parser_log         = add_log_command(subparsers)
 
     args, unknown = parser.parse_known_args()
 
@@ -241,6 +253,10 @@ def cli_agent():
         if args.help:
             parser_list_models.print_help()
         list_models(args)
+    elif args.command == "log":
+        if args.help:
+            parser_list_models.print_help()
+        log(args)
     else:
         parser.print_help()
 
