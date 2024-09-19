@@ -29,8 +29,11 @@ def start(args):
             my_handler.sequential_entrypoint(spath=str(spath), llms=args.llm, lang=args.lang, update=args.update, w_dir=args.w_dir, gen_spec=f, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
 
 def log(args):
+    import datetime  # Ensure datetime is imported
+    base_output_dir = os.path.expanduser('~/hdlagent/hdlagent/out')
+
     if args.list_runs:
-        base_output_dir = os.path.expanduser('~/hdlagent/hdlagent/out')
+        # Existing code to list runs
         benchmark_dirs = glob.glob(os.path.join(base_output_dir, '*'))
 
         print("Available Runs:\n")
@@ -40,45 +43,113 @@ def log(args):
             print(f"{idx}. {bench_name} - Run on {last_modified}")
         return
 
-    print("Log command invoked.")
-    print(f"Output file: {args.output_file}")
+    elif args.benchmark_name:
+        # New feature: display detailed information about a specific run
+        benchmark_name = args.benchmark_name
+        logs_dir = os.path.join(base_output_dir, benchmark_name, 'logs')
 
-    base_output_dir = os.path.expanduser('~/hdlagent/hdlagent/out')
+        if not os.path.exists(logs_dir):
+            print(f"No logs directory found for benchmark '{benchmark_name}'.")
+            return
 
-    if hasattr(args, 'benchmark_name') and args.benchmark_name:
-        logs_dir_pattern = os.path.join(base_output_dir, args.benchmark_name, 'logs')
-    else:
-        logs_dir_pattern = os.path.join(base_output_dir, '*', 'logs')
-
-    log_directories = glob.glob(logs_dir_pattern)
-
-    if not log_directories:
-        print(f"No logs directory found matching pattern {logs_dir_pattern}.")
-        return
-
-    results_lines = []
-
-    for logs_dir in log_directories:
         compile_log_pattern = os.path.join(logs_dir, '*_compile_log.md')
         compile_logs = glob.glob(compile_log_pattern)
 
-        for log_file in compile_logs:
-            with open(log_file, 'r') as file:
-                lines = file.readlines()
-                for line in reversed(lines):
-                    if line.startswith('RESULTS :'):
-                        results_lines.append(line.strip() + '\n')  # Ensure each result is on a new line
-                        break  # Stop after finding the last RESULTS line
+        if not compile_logs:
+            print(f"No compile log found for benchmark '{benchmark_name}'.")
+            return
 
-    if not results_lines:
-        print("No RESULTS lines found in the compile logs.")
+        # Assuming there's only one compile log per benchmark
+        compile_log_file = compile_logs[0]
+
+        # Extract the RESULTS line and other details
+        with open(compile_log_file, 'r') as file:
+            lines = file.readlines()
+
+        results_line = None
+        for line in reversed(lines):
+            if line.startswith('RESULTS :'):
+                results_line = line.strip()
+                break
+
+        if not results_line:
+            print(f"No RESULTS line found in the compile log for benchmark '{benchmark_name}'.")
+            return
+
+        # Parse the RESULTS line
+        parts = results_line.split(' : ')
+        if len(parts) != 12:
+            print(f"Invalid RESULTS line format in the compile log for benchmark '{benchmark_name}'.")
+            return
+
+        # Map parts to variables
+        _, model, name, comp_n, comp_f, lec_n, lec_f, top_k, prompt_tokens, completion_tokens, world_clock_time, llm_query_time = parts
+
+        # Determine the status
+        status = "Success" if int(comp_f) == 0 and int(lec_f) == 0 else "Failure"
+
+        # Get run date from log file modification time
+        run_date = datetime.datetime.fromtimestamp(os.path.getmtime(compile_log_file)).strftime('%Y-%m-%d %H:%M:%S')
+
+        # Display the detailed information
+        print(f"Benchmark: {benchmark_name}")
+        print(f"Run Date: {run_date}")
+        print(f"Model: {model}")
+        print(f"Status: {status}\n")
+        print("Performance Metrics:")
+        print(f"- Compilation Attempts: {comp_n}")
+        print(f"- Compilation Failures: {comp_f}")
+        print(f"- LEC Attempts: {lec_n}")
+        print(f"- LEC Failures: {lec_f}")
+        total_tokens = int(prompt_tokens) + int(completion_tokens)
+        print(f"- Total Tokens Used: {total_tokens} (Prompt: {prompt_tokens}, Completion: {completion_tokens})")
+        print(f"- Total Time: {world_clock_time} seconds (LLM Query Time: {llm_query_time} seconds)")
+        print(f"- Top_k: {top_k}\n")
+        print("Output Files:")
+        # Assuming standard file names
+        generated_code = os.path.join(base_output_dir, benchmark_name, f"{name}.v")
+        compile_log = compile_log_file
+        spec_log = os.path.join(logs_dir, f"{name}_spec_log.md")
+
+        print(f"- Generated Code: {generated_code}")
+        print(f"- Compile Log: {compile_log}")
+        print(f"- Spec Log: {spec_log}")
+
         return
 
-    output_file = args.output_file if args.output_file else 'all_results.txt'
-    with open(output_file, 'w') as file:
-        file.writelines(results_lines)
+    else:
+        # Existing feature: collect all RESULTS lines and save to a file
+        logs_dir_pattern = os.path.join(base_output_dir, '*', 'logs')
+        log_directories = glob.glob(logs_dir_pattern)
 
-    print(f"Collected RESULTS lines have been saved to {output_file}")
+        if not log_directories:
+            print(f"No logs directory found matching pattern {logs_dir_pattern}.")
+            return
+
+        results_lines = []
+
+        for logs_dir in log_directories:
+            compile_log_pattern = os.path.join(logs_dir, '*_compile_log.md')
+            compile_logs = glob.glob(compile_log_pattern)
+
+            for log_file in compile_logs:
+                with open(log_file, 'r') as file:
+                    lines = file.readlines()
+                    for line in reversed(lines):
+                        if line.startswith('RESULTS :'):
+                            results_lines.append(line.strip() + '\n')  # Ensure each result is on a new line
+                            break  # Stop after finding the last RESULTS line
+
+        if not results_lines:
+            print("No RESULTS lines found in the compile logs.")
+            return
+
+        output_file = args.output_file if args.output_file else 'all_results.txt'
+        with open(output_file, 'w') as file:
+            file.writelines(results_lines)
+
+        print(f"Collected RESULTS lines have been saved to {output_file}")
+
 
 def bench(args):
     if args.help:
@@ -257,6 +328,7 @@ def add_log_command(subparsers):
     add_shared_args(parser)
     parser.add_argument('--output-file', help="The output file to save collected RESULTS lines.")
     parser.add_argument('--list-runs', action='store_true', help="List all available runs and their timestamps.")
+    parser.add_argument('benchmark_name', nargs='?', help="Name of the benchmark to log details for", default=None)
 
 
     return parser
