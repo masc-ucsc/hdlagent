@@ -29,7 +29,6 @@ def start(args):
             my_handler.sequential_entrypoint(spath=str(spath), llms=args.llm, lang=args.lang, update=args.update, w_dir=args.w_dir, gen_spec=f, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
 
 def log(args):
-    import datetime  # Ensure datetime is imported
     base_output_dir = os.path.expanduser('~/hdlagent/hdlagent/out')
 
     if args.list_runs:
@@ -44,7 +43,7 @@ def log(args):
         return
 
     elif args.benchmark_name:
-        # New feature: display detailed information about a specific run
+        # Existing feature: display detailed information about a specific run
         benchmark_name = args.benchmark_name
         logs_dir = os.path.join(base_output_dir, benchmark_name, 'logs')
 
@@ -118,7 +117,7 @@ def log(args):
         return
 
     else:
-        # Existing feature: collect all RESULTS lines and save to a file
+        # Collect all RESULTS entries
         logs_dir_pattern = os.path.join(base_output_dir, '*', 'logs')
         log_directories = glob.glob(logs_dir_pattern)
 
@@ -126,7 +125,8 @@ def log(args):
             print(f"No logs directory found matching pattern {logs_dir_pattern}.")
             return
 
-        results_lines = []
+        results_entries = []
+        results_lines = []  # To store the raw RESULTS lines
 
         for logs_dir in log_directories:
             compile_log_pattern = os.path.join(logs_dir, '*_compile_log.md')
@@ -135,46 +135,133 @@ def log(args):
             for log_file in compile_logs:
                 with open(log_file, 'r') as file:
                     lines = file.readlines()
+                    results_line = None
                     for line in reversed(lines):
                         if line.startswith('RESULTS :'):
-                            results_lines.append(line.strip() + '\n')  # Ensure each result is on a new line
+                            results_line = line.strip()
+                            results_lines.append(results_line + '\n')  # For saving later
                             break  # Stop after finding the last RESULTS line
 
-        if not results_lines:
-            print("No RESULTS lines found in the compile logs.")
+                if results_line:
+                    # Parse the RESULTS line
+                    parts = results_line.split(' : ')
+                    if len(parts) != 12:
+                        continue  # Skip if RESULTS line format is invalid
+
+                    # Map parts to variables
+                    _, model, name, comp_n, comp_f, lec_n, lec_f, top_k, prompt_tokens, completion_tokens, world_clock_time, llm_query_time = parts
+
+                    # Get run date from log file modification time
+                    run_date = datetime.datetime.fromtimestamp(os.path.getmtime(log_file))
+
+                    # Determine the status
+                    status = 'success' if int(comp_f) == 0 and int(lec_f) == 0 else 'failed'
+
+                    # Create a dictionary for the entry
+                    entry = {
+                        'benchmark_name': name,
+                        'model': model,
+                        'comp_n': int(comp_n),
+                        'comp_f': int(comp_f),
+                        'lec_n': int(lec_n),
+                        'lec_f': int(lec_f),
+                        'top_k': int(top_k),
+                        'prompt_tokens': int(prompt_tokens),
+                        'completion_tokens': int(completion_tokens),
+                        'world_clock_time': float(world_clock_time),
+                        'llm_query_time': float(llm_query_time),
+                        'run_date': run_date,
+                        'log_file': log_file,
+                        'status': status,
+                        'results_line': results_line,
+                    }
+
+                    results_entries.append(entry)
+
+        if not results_entries:
+            print("No RESULTS entries found in the compile logs.")
             return
 
-        output_file = args.output_file if args.output_file else 'all_results.txt'
-        with open(output_file, 'w') as file:
-            file.writelines(results_lines)
+        # Check if any filters are specified
+        filters_specified = (args.status != 'all' or args.date_from or args.date_to or args.top_k is not None)
 
-        print(f"Collected RESULTS lines have been saved to {output_file}")
+        if filters_specified:
+            # Apply filters
+            filtered_entries = []
 
+            for entry in results_entries:
+                # Filter by status
+                if args.status != 'all' and entry['status'] != args.status:
+                    continue
 
-def bench(args):
-    if args.help:
-        print("\n\nPerformance against benchmarks")
-        return
+                # Filter by date
+                if args.date_from:
+                    try:
+                        date_from = datetime.datetime.strptime(args.date_from, '%Y-%m-%d')
+                    except ValueError:
+                        print("Invalid date format for --date-from. Use YYYY-MM-DD.")
+                        return
+                    if entry['run_date'] < date_from:
+                        continue
+                if args.date_to:
+                    try:
+                        date_to = datetime.datetime.strptime(args.date_to, '%Y-%m-%d') + datetime.timedelta(days=1)
+                    except ValueError:
+                        print("Invalid date format for --date-to. Use YYYY-MM-DD.")
+                        return
+                    if entry['run_date'] >= date_to:
+                        continue
 
-    if args.skip_completed and args.update:
-        print("ERROR: Benchmarks can not invoke --skip_completed and --update at the same time")
-        exit()
+                # Filter by top_k
+                if args.top_k is not None:
+                    if entry['top_k'] < args.top_k:
+                        continue
 
-    print("This example will show how you can run a yaml file: `poetry run hdlagent/cli_agent.py bench sample/RCA_spec.yaml`\n")
+                filtered_entries.append(entry)
 
-    spath      = resources.files('resources')
-    my_handler = Handler()
-    my_handler.set_comp_iter(args.comp_limit)
-    my_handler.create_agents(spath=str(spath), llms=args.llm, lang=args.lang, use_spec=True, temperature= None, w_dir=args.w_dir, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
-    for f in args.bench_list:
-        print(f"BENCHMARKING file... {f}")
-        my_handler.spec_run(target_spec=f, iterations=args.comp_limit)
+            if not filtered_entries:
+                print("No entries match the specified filters.")
+                return
 
-    if len(args.bench_list) == 0: # Check current directory to build
-        files = os.listdir(args.w_dir)
-        args.bench_list = [file for file in files if file.endswith("spec.yaml")]
+            # Sort entries by run date
+            filtered_entries.sort(key=lambda x: x['run_date'])
 
+            # Display the filtered entries
+            if args.status != 'all':
+                print(f"{args.status.capitalize()} Runs", end='')
+                if args.date_from or args.date_to:
+                    print(" between", end=' ')
+                    if args.date_from:
+                        print(f"{args.date_from}", end=' ')
+                    if args.date_to:
+                        print(f"and {args.date_to}", end=' ')
+                print(":\n")
+            else:
+                print("Filtered Runs:\n")
 
+            for idx, entry in enumerate(filtered_entries, start=1):
+                run_date_str = entry['run_date'].strftime('%Y-%m-%d %H:%M:%S')
+                print(f"{idx}. {entry['benchmark_name']} - Run on {run_date_str}")
+
+            # Optionally, write the filtered results to an output file
+            if args.output_file:
+                with open(args.output_file, 'w') as file:
+                    for entry in filtered_entries:
+                        file.write(entry['results_line'] + '\n')
+                print(f"\nFiltered results have been saved to {args.output_file}")
+
+        else:
+            # No filters specified
+            # Proceed with default behavior
+            if not results_lines:
+                print("No RESULTS lines found in the compile logs.")
+                return
+
+            output_file = args.output_file if args.output_file else 'all_results.txt'
+            with open(output_file, 'w') as file:
+                file.writelines(results_lines)
+
+            print(f"Collected RESULTS lines have been saved to {output_file}")
 
 def build(args):
     if args.help:
@@ -330,6 +417,10 @@ def add_log_command(subparsers):
     parser.add_argument('--list-runs', action='store_true', help="List all available runs and their timestamps.")
     parser.add_argument('benchmark_name', nargs='?', help="Name of the benchmark to log details for", default=None)
 
+    parser.add_argument('--status', choices=['all', 'success', 'failed'], default='all', help='Filter logs by run status.')
+    parser.add_argument('--date-from', type=str, help='Show logs from this date (YYYY-MM-DD).')
+    parser.add_argument('--date-to', type=str, help='Show logs up to this date (YYYY-MM-DD).')
+    parser.add_argument('--top_k', type=int, help='Filter logs where top_k is greater than or equal to the specified value.')
 
     return parser
 
