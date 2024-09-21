@@ -9,6 +9,31 @@ import os
 import glob
 import datetime
 
+def batch(args):
+    print("Batch command invoked for directory:", args.directory_path)
+    directory_path = os.path.abspath(args.directory_path)
+
+    if not os.path.exists(directory_path):
+        print(f"Specified directory does not exist: {directory_path}")
+        return
+
+    yaml_files = [f for f in os.listdir(directory_path) if f.endswith('.yaml') or f.endswith('_spec.yaml')]
+
+    if not yaml_files:
+        print("No .spec.yaml files found in the specified directory.")
+        return
+
+    spath = resources.files('resources')
+    my_handler = Handler()
+    my_handler.set_comp_iter(args.comp_limit)
+    my_handler.create_agents(spath=str(spath), llms=args.llm, lang=args.lang, use_spec=True, temperature=None, w_dir=directory_path, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
+
+    for yaml_file in yaml_files:
+        spec_file_path = os.path.join(directory_path, yaml_file)
+        print(f"Processing {spec_file_path}...")
+        my_handler.spec_run(target_spec=spec_file_path, iterations=args.comp_limit)
+
+
 def start(args):
     if args.help:
         print("\n\nStart a new structured spec file out of a plain problem explanation")
@@ -28,11 +53,33 @@ def start(args):
         else:
             my_handler.sequential_entrypoint(spath=str(spath), llms=args.llm, lang=args.lang, update=args.update, w_dir=args.w_dir, gen_spec=f, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
 
+def bench(args):
+    if args.help:
+        print("\n\nPerformance against benchmarks")
+        return
+
+    if args.skip_completed and args.update:
+        print("ERROR: Benchmarks can not invoke --skip_completed and --update at the same time")
+        exit()
+
+    print("This example will show how you can run a yaml file: `poetry run hdlagent/cli_agent.py bench sample/RCA_spec.yaml`\n")
+
+    spath      = resources.files('resources')
+    my_handler = Handler()
+    my_handler.set_comp_iter(args.comp_limit)
+    my_handler.create_agents(spath=str(spath), llms=args.llm, lang=args.lang, use_spec=True, temperature= None, w_dir=args.w_dir, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
+    for f in args.bench_list:
+        print(f"BENCHMARKING file... {f}")
+        my_handler.spec_run(target_spec=f, iterations=args.comp_limit)
+
+    if len(args.bench_list) == 0: # Check current directory to build
+        files = os.listdir(args.w_dir)
+        args.bench_list = [file for file in files if file.endswith("spec.yaml")]
+
 def log(args):
     base_output_dir = os.path.expanduser('~/hdlagent/hdlagent/out')
 
     if args.list_runs:
-        # Existing code to list runs
         benchmark_dirs = glob.glob(os.path.join(base_output_dir, '*'))
 
         print("Available Runs:\n")
@@ -43,7 +90,6 @@ def log(args):
         return
 
     elif args.benchmark_name:
-        # Existing feature: display detailed information about a specific run
         benchmark_name = args.benchmark_name
         logs_dir = os.path.join(base_output_dir, benchmark_name, 'logs')
 
@@ -61,7 +107,6 @@ def log(args):
         # Assuming there's only one compile log per benchmark
         compile_log_file = compile_logs[0]
 
-        # Extract the RESULTS line and other details
         with open(compile_log_file, 'r') as file:
             lines = file.readlines()
 
@@ -75,22 +120,17 @@ def log(args):
             print(f"No RESULTS line found in the compile log for benchmark '{benchmark_name}'.")
             return
 
-        # Parse the RESULTS line
         parts = results_line.split(' : ')
         if len(parts) != 12:
             print(f"Invalid RESULTS line format in the compile log for benchmark '{benchmark_name}'.")
             return
 
-        # Map parts to variables
         _, model, name, comp_n, comp_f, lec_n, lec_f, top_k, prompt_tokens, completion_tokens, world_clock_time, llm_query_time = parts
 
-        # Determine the status
         status = "Success" if int(comp_f) == 0 and int(lec_f) == 0 else "Failure"
 
-        # Get run date from log file modification time
         run_date = datetime.datetime.fromtimestamp(os.path.getmtime(compile_log_file)).strftime('%Y-%m-%d %H:%M:%S')
 
-        # Display the detailed information
         print(f"Benchmark: {benchmark_name}")
         print(f"Run Date: {run_date}")
         print(f"Model: {model}")
@@ -105,7 +145,6 @@ def log(args):
         print(f"- Total Time: {world_clock_time} seconds (LLM Query Time: {llm_query_time} seconds)")
         print(f"- Top_k: {top_k}\n")
         print("Output Files:")
-        # Assuming standard file names
         generated_code = os.path.join(base_output_dir, benchmark_name, f"{name}.v")
         compile_log = compile_log_file
         spec_log = os.path.join(logs_dir, f"{name}_spec_log.md")
@@ -117,7 +156,6 @@ def log(args):
         return
 
     else:
-        # Collect all RESULTS entries
         logs_dir_pattern = os.path.join(base_output_dir, '*', 'logs')
         log_directories = glob.glob(logs_dir_pattern)
 
@@ -126,7 +164,7 @@ def log(args):
             return
 
         results_entries = []
-        results_lines = []  # To store the raw RESULTS lines
+        results_lines = []
 
         for logs_dir in log_directories:
             compile_log_pattern = os.path.join(logs_dir, '*_compile_log.md')
@@ -139,25 +177,20 @@ def log(args):
                     for line in reversed(lines):
                         if line.startswith('RESULTS :'):
                             results_line = line.strip()
-                            results_lines.append(results_line + '\n')  # For saving later
-                            break  # Stop after finding the last RESULTS line
+                            results_lines.append(results_line + '\n')
+                            break
 
                 if results_line:
-                    # Parse the RESULTS line
                     parts = results_line.split(' : ')
                     if len(parts) != 12:
-                        continue  # Skip if RESULTS line format is invalid
+                        continue
 
-                    # Map parts to variables
                     _, model, name, comp_n, comp_f, lec_n, lec_f, top_k, prompt_tokens, completion_tokens, world_clock_time, llm_query_time = parts
 
-                    # Get run date from log file modification time
                     run_date = datetime.datetime.fromtimestamp(os.path.getmtime(log_file))
 
-                    # Determine the status
                     status = 'success' if int(comp_f) == 0 and int(lec_f) == 0 else 'failed'
 
-                    # Create a dictionary for the entry
                     entry = {
                         'benchmark_name': name,
                         'model': model,
@@ -182,19 +215,15 @@ def log(args):
             print("No RESULTS entries found in the compile logs.")
             return
 
-        # Check if any filters are specified
         filters_specified = (args.status != 'all' or args.date_from or args.date_to or args.top_k is not None)
 
         if filters_specified:
-            # Apply filters
             filtered_entries = []
 
             for entry in results_entries:
-                # Filter by status
                 if args.status != 'all' and entry['status'] != args.status:
                     continue
 
-                # Filter by date
                 if args.date_from:
                     try:
                         date_from = datetime.datetime.strptime(args.date_from, '%Y-%m-%d')
@@ -212,7 +241,6 @@ def log(args):
                     if entry['run_date'] >= date_to:
                         continue
 
-                # Filter by top_k
                 if args.top_k is not None:
                     if entry['top_k'] < args.top_k:
                         continue
@@ -223,10 +251,8 @@ def log(args):
                 print("No entries match the specified filters.")
                 return
 
-            # Sort entries by run date
             filtered_entries.sort(key=lambda x: x['run_date'])
 
-            # Display the filtered entries
             if args.status != 'all':
                 print(f"{args.status.capitalize()} Runs", end='')
                 if args.date_from or args.date_to:
@@ -243,7 +269,6 @@ def log(args):
                 run_date_str = entry['run_date'].strftime('%Y-%m-%d %H:%M:%S')
                 print(f"{idx}. {entry['benchmark_name']} - Run on {run_date_str}")
 
-            # Optionally, write the filtered results to an output file
             if args.output_file:
                 with open(args.output_file, 'w') as file:
                     for entry in filtered_entries:
@@ -251,8 +276,6 @@ def log(args):
                 print(f"\nFiltered results have been saved to {args.output_file}")
 
         else:
-            # No filters specified
-            # Proceed with default behavior
             if not results_lines:
                 print("No RESULTS lines found in the compile logs.")
                 return
@@ -424,6 +447,13 @@ def add_log_command(subparsers):
 
     return parser
 
+def add_batch_command(subparsers):
+    parser = subparsers.add_parser("batch", help="Perform batch operations on all .spec.yaml files within a directory", add_help=False)
+    add_shared_args(parser)
+    parser.add_argument('directory_path', type=str, help="Directory containing .spec.yaml files to process")
+
+    return parser
+
 def cli_agent():
 
     parser     = argparse.ArgumentParser(description = "hdlagent: A Hardware Description Language Agent", add_help=False)
@@ -434,6 +464,7 @@ def cli_agent():
     parser_list_models = add_list_models_command(subparsers)
     parser_start       = add_start_command(subparsers)
     parser_log         = add_log_command(subparsers)
+    parser_batch = add_batch_command(subparsers)  # Add the batch parser
 
     args, unknown = parser.parse_known_args()
 
@@ -471,6 +502,11 @@ def cli_agent():
         if args.help:
             parser_list_models.print_help()
         log(args)
+    elif args.command == "batch":
+        if args.help:
+            parser_batch.print_help()
+        else:
+            batch(args)
     else:
         parser.print_help()
 
