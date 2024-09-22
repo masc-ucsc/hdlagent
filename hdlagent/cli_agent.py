@@ -456,7 +456,17 @@ def add_batch_command(subparsers):
 
 def cli_agent():
 
-    parser     = argparse.ArgumentParser(description = "hdlagent: A Hardware Description Language Agent", add_help=False)
+    parser     = argparse.ArgumentParser(description = "hdlagent: A Hardware Description Language Agent",
+                                         epilog="""
+Examples:
+  hdlagent start description.txt
+  hdlagent bench sample/RCA_spec.yaml
+  hdlagent build
+  hdlagent batch sample/
+  hdlagent list-models
+  hdlagent log [--list-runs: List all available runs and their timestamps.| benchmark_name: log details| --status, --date-from, --date-to, --top_k: Filter logs|--output-file: to save collected RESULTS lines]
+""",
+    formatter_class=argparse.RawDescriptionHelpFormatter, add_help=False)
     subparsers = parser.add_subparsers(dest          = "command")
 
     parser_bench       = add_bench_command(subparsers)
