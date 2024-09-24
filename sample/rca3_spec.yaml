@@ -1,0 +1,11 @@
+description: |
+
+  - Module Name: rca3
+
+  Perform a Ripple Carry Addition (RCA) on the three 6-bit inputs (`a`, `b`, `c`).
+  Ensure that the result of this addition should be an 8-bit output named `potato`.
+
+interface: |
+
+  module rca3(input [5:0] a, input [5:0] b, input [5:0] c, output [7:0] potato);
+
