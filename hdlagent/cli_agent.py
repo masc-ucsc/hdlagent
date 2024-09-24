@@ -9,6 +9,8 @@ import os
 import glob
 import datetime
 
+DEFAULT_MODEL = 'gpt-4o'
+
 def batch(args):
     print("Batch command invoked for directory:", args.directory_path)
     directory_path = os.path.abspath(args.directory_path)
@@ -354,12 +356,24 @@ def list_models(args):
                     print(" ", m)
                 print("\n")
 
+    if "sambanova" in args.model or showall:
+        if "SAMBANOVA_API_KEY" in os.environ:
+                models = agent.list_sambanova_models()
+                if len(models):
+                    all_models += models
+                    print("SambaNova models:")
+                    for m in models:
+                            print(" ", m)
+                    print("\n")
+        else:
+            print("SambaNova unavailable unless SAMBANOVA_API_KEY is set")    
+
     return all_models
 
 def add_shared_args(model):
 
     model.add_argument('--config',        type=str,   action="store",       help='Path to a configuration YAML file')
-    model.add_argument('--llm',           type=str,   action="append",      default=['gpt-4o'], help='LLM model. Use list_models to see models')
+    model.add_argument('--llm',           type=str,   action="store",      default=[DEFAULT_MODEL], help='LLM model. Use list_models to see models')
     model.add_argument('--lang',          type=str,   action="store",       default="Verilog",                choices=['Verilog', 'Chisel', 'PyRTL', 'DSLX'], help='Language for code generation. It can only be "Verilog", "Chisel", "PyRTL", or "DSLX"')
     model.add_argument('--parallel',      action="store_false", help='Parallelize hdlagent runs')
 
@@ -399,10 +413,12 @@ def check_args(args):
         print("ERROR: no model available. Try setting OPENAI/Gemini/OCTOAI tokens")
         exit(5)
 
-    for x in args.llm:
-        if x not in l:
-            print(f"ERROR: model {x} is not in list-models available")
-            exit(3)
+    if isinstance(args.llm, str):
+        args.llm = [args.llm]
+
+    if (args.llm and l) == None:
+        print(f"ERROR: model {args.llm} is not in list-models available")
+        exit(3)
 
 def add_start_command(subparsers):
     parser = subparsers.add_parser("start", help="Start a spec from a simple explanation", add_help=False)
