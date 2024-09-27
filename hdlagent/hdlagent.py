@@ -74,7 +74,7 @@ def load_config(ctx, param, value):
 
 
 @click.command()
-@click.option('--list_models', is_flag=True, default=False, help='List all available models (OpenAI, OctoAI, VertexAI, SambaNova), some may have too short context.')
+@click.option('--list_models', is_flag=True, default=False, help='List all available models (OpenAI, VertexAI, SambaNova), some may have too short context.')
 @click.option('--config', type=click.Path(exists=True), callback=load_config, expose_value=False, is_eager=True, help='Path to a configuration YAML file.')
 
 @click.option('--llm', type=str, multiple=True, default=["gpt-3.5-turbo-0613"], help='Specify one of more LLM models. Use --list_models to list models.')
@@ -127,15 +127,6 @@ def process_args(ctx, list_models:bool, llm, lang:str, parallel:bool, bench:str,
         else:
             print("OpenAI unavailable unless OPENAI_API_KEY is set")
 
-        if "OCTOAI_TOKEN" in os.environ:
-            models = agent.list_octoai_models()
-            if len(models):
-                print("OctoAI models:")
-                for m in models:
-                    print(" ", m)
-                print("\n")
-        else:
-            print("OctoAI unavailable unless OCTOAI_TOKEN is set")
 
         # TODO: It would be nice to have a cleaner API or way to test for access and/or ask to login if VertexAI model is used. Not just a try/except at runtime
         models = agent.list_vertexai_models()

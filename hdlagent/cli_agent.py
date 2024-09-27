@@ -333,19 +333,6 @@ def list_models(args):
         else:
             print("OpenAI unavailable unless OPENAI_API_KEY is set")
 
-    if "octoai" in args.model or showall:
-        if "OCTOAI_TOKEN" in os.environ:
-            models = agent.list_octoai_models()
-            if len(models):
-                all_models += models
-                if not args.silent:
-                    print("OctoAI models:")
-                    for m in models:
-                        print(" ", m)
-                    print("\n")
-        else:
-            print("OctoAI unavailable unless OCTOAI_TOKEN is set")
-
     if "vertex" in args.model or showall:
         models = agent.list_vertexai_models()
         if len(models):
@@ -410,7 +397,7 @@ def check_args(args):
     qargs.silent = False
 
     if len(l) == 0:
-        print("ERROR: no model available. Try setting OPENAI/Gemini/OCTOAI tokens")
+        print("ERROR: no model available. Try setting OPENAI/Gemini/SambaNova tokens")
         exit(5)
 
     if isinstance(args.llm, str):
@@ -445,7 +432,7 @@ def add_build_command(subparsers):
 def add_list_models_command(subparsers):
     parser = subparsers.add_parser("list-models", help="List the existing models available", add_help=False)
     add_shared_args(parser)
-    parser.add_argument("model", nargs="*", help="platform (openai, octoai, vertex)")
+    parser.add_argument("model", nargs="*", help="platform (openai, sambanova, vertex)")
 
     return parser
 

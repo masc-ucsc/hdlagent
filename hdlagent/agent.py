@@ -2,7 +2,6 @@ import importlib
 import openai
 from openai import OpenAI
 import os
-import octoai
 from pathlib import Path
 import re
 import subprocess
@@ -42,17 +41,6 @@ def list_openai_models(warn: bool = True):
             print("Warning: OPENAI_API_KEY not set")
         return []
 
-def list_octoai_models(warn: bool = True):
-    # Experimental list:
-    exp_list = ['smaug-72b-chat', 'mixtral-8x22b', 'meta-llama-3-70b-instruct']
-    if "OCTOAI_TOKEN" in os.environ:
-        # NOTE: Even without internet, it returns a list
-        l = octoai.chat.get_model_list()
-        return l + exp_list
-    else:
-        if warn:
-            print("OCTOAI_TOKEN not set")
-        return []
 
 # XXX - hacky until Vertex adds a list API
 vertexai_models = ["gemini-1.0-pro-002", "gemini-1.0-pro-001", "gemini-1.0-pro", "gemini-1.5-pro-preview-0409"]
@@ -191,10 +179,8 @@ class Agent:
 
         # Name to be specified in chat completion API of target LLM
         self.chat_completion = None
-        if model in list_octoai_models(False):
-            self.chat_completion = self.octoai_chat_completion
-            self.client          = octoai.client.Client()
-        elif model in list_openai_models(False):
+
+        if model in list_openai_models(False):
             self.chat_completion = self.openai_chat_completion
             self.client          = OpenAI()
         elif model in list_sambanova_models():
@@ -218,8 +204,8 @@ class Agent:
                 print("gcloud auth application-default login")
                 exit(-2)
 
-        elif ("OPENAI_API_KEY" not in os.environ) and ("OCTOAI_TOKEN" not in os.environ) and ("PROJECT_ID" not in os.environ):
-            print("Please set either OPENAI_API_KEY or OCTOAI_TOKEN or PROJECT_ID environment variable(s) before continuing, exiting...")
+        elif ("OPENAI_API_KEY" not in os.environ) and ("SAMBANOVA_API_KEY" not in os.environ) and ("PROJECT_ID" not in os.environ):
+            print("Please set either OPENAI_API_KEY or SAMBANOVA_API_KEY or PROJECT_ID environment variable(s) before continuing, exiting...")
             exit()
         if self.chat_completion is None:
             print(f"Error: {model} is an invalid model, please check --list_models for available LLM selection, exiting...")
@@ -633,31 +619,6 @@ class Agent:
         self.completion_tokens += completion.to_dict()['usage_metadata']['candidates_token_count']
         return completion.to_dict()['candidates'][0]['content']['parts'][0]['text']
 
-    def octoai_chat_completion(self, conversation, compile_convo: bool = False):
-        try:
-            if self.temp is None:
-                completion = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=conversation,
-                    max_tokens=2048,
-                    presence_penalty=0,
-                    top_p=0.9,
-                )
-            else:
-                completion = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=conversation,
-                    max_tokens=2048,  # FIXME: automatic by model? 34B can do 16K, 70B only 4K
-                    presence_penalty=0,
-                    temperature=self.temp,
-                    top_p=0.9,
-                )
-            self.prompt_tokens     += completion.dict()['usage']['prompt_tokens']
-            self.completion_tokens += completion.dict()['usage']['completion_tokens']
-            return completion.dict()['choices'][0]['message']['content']
-        except Exception as e:
-            print("octoai model failed: ", e)
-            exit(3)
 
     def openai_chat_completion(self, conversation, compile_convo: bool = False):
         if self.temp is None:
