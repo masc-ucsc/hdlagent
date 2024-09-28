@@ -41,7 +41,6 @@ Here are the available commands:
 - **start** - Start a new spec from a simple explanation
 - **bench** - Run benchmarks using YAML specification files
 - **build** - Build the code from spec files
-- **batch** - Run benchmarks on all YAML files in a directory
 - **list-models** - List available models
 - **log** - Collect and display logs from previous runs
 
@@ -93,21 +92,6 @@ Options:
 
 - `--llm LLM_MODEL`: Specify the LLM model to use
 - Additional options are available; `run hdlagent build --help` for more details.
-### **`batch` Command**
-**Description**: Run benchmarks on all YAML specification files in a directory.
-
-Usage:
-```
-poetry run hdlagent/cli_agent.py batch [options] <directory>
-```
-Example:
-```
-poetry run hdlagent/cli_agent.py batch sample/
-```
-Options:
-
-- `--llm LLM_MODEL`: Specify the LLM model to use
-- Additional options are available; run `hdlagent batch --help` for more details.
 ### **`list-models` Command**
 **Description**: List the existing models available for use.
 
