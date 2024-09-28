@@ -18,14 +18,16 @@ docstring-code-format = true
 [tool.poetry.dependencies]
 python = "^3.11"
 openai = "^1.10.0"
+octoai-sdk = "^0.10.0"
 markdown = "^3.5.2"
 vertexai = "^1.0.0"
 google-cloud-aiplatform = "^1.39.0"
 click = "^8.1.7"
-pyrtl = "^0.11.0"
+pyrtl = "^0.11.2"
 #hdeval = "^0.1.0"
-hdeval = { git = "https://github.com/masc-ucsc/hdeval", branch = "main" }
-#hdeval = { path = "../hdeval", develop = true }
+#hdeval = {path = "../hdeval"}
+hdeval = { path = "../hdeval", develop = true }
+pyyaml = "^6.0.2"
 
 [build-system]
 requires = ["poetry-core"]

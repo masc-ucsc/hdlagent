@@ -8,32 +8,32 @@ from importlib import resources
 import os
 import glob
 import datetime
+from hdeval import HDEvalInterface
+print(f"HDEvalInterface imported from: {HDEvalInterface.__module__}")
+
+				
+																	  
+														 
+
+										  
+																	  
+			  
+
+																										   
+
+					  
+																	  
+			  
 
 DEFAULT_MODEL = 'gpt-4o'
+						  
+											 
+																																																																							   
 
-def batch(args):
-    print("Batch command invoked for directory:", args.directory_path)
-    directory_path = os.path.abspath(args.directory_path)
-
-    if not os.path.exists(directory_path):
-        print(f"Specified directory does not exist: {directory_path}")
-        return
-
-    yaml_files = [f for f in os.listdir(directory_path) if f.endswith('.yaml') or f.endswith('_spec.yaml')]
-
-    if not yaml_files:
-        print("No .spec.yaml files found in the specified directory.")
-        return
-
-    spath = resources.files('resources')
-    my_handler = Handler()
-    my_handler.set_comp_iter(args.comp_limit)
-    my_handler.create_agents(spath=str(spath), llms=args.llm, lang=args.lang, use_spec=True, temperature=None, w_dir=directory_path, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
-
-    for yaml_file in yaml_files:
-        spec_file_path = os.path.join(directory_path, yaml_file)
-        print(f"Processing {spec_file_path}...")
-        my_handler.spec_run(target_spec=spec_file_path, iterations=args.comp_limit)
+								
+																
+												
+																				   
 
 
 def start(args):
@@ -70,13 +70,44 @@ def bench(args):
     my_handler = Handler()
     my_handler.set_comp_iter(args.comp_limit)
     my_handler.create_agents(spath=str(spath), llms=args.llm, lang=args.lang, use_spec=True, temperature= None, w_dir=args.w_dir, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
-    for f in args.bench_list:
-        print(f"BENCHMARKING file... {f}")
-        my_handler.spec_run(target_spec=f, iterations=args.comp_limit)
+							 
+										  
+																	  
 
     if len(args.bench_list) == 0: # Check current directory to build
         files = os.listdir(args.w_dir)
         args.bench_list = [file for file in files if file.endswith("spec.yaml")]
+    for benchmark_spec in args.bench_list:
+        print(f"BENCHMARKING... {benchmark_spec}")
+
+        if benchmark_spec.startswith('hdeval:'):
+            # Handle hdeval benchmarks
+            benchmark_name = benchmark_spec.split(':', 1)[1]
+            print(f"Processing hdeval benchmark: {benchmark_name}")
+
+            hdeval_interface = HDEvalInterface(hdeval_repo_path='/home/farzaneh/hdeval')
+            yaml_files  = hdeval_interface.hdeval_open(benchmark_name)
+
+            if not yaml_files:
+                print(f"No YAML files generated for benchmark '{benchmark_name}'.")
+                continue
+
+            for yaml_file in yaml_files:
+                print(f"Processing YAML file: {yaml_file}")
+                my_handler.spec_run(target_spec=yaml_file, iterations=args.comp_limit)
+        else:
+            # Assume it's a YAML file path
+            benchmark_file = benchmark_spec
+            if not os.path.exists(benchmark_file):
+                print(f"Error: Benchmark file '{benchmark_file}' not found.")
+                continue  # Skip to the next benchmark
+
+            print(f"Processing YAML file: {benchmark_file}")
+            with open(benchmark_file, 'r') as f:
+                benchmark_data = yaml.safe_load(f)
+
+        print(f"Processing YAML file: {benchmark_file}")
+        my_handler.spec_run(target_spec=benchmark_file, iterations=args.comp_limit)
 
 def log(args):
     base_output_dir = os.path.expanduser('~/hdlagent/hdlagent/out')
@@ -333,6 +364,7 @@ def list_models(args):
         else:
             print("OpenAI unavailable unless OPENAI_API_KEY is set")
 
+
     if "vertex" in args.model or showall:
         models = agent.list_vertexai_models()
         if len(models):
@@ -353,7 +385,7 @@ def list_models(args):
                             print(" ", m)
                     print("\n")
         else:
-            print("SambaNova unavailable unless SAMBANOVA_API_KEY is set")    
+            print("SambaNova unavailable unless SAMBANOVA_API_KEY is set")
 
     return all_models
 
