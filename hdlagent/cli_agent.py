@@ -11,30 +11,7 @@ import datetime
 from hdeval import HDEvalInterface
 print(f"HDEvalInterface imported from: {HDEvalInterface.__module__}")
 
-				
-																	  
-														 
-
-										  
-																	  
-			  
-
-																										   
-
-					  
-																	  
-			  
-
 DEFAULT_MODEL = 'gpt-4o'
-						  
-											 
-																																																																							   
-
-								
-																
-												
-																				   
-
 
 def start(args):
     if args.help:
@@ -70,9 +47,6 @@ def bench(args):
     my_handler = Handler()
     my_handler.set_comp_iter(args.comp_limit)
     my_handler.create_agents(spath=str(spath), llms=args.llm, lang=args.lang, use_spec=True, temperature= None, w_dir=args.w_dir, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
-							 
-										  
-																	  
 
     if len(args.bench_list) == 0: # Check current directory to build
         files = os.listdir(args.w_dir)
