@@ -9,7 +9,7 @@ import os
 import glob
 import datetime
 from hdeval import HDEvalInterface
-print(f"HDEvalInterface imported from: {HDEvalInterface.__module__}")
+#print(f"HDEvalInterface imported from: {HDEvalInterface.__module__}")
 
 DEFAULT_MODEL = 'gpt-4o'
 

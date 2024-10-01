@@ -2,7 +2,7 @@
 name = "hdlagent"
 version = "0.1.1"
 description = ""
-authors = ["Mark Zakharov <mzakharo@ucsc.edu>", "Jose Renau <renau@ucsc.edu>"]
+authors = ["Mark Zakharov <mzakharo@ucsc.edu>", "Farzaneh Rabiei <frabieik@ucsc.edu>" , "Jose Renau <renau@ucsc.edu>"]
 readme = "README.md"
 
 include = ["resources/common/common.yaml"]
@@ -26,7 +26,8 @@ click = "^8.1.7"
 pyrtl = "^0.11.2"
 #hdeval = "^0.1.0"
 #hdeval = {path = "../hdeval"}
-hdeval = { path = "../hdeval", develop = true }
+#hdeval = { path = "../hdeval", develop = true }
+hdeval = { git = "https://github.com/masc-ucsc/hdeval.git", branch = "main" }
 pyyaml = "^6.0.2"
 
 [build-system]
