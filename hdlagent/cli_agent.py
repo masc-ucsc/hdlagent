@@ -9,8 +9,11 @@ import os
 import glob
 import datetime
 from hdeval import HDEvalInterface
-#print(f"HDEvalInterface imported from: {HDEvalInterface.__module__}")
+import logging
+#from interface import HDEvalInterface
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 DEFAULT_MODEL = 'gpt-4o'
 
 def start(args):
@@ -59,7 +62,8 @@ def bench(args):
             benchmark_name = benchmark_spec.split(':', 1)[1]
             print(f"Processing hdeval benchmark: {benchmark_name}")
 
-            hdeval_interface = HDEvalInterface(hdeval_repo_path='/home/farzaneh/hdeval')
+           # hdeval_interface = HDEvalInterface(hdeval_repo_path='/home/farzaneh/hdeval')
+            hdeval_interface = HDEvalInterface()
             yaml_files  = hdeval_interface.hdeval_open(benchmark_name)
 
             if not yaml_files:
