@@ -263,7 +263,7 @@ class Handler:
     # Additional Agents may be used to testbench the generated RTL
     #
     # Intended use: user-facing code and test generation
-    def spec_run(self, target_spec: str, iterations: int):
+    def spec_run(self, target_spec: str, iterations: int, w_dir: str = None):
         print(f"Processing spec file: {target_spec}")
         if not os.path.exists(target_spec):
             print(f"Error: {target_spec} not found, exiting...")
@@ -271,10 +271,14 @@ class Handler:
 
         # XXX - find some way to check and warn user that code does not exist yet (necessary?)
         designer = self.get_designer()
+        if w_dir is not None:
+            designer.set_w_dir(w_dir)  # Set the working directory for the designer agent
         compiled = designer.spec_run_loop(designer.read_spec(target_spec), iterations)
 
         if compiled:
             for agent in self.get_testers():
+                if w_dir is not None:
+                    agent.set_w_dir(w_dir)  # Set the working directory for the tester agents
                 agent.tb_loop(agent.read_spec(target_spec))
 
     def sequential_entrypoint(self, spath: str, llms: list, lang: str, json_data: dict = None, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', bench_spec: bool = False, gen_spec: str = None, target_spec: str = None, init_context: list = [], supp_context: bool = False, temperature: float = None, short_context: bool = False):

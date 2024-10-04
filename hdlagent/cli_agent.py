@@ -15,6 +15,8 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 DEFAULT_MODEL = 'gpt-4o'
+#DEFAULT_MODEL = 'llama3-405b'
+#DEFAULT_MODEL = 'gpt-4-1106-preview'
 
 def start(args):
     if args.help:
@@ -80,12 +82,14 @@ def bench(args):
                 print(f"Error: Benchmark file '{benchmark_file}' not found.")
                 continue  # Skip to the next benchmark
 
+            for f in args.file_list:
+                my_handler.spec_run(target_spec=f, iterations=args.comp_limit, w_dir=args.w_dir)
             print(f"Processing YAML file: {benchmark_file}")
-            with open(benchmark_file, 'r') as f:
-                benchmark_data = yaml.safe_load(f)
+            #with open(benchmark_file, 'r') as f:
+            #    benchmark_data = yaml.safe_load(f)
 
         print(f"Processing YAML file: {benchmark_file}")
-        my_handler.spec_run(target_spec=benchmark_file, iterations=args.comp_limit)
+        my_handler.spec_run(target_spec=benchmark_file, iterations=args.comp_limit, w_dir=args.w_dir)
 
 def log(args):
     base_output_dir = os.path.expanduser('~/hdlagent/hdlagent/out')
