@@ -83,13 +83,11 @@ def bench(args):
                 continue  # Skip to the next benchmark
 
             for f in args.file_list:
-                my_handler.spec_run(target_spec=f, iterations=args.comp_limit, w_dir=args.w_dir)
+                my_handler.spec_run(target_spec=f, iterations=args.comp_limit)
             print(f"Processing YAML file: {benchmark_file}")
-            #with open(benchmark_file, 'r') as f:
-            #    benchmark_data = yaml.safe_load(f)
 
         print(f"Processing YAML file: {benchmark_file}")
-        my_handler.spec_run(target_spec=benchmark_file, iterations=args.comp_limit, w_dir=args.w_dir)
+        my_handler.spec_run(target_spec=benchmark_file, iterations=args.comp_limit)
 
 def log(args):
     base_output_dir = os.path.expanduser('~/hdlagent/hdlagent/out')
