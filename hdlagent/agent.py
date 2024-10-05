@@ -238,7 +238,8 @@ class Agent:
         self.prev_test_cases      = -1
 
         # Where the resulting source files and logs will be managed and left
-        self.w_dir       = './'
+        #self.w_dir       = './'
+        self.w_dir = None
         self.spec_log    = "./logs/spec_log.md"
         self.compile_log = "./logs/compile_log.md"
         self.tb_log      = "./logs/tb_log.md"
@@ -417,11 +418,15 @@ class Agent:
     # Intended use: within read_spec()
     def resolve_spec_path(self, target_spec: str, in_directory: bool):
         w_dir = self.get_w_dir()            # auto-set w_dir to spec parent dir when unspecified
-        if w_dir == Path('./').resolve():
+        #if w_dir == Path('./').resolve():
+        if self.w_dir is None:
             w_dir = os.path.dirname(os.path.abspath(target_spec))
-
-        if in_directory:                    # w_dir is parent dir of spec
-            self.set_w_dir(w_dir)
+            if in_directory:
+                self.set_w_dir(w_dir)
+            else:
+                self.set_w_dir(os.path.join(w_dir, self.name), target_spec)
+        #if in_directory:                    # w_dir is parent dir of spec
+        #    self.set_w_dir(w_dir)
         else:                               # w_dir is set to child dir next to spec
             self.set_w_dir(os.path.join(w_dir, self.name), target_spec)
         
