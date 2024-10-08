@@ -381,31 +381,66 @@ class Agent:
     # Intended use: right after the beginning of a new Agent's instantiation
     def set_w_dir(self, path: str, spec_path: str = None):
         # Now create the dir if it does not exist
-        directory = Path(path) / ""
-        if directory:
-            os.makedirs(directory, exist_ok=True)
-        self.w_dir = directory
+        if not isinstance(path, Path):
+            path = Path(path)
+
+        path = path.resolve()
+        print(f"Setting w_dir to: {path}")
+        # Create the directory if it does not exist
+        if path:
+            path.mkdir(parents=True, exist_ok=True)
+        self.w_dir = path
         self.update_paths(spec_path)
+        print(f"After set_w_dir, self.w_dir: {self.w_dir}")
+        #directory = Path(path) / ""
+        #if directory:
+        #    os.makedirs(directory, exist_ok=True)
+        #self.w_dir = directory
+        #self.update_paths(spec_path)
 
     # Helper function to others that may change or set file names and paths.
     # Keeps all file pointers up to date
     #
     # Intended use: inside of 'set_w_dir' or 'set_module_name'
     def update_paths(self, spec_path: str = None):
-        self.compile_log  = os.path.join(self.w_dir, "logs", self.name + "_compile_log.md")
-        self.fail_log     = os.path.join(self.w_dir, "logs", self.name + "_fail.md")
-        self.tb_log       = os.path.join(self.w_dir, "logs", f"{self.name}_{self.model}_tb_log.md")
+        print(f"Updating paths with self.w_dir: {self.w_dir}")
+        logs_dir = self.w_dir / "logs"
+        logs_dir.mkdir(parents=True, exist_ok=True)
+
+        self.compile_log = logs_dir / f"{self.name}_compile_log.md"
+        self.fail_log = logs_dir / f"{self.name}_fail.md"
+        self.tb_log = logs_dir / f"{self.name}_{self.model}_tb_log.md"
+
         if self.spec is not None:
-            self.spec_log = os.path.join(self.w_dir, "logs", self.name + "_spec_log.md")
-            self.spec     = os.path.join(self.w_dir, self.name + "_spec.yaml")
-            if self.name != "" and spec_path is not None:   # XXX - partition spec_path contents into submodules, when nested
-                with open (spec_path, 'r') as path:
+            #self.spec_log = logs_dir / f"{self.name}_spec_log.md"
+            self.spec_log = logs_dir / f"{self.name}_compile_log.md"
+            self.spec = self.w_dir / f"{self.name}_spec.yaml"
+            if self.name != "" and spec_path is not None:
+                with open(spec_path, 'r') as path:
                     contents = path.read()
-                    with open (self.spec, 'w') as file:     # this spec can be used in-place, produces no copy
+                    with open(self.spec, 'w') as file:
                         file.write(contents + "\nin_directory: True")
-        self.code         = os.path.join(self.w_dir, self.name + self.file_ext)
-        self.verilog      = os.path.join(self.w_dir, self.name + ".v")
-        self.tb           = os.path.join(self.w_dir, "tests", f"{self.name}_{self.model}_tb.v")
+
+        self.code = self.w_dir / f"{self.name}{self.file_ext}"
+        self.verilog = self.w_dir / f"{self.name}.v"
+        tests_dir = self.w_dir / "tests"
+        tests_dir.mkdir(parents=True, exist_ok=True)
+        self.tb = tests_dir / f"{self.name}_{self.model}_tb.v"
+
+        # self.compile_log  = os.path.join(self.w_dir, "logs", self.name + "_compile_log.md")
+        # self.fail_log     = os.path.join(self.w_dir, "logs", self.name + "_fail.md")
+        # self.tb_log       = os.path.join(self.w_dir, "logs", f"{self.name}_{self.model}_tb_log.md")
+        # if self.spec is not None:
+        #     self.spec_log = os.path.join(self.w_dir, "logs", self.name + "_spec_log.md")
+        #     self.spec     = os.path.join(self.w_dir, self.name + "_spec.yaml")
+        #     if self.name != "" and spec_path is not None:   # XXX - partition spec_path contents into submodules, when nested
+        #         with open (spec_path, 'r') as path:
+        #             contents = path.read()
+        #             with open (self.spec, 'w') as file:     # this spec can be used in-place, produces no copy
+        #                 file.write(contents + "\nin_directory: True")
+        # self.code         = os.path.join(self.w_dir, self.name + self.file_ext)
+        # self.verilog      = os.path.join(self.w_dir, self.name + ".v")
+        # self.tb           = os.path.join(self.w_dir, "tests", f"{self.name}_{self.model}_tb.v")
 
     # Helper function to check if the spec exists or not
     #
@@ -417,19 +452,17 @@ class Agent:
     #
     # Intended use: within read_spec()
     def resolve_spec_path(self, target_spec: str, in_directory: bool):
-        w_dir = self.get_w_dir()            # auto-set w_dir to spec parent dir when unspecified
-        #if w_dir == Path('./').resolve():
+        print(f"Before resolve_spec_path, self.w_dir: {self.w_dir}")
         if self.w_dir is None:
-            w_dir = os.path.dirname(os.path.abspath(target_spec))
+            w_dir = Path(target_spec).parent.resolve()
             if in_directory:
                 self.set_w_dir(w_dir)
             else:
-                self.set_w_dir(os.path.join(w_dir, self.name), target_spec)
-        #if in_directory:                    # w_dir is parent dir of spec
-        #    self.set_w_dir(w_dir)
-        else:                               # w_dir is set to child dir next to spec
-            #self.set_w_dir(os.path.join(w_dir, self.name), target_spec)
+                self.set_w_dir(w_dir / self.name, spec_path=target_spec)
+        else:
+            # 'w_dir' is already set; do not change it
             pass
+        print(f"After resolve_spec_path, self.w_dir: {self.w_dir}")
         
     # Helper function that extracts and reformats information from spec yaml file
     # to create initial prompt(s) for compilation loop and testbench
@@ -439,14 +472,20 @@ class Agent:
     # Intended use: before a generation/lec loop is started so the prompt can be reformatted and formalized
     def read_spec(self, target_spec: str = None):
         if target_spec is None:
-            target_spec = self.spec
+           target_spec = self.spec
 
         if target_spec is None:
             print("Error: attempting to read spec in a run where it is not employed, exiting...")
             exit()
         with open(target_spec, 'r') as file:
             spec = yaml.safe_load(file)
+        # Prevent w_dir from being overridden if already set
 
+        # Only set self.name if it's not already set
+        if not hasattr(self, 'name') or self.name is None:
+            self.name = os.path.splitext(os.path.basename(target_spec))[0]
+        else:
+            print(f"self.name already set to: {self.name}, not overwriting in read_spec")
         self.resolve_spec_path(target_spec, spec.get('in_directory') is True)
         if 'description' not in spec:
             print(f"Error: valid yaml 'description' key not found in {self.spec} file, exiting...")
@@ -751,12 +790,25 @@ class Agent:
     #
     # Intended use: compile new code response from LLM that was dumped to file
     def test_code_compile(self):
-        my_path = os.path.dirname(os.path.abspath(__file__))
-        script  = self.compile_script + self.code
-        if 'resources' in self.compile_script:
-            script  = my_path + script
-        res     = subprocess.run([script], capture_output=True, shell=True)
-        errors  = self.check_errors(res)
+        my_path = Path(__file__).resolve().parent
+        # Ensure self.compile_script is a Path object
+        if isinstance(self.compile_script, str):
+            self.compile_script = Path(self.compile_script)
+
+        # Combine paths using the '/' operator
+        script = script = self.compile_script
+
+        command = [str(script), str(self.code)]
+
+        # Adjust script if 'resources' is in the compile script path
+        if 'resources' in str(self.compile_script):
+            script = my_path / script
+            command = [str(script), str(self.code)]
+
+        # Run the compile command
+        res = subprocess.run(command, capture_output=True, shell=True)
+
+        errors = self.check_errors(res)
         self.comp_n += 1
         if errors is not None:
             self.comp_f += 1
@@ -911,12 +963,17 @@ class Agent:
     #
     # Intended use: inside of the lec loop
     def code_compilation_loop(self, prompt: str, lec_iteration: int = 0, iterations: int = 1):
+        if not isinstance(self.code, Path):
+            self.code = Path(self.code)
+        
         if lec_iteration == 0:
             current_query = self.get_compile_initial_instruction(prompt)
         else:
             current_query = prompt
         for _ in range(iterations):
-            self.dump_codeblock(self.query_model(self.compile_conversation, current_query, True), self.code)
+            #self.dump_codeblock(self.query_model(self.compile_conversation, current_query, True), self.code)
+            codeblock = self.query_model(self.compile_conversation, current_query, True)
+            self.dump_codeblock(codeblock, self.code)
             compile_out = self.test_code_compile()
             if compile_out is not None:
                 current_query = self.get_compile_iteration_instruction(compile_out)
@@ -929,10 +986,15 @@ class Agent:
     # and dumps the conversation.
     #
     # Intended use: user facing RTL generation
-    def spec_run_loop(self, prompt: str, iterations: int = 1, continued: bool = False):
+    def spec_run_loop(self, prompt: str, iterations: int = 1, continued: bool = False, update: bool = False):
         if not continued:   # Maintain conversation history when iterating over design
             self.reset_conversations()
             self.reset_perf_counters()
+
+        if update:
+            # Re-run LEC without regenerating code
+            failure_reason = self.test_lec()
+            return self.finish_run(failure_reason)
 
         return self.finish_run(self.code_compilation_loop(prompt, 0, iterations)[1])
 
@@ -1065,11 +1127,16 @@ class Agent:
         with open(self.fail_log, "w") as md_file:
             md_file.write("Reason for failure:\n" + reason)
 
-    def dump_codeblock(self, text: str, filepath: str):
-        isolated_code = text.replace('```','')
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        with open(filepath, 'w') as file:
-            file.write(isolated_code)
+    def dump_codeblock(self, codeblock: str, filepath):
+        if not isinstance(filepath, Path):
+            filepath = Path(filepath)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        with filepath.open('w') as f:
+            f.write(codeblock)
+        # isolated_code = text.replace('```','')
+        # os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        # with open(filepath, 'w') as file:
+        #     file.write(isolated_code)
 
     def failure_message(self, conversation):
         msg = f"Failure!\nAfter {self.comp_f} compilations failures and {self.lec_f} testing failures, your desired circuit could not be faithfully generated!\nSee {self.fail_log} for final failure reason."

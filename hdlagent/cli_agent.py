@@ -74,7 +74,7 @@ def bench(args):
 
             for yaml_file in yaml_files:
                 print(f"Processing YAML file: {yaml_file}")
-                my_handler.spec_run(target_spec=yaml_file, iterations=args.comp_limit)
+                my_handler.spec_run(target_spec=yaml_file, iterations=args.comp_limit, w_dir=args.w_dir, skip_completed=args.skip_completed, update=args.update)
         else:
             # Assume it's a YAML file path
             benchmark_file = benchmark_spec

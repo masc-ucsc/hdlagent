@@ -148,7 +148,16 @@ def process_args(ctx, list_models:bool, llm, lang:str, parallel:bool, bench:str,
 
     elif bench is not None:
         spath      = resources.files('resources')
-        json_data  = handler.set_json_bounds(handler.check_json(bench), bench_limit, bench_from)
+        #json_data  = handler.set_json_bounds(handler.check_json(bench), bench_limit, bench_from)
+        # Check if 'bench' is a directory or a single YAML file
+        if os.path.isdir(bench):
+            # Get list of YAML files in the directory
+            yaml_files = [os.path.join(bench, f) for f in os.listdir(bench) if f.endswith('.yaml')]
+        elif os.path.isfile(bench):
+            yaml_files = [bench]
+        else:
+            print(f"Error: Bench path '{bench}' is not a valid file or directory.")
+            exit()
 
         if skip_completed and update:
             print("Error: cannot invoke --skip_completed and --update at the same time, exiting...")
@@ -167,7 +176,7 @@ def process_args(ctx, list_models:bool, llm, lang:str, parallel:bool, bench:str,
             my_handler.set_lec_iter(lec_limit)
             my_handler.set_lec_feedback_limit(lec_limit_feedback)
             my_handler.set_k(top_k)
-            my_handler.sequential_entrypoint(spath, llm, lang, json_data, skip_completed, skip_successful, update, w_dir, bench_spec, gen_spec, target_spec, init_context, supp_context, temperature, short_context)
+            my_handler.sequential_entrypoint(spath, llm, lang, yaml_files, skip_completed, skip_successful, update, w_dir, bench_spec, gen_spec, target_spec, init_context, supp_context, temperature, short_context)
     elif (gen_spec is not None) or (target_spec is not None):
             spath      = resources.files('resources')
             my_handler = Handler()

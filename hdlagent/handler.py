@@ -1,6 +1,8 @@
 from agent import Agent, Role
 import json
 import os
+from pathlib import Path
+
 
 def check_json(json_path: str):
     data = None
@@ -136,40 +138,87 @@ class Handler:
     # Reads the compile log file of the entry, returns the relevant results in a dictionary
     #
     # Intended use: for checking the status of previous runs
-    def get_results(self, entry, base_w_dir: str):
-        log_path = os.path.join(base_w_dir, entry['name'], "logs", entry['name'] + "_compile_log.md")
-        if os.path.exists(log_path):
-            with open(log_path, 'r') as file:
-                for last_line in file:
-                    pass
+    # def get_results(self, entry, base_w_dir: str):
+    #     log_path = os.path.join(base_w_dir, entry['name'], "logs", entry['name'] + "_compile_log.md")
+    #     if os.path.exists(log_path):
+    #         with open(log_path, 'r') as file:
+    #             for last_line in file:
+    #                 pass
 
-            parts = last_line.strip().split(':')
-            _, _, _, comp_n, comp_f, lec_n, lec_f, top_k, _, _, _, _ = [int(part.strip()) if part.strip().isdigit() else part for part in parts]
-            res_dict = {}
-            res_dict['comp_n'] = comp_n
-            res_dict['comp_f'] = comp_f
-            res_dict['lec_n']  = lec_n
-            res_dict['lec_f']  = lec_f
-            res_dict['top_k']  = top_k
-            return res_dict
-        return None
+    #         parts = last_line.strip().split(':')
+    #         _, _, _, comp_n, comp_f, lec_n, lec_f, top_k, _, _, _, _ = [int(part.strip()) if part.strip().isdigit() else part for part in parts]
+    #         res_dict = {}
+    #         res_dict['comp_n'] = comp_n
+    #         res_dict['comp_f'] = comp_f
+    #         res_dict['lec_n']  = lec_n
+    #         res_dict['lec_f']  = lec_f
+    #         res_dict['top_k']  = top_k
+    #         return res_dict
+    #     return None
 
-    # If the test was already completed in the w_dir, it is skipped instead of being re-done
-    # This is proven by the existence of a log dump and all top_k being completed
-    #
-    # Intended use: Save tokens while benchmarking
-    def check_completion(self, entry, base_w_dir: str):
-        results = self.get_results(entry, base_w_dir)
-        if results is not None:
-            return results['top_k'] == self.top_k
-        return False
+    # # If the test was already completed in the w_dir, it is skipped instead of being re-done
+    # # This is proven by the existence of a log dump and all top_k being completed
+    # #
+    # # Intended use: Save tokens while benchmarking
+    # def check_completion(self, entry, base_w_dir: str):
+    #     results = self.get_results(entry, base_w_dir)
+    #     if results is not None:
+    #         return results['top_k'] == self.top_k
+    #     return False
 
     # If the test has already succeeded in the w_dir, it is skipped instead of being re-done
     # This is proven by reading the compile log and checking for a difference between lec_n and lec_f
     #
     # Intended use: Save tokens while benchmarking
-    def check_success(self, entry, base_w_dir: str):
-        results = self.get_results(entry, base_w_dir)
+    # def check_success(self, entry, base_w_dir: str):
+    #     results = self.get_results(entry, base_w_dir)
+    #     if results is not None:
+    #         return results['lec_f'] < results['lec_n']
+    #     return False
+
+    def get_results(self, spec_name: str, base_w_dir: str):
+        #spec_name = os.path.splitext(os.path.basename(yaml_file))[0]
+        #log_path = os.path.join(base_w_dir, spec_name, "logs", f"{spec_name}_compile_log.md")
+        if not isinstance(base_w_dir, Path):
+            base_w_dir = Path(base_w_dir)
+        base_w_dir = base_w_dir.resolve()
+
+        log_path = base_w_dir / "logs" / f"{spec_name}_compile_log.md"
+        print(f"Checking for log at: {log_path} (Resolved: {log_path.resolve()})")
+        # Add debug statements
+        print(f"Does log_path exist? {log_path.exists()}")
+        print(f"Listing contents of {log_path.parent}:")
+        for item in log_path.parent.iterdir():
+            print(f" - {item} (exists: {item.exists()})")
+        if log_path.exists():
+            print("Log file found at:", log_path.resolve())
+            with open(log_path, 'r') as file:
+                lines = file.readlines()
+                if lines:
+                    last_line = lines[-1]
+                    if "RESULTS" in last_line:
+                        parts = [part.strip() for part in last_line.strip().split(':')]
+                        res_dict = {
+                            'comp_n': int(parts[3]),
+                            'comp_f': int(parts[4]),
+                            'lec_n': int(parts[5]),
+                            'lec_f': int(parts[6]),
+                            'top_k': int(parts[7]),
+                        }
+                        return res_dict
+        else:
+            print(f"Log file not found at {log_path}")
+        return None
+
+    def check_completion(self, spec_name: str, benchmark_w_dir: str):
+        results = self.get_results(spec_name, benchmark_w_dir)
+        if results is not None:
+            print(f"Results top_k: {results['top_k']}, Handler top_k: {self.top_k}")
+            return results['top_k'] >= self.top_k
+        return False
+
+    def check_success(self, spec_name: str, benchmark_w_dir: str):
+        results = self.get_results(spec_name, benchmark_w_dir)
         if results is not None:
             return results['lec_f'] < results['lec_n']
         return False
@@ -227,6 +276,38 @@ class Handler:
             designer.incr_k()
 
 
+    def single_yaml_run(self, yaml_file: str, base_w_dir: str, skip_completed: bool, update: bool):
+        spec_name = os.path.splitext(os.path.basename(yaml_file))[0]
+
+        for agent in self.agents:
+            agent.reset_k()
+            agent.set_w_dir(os.path.join(base_w_dir, agent.name, spec_name))
+
+        designer = self.get_designer()
+        testers  = self.get_testers()
+
+        designer.read_spec(yaml_file)
+        prompt = designer.spec_content
+
+        pass_k = self.top_k
+        if skip_completed:
+            results = self.get_results(yaml_file, base_w_dir)
+            if results is not None:
+                pass_k -= results['top_k']
+                designer.set_k(results['top_k'] + 1)
+
+        for _ in range(pass_k):
+            successful   = self.check_success(yaml_file, base_w_dir)
+            completed    = self.check_completion(yaml_file, base_w_dir)
+            update_entry = completed and (not successful) and update
+
+            if designer.spec_run_loop(prompt, self.comp_iter):
+                if testers:
+                    for agent in testers:
+                        agent.tb_loop(prompt)
+                break
+            designer.incr_k()
+
     # Wrapper around single_json_run(), keeps track of individual problems' statuses.
     # Checking if they were passed to not repeat them.
     #
@@ -263,32 +344,97 @@ class Handler:
     # Additional Agents may be used to testbench the generated RTL
     #
     # Intended use: user-facing code and test generation
-    def spec_run(self, target_spec: str, iterations: int, w_dir: str = None):
+    def spec_run(self, target_spec: str, iterations: int, w_dir: str = None,
+             skip_completed: bool = False, update: bool = False, skip_successful: bool = False):
         print(f"Processing spec file: {target_spec}")
         if not os.path.exists(target_spec):
             print(f"Error: {target_spec} not found, exiting...")
             exit()
 
-        # XXX - find some way to check and warn user that code does not exist yet (necessary?)
         designer = self.get_designer()
-        if w_dir is not None:
-            designer.set_w_dir(w_dir)  # Set the working directory for the designer agent
-        compiled = designer.spec_run_loop(designer.read_spec(target_spec), iterations)
+        spec_name = os.path.splitext(os.path.basename(target_spec))[0]
+        print(f"Spec name: {spec_name}")
+        # Read the spec first
+        designer.read_spec(target_spec)
+        # Then set designer.name to spec_name
+        designer.name = spec_name
+        print(f"After read_spec, designer.name: {designer.name}")
 
+        if w_dir is not None:
+            base_w_dir = Path(w_dir)
+        else:
+            base_w_dir = Path('.')
+        base_w_dir = base_w_dir.resolve()
+
+        benchmark_w_dir = base_w_dir / spec_name
+        benchmark_w_dir = benchmark_w_dir.resolve()
+        designer.set_w_dir(benchmark_w_dir)
+        print(f"Designer w_dir set to: {designer.w_dir}")
+        # Check for completion and success
+        successful = self.check_success(designer.name, benchmark_w_dir)
+        completed = self.check_completion(designer.name, benchmark_w_dir)
+        run = True
+        if skip_completed and completed:
+            run = False
+            print(f"Skipping '{spec_name}' as it is already completed.")
+        elif skip_successful and successful:
+            run = False
+            print(f"Skipping '{spec_name}' as it is already successful.")
+    
+        print(f"Successful: {successful}")
+        print(f"Completed: {completed}")
+        print(f"Run: {run}")
+
+
+        if not run:
+            return
+
+        update_entry = completed and (not successful) and update
+        if skip_completed and completed:
+            print(f"Skipping '{spec_name}' as it is already completed.")
+            return
+        # if w_dir is not None:
+        #    designer.set_w_dir(w_dir)  # Set the working directory for the designer agent
+        print(f"Before spec_run_loop, designer.name: {designer.name}")
+        compiled = designer.spec_run_loop(designer.read_spec(target_spec), iterations, update=update_entry)
+        print(f"After spec_run_loop, designer.name: {designer.name}")
         if compiled:
             for agent in self.get_testers():
-                if w_dir is not None:
-                    agent.set_w_dir(w_dir)  # Set the working directory for the tester agents
+                #if w_dir is not None:
+                #agent.set_w_dir(w_dir)  # Set the working directory for the tester agents
+                agent.set_w_dir(w_dir)
                 agent.tb_loop(agent.read_spec(target_spec))
 
-    def sequential_entrypoint(self, spath: str, llms: list, lang: str, json_data: dict = None, skip_completed: bool = False, skip_successful: bool = False, update: bool = False, w_dir: str = './', bench_spec: bool = False, gen_spec: str = None, target_spec: str = None, init_context: list = [], supp_context: bool = False, temperature: float = None, short_context: bool = False):
+    def sequential_entrypoint(self, spath: str, llms: list, lang: str, yaml_files: list = None,
+                          skip_completed: bool = False, skip_successful: bool = False, update: bool = False,
+                          w_dir: str = './', bench_spec: bool = False, gen_spec: str = None, target_spec: str = None,
+                          init_context: list = [], supp_context: bool = False, temperature: float = None,
+                          short_context: bool = False):
         use_spec = bench_spec or (gen_spec is not None) or (target_spec is not None)
         self.create_agents(spath, llms, lang, init_context, supp_context, use_spec, w_dir, temperature, short_context)
 
-        if json_data is not None:
-            self.json_run(json_data, skip_completed, skip_successful, update)
+        if yaml_files is not None:
+            self.yaml_run(yaml_files, skip_completed, skip_successful, update)
         else:
             if gen_spec is not None:
                 self.generate_spec_from_ref(gen_spec)
             if target_spec is not None:
-                self.spec_run(target_spec, self.comp_iter)
+                self.spec_run(target_spec, self.comp_iter, w_dir=w_dir, skip_completed=skip_completed,
+                      update=update, skip_successful=skip_successful)
+
+        #if json_data is not None:
+        #    self.json_run(json_data, skip_completed, skip_successful, update)
+        #else:
+        #    if gen_spec is not None:
+        #        self.generate_spec_from_ref(gen_spec)
+        #    if target_spec is not None:
+        #        self.spec_run(target_spec, self.comp_iter)
+
+    def yaml_run(self, yaml_files: list, skip_completed: bool = False, skip_successful: bool = False, update: bool = False):
+        base_w_dir = self.get_designer().w_dir
+        for yaml_file in yaml_files:
+            successful = self.check_success(yaml_file, base_w_dir)
+            completed  = self.check_completion(yaml_file, base_w_dir)
+            run        = not ((skip_completed and completed) or (skip_successful and successful))
+            if run:
+                self.single_yaml_run(yaml_file, base_w_dir, skip_completed, update)
