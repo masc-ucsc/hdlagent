@@ -220,6 +220,7 @@ class Handler:
     def check_success(self, spec_name: str, benchmark_w_dir: str):
         results = self.get_results(spec_name, benchmark_w_dir)
         if results is not None:
+            print(f"*******results['lec_f']: {results['lec_f']}, results['lec_n']: {results['lec_n']}")
             return results['lec_f'] < results['lec_n']
         return False
 
@@ -345,32 +346,31 @@ class Handler:
     #
     # Intended use: user-facing code and test generation
     def spec_run(self, target_spec: str, iterations: int, w_dir: str = None,
-             skip_completed: bool = False, update: bool = False, skip_successful: bool = False):
+                 skip_completed: bool = True, update: bool = False, skip_successful: bool = True):
+        print(f"spec_run: skip_completed={skip_completed}, skip_successful={skip_successful}")
         print(f"Processing spec file: {target_spec}")
         if not os.path.exists(target_spec):
             print(f"Error: {target_spec} not found, exiting...")
             exit()
-
+    
         designer = self.get_designer()
         spec_name = os.path.splitext(os.path.basename(target_spec))[0]
         print(f"Spec name: {spec_name}")
-        # Read the spec first
+    
         designer.read_spec(target_spec)
-        # Then set designer.name to spec_name
         designer.name = spec_name
         print(f"After read_spec, designer.name: {designer.name}")
-
+    
         if w_dir is not None:
             base_w_dir = Path(w_dir)
         else:
             base_w_dir = Path('.')
         base_w_dir = base_w_dir.resolve()
-
+    
         benchmark_w_dir = base_w_dir / spec_name
         benchmark_w_dir = benchmark_w_dir.resolve()
         designer.set_w_dir(benchmark_w_dir)
         print(f"Designer w_dir set to: {designer.w_dir}")
-        # Check for completion and success
         successful = self.check_success(designer.name, benchmark_w_dir)
         completed = self.check_completion(designer.name, benchmark_w_dir)
         run = True
@@ -384,32 +384,23 @@ class Handler:
         print(f"Successful: {successful}")
         print(f"Completed: {completed}")
         print(f"Run: {run}")
-
-
+    
         if not run:
             return
-
-        update_entry = completed and (not successful) and update
-        if skip_completed and completed:
-            print(f"Skipping '{spec_name}' as it is already completed.")
-            return
-        # if w_dir is not None:
-        #    designer.set_w_dir(w_dir)  # Set the working directory for the designer agent
         print(f"Before spec_run_loop, designer.name: {designer.name}")
-        compiled = designer.spec_run_loop(designer.read_spec(target_spec), iterations, update=update_entry)
+        compiled = designer.spec_run_loop(designer.read_spec(target_spec), iterations)
         print(f"After spec_run_loop, designer.name: {designer.name}")
         if compiled:
             for agent in self.get_testers():
-                #if w_dir is not None:
-                #agent.set_w_dir(w_dir)  # Set the working directory for the tester agents
                 agent.set_w_dir(w_dir)
                 agent.tb_loop(agent.read_spec(target_spec))
-
+    
     def sequential_entrypoint(self, spath: str, llms: list, lang: str, yaml_files: list = None,
-                          skip_completed: bool = False, skip_successful: bool = False, update: bool = False,
+                          skip_completed: bool = True, skip_successful: bool = True, update: bool = False,
                           w_dir: str = './', bench_spec: bool = False, gen_spec: str = None, target_spec: str = None,
                           init_context: list = [], supp_context: bool = False, temperature: float = None,
                           short_context: bool = False):
+        print(f"%%%%%: skip_completed={skip_completed}, skip_successful={skip_successful}")
         use_spec = bench_spec or (gen_spec is not None) or (target_spec is not None)
         self.create_agents(spath, llms, lang, init_context, supp_context, use_spec, w_dir, temperature, short_context)
 

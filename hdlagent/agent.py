@@ -314,8 +314,11 @@ class Agent:
     #
     # Intended use: at the beginning of a new initial prompt submission
     def set_module_name(self, name: str):
-        self.name = name
-        self.update_paths()
+        print(f"set_module_name (before): self.name = {self.name}")
+        self.module_name = name
+        print(f"set_module_name: self.module_name = {self.module_name}")
+        # self.name = name
+        # self.update_paths()
 
     # The current run will assume this is the amount of pipeline stages
     # desired for the prompted RTL design, this will modify the LEC
@@ -335,6 +338,7 @@ class Agent:
     # Intended use: at the beginning of a new initial prompt submission
     def set_interface(self, interface: str):
         # Remove unnecessary reg/wire type
+        print(f"set_interface (before): self.name = {self.name}")
         interface = interface.replace(' reg ', ' ').replace(' reg[', ' [')
         interface = interface.replace(' wire ', ' ').replace(' wire[', ' [')
         # Remove (legal) whitespaces from between brackets
@@ -342,6 +346,7 @@ class Agent:
         interface = interface.replace('\n', ' ')
         interface = interface.replace('endmodule', ' ')
         self.set_module_name(get_name_from_interface(interface))
+        print(f"set_interface: self.module_name = {self.module_name}")
         self.io = []
         # regex search for substring between '(' and ');'
         pattern = r"\((.*?)\);"
@@ -367,6 +372,7 @@ class Agent:
         self.interface += ','.join([' '.join(inner_list) for inner_list in self.io])
         self.interface += ");"
         self.interface = self.interface.replace('  ', ' ')
+        print(f"set_interface (after): self.name = {self.name}")
 
     # Resolves and returns w_dir as absolute path
     #
@@ -403,7 +409,7 @@ class Agent:
     #
     # Intended use: inside of 'set_w_dir' or 'set_module_name'
     def update_paths(self, spec_path: str = None):
-        print(f"Updating paths with self.w_dir: {self.w_dir}")
+        print(f"update_paths: self.name = {self.name}")
         logs_dir = self.w_dir / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
 
@@ -472,21 +478,22 @@ class Agent:
     # Intended use: before a generation/lec loop is started so the prompt can be reformatted and formalized
     def read_spec(self, target_spec: str = None):
         if target_spec is None:
-           target_spec = self.spec
-
+            target_spec = self.spec
+    
         if target_spec is None:
             print("Error: attempting to read spec in a run where it is not employed, exiting...")
             exit()
         with open(target_spec, 'r') as file:
             spec = yaml.safe_load(file)
-        # Prevent w_dir from being overridden if already set
-
+    
         # Only set self.name if it's not already set
-        if not hasattr(self, 'name') or self.name is None:
+        if not hasattr(self, 'name') or self.name == "":
             self.name = os.path.splitext(os.path.basename(target_spec))[0]
         else:
             print(f"self.name already set to: {self.name}, not overwriting in read_spec")
+    
         self.resolve_spec_path(target_spec, spec.get('in_directory') is True)
+    
         if 'description' not in spec:
             print(f"Error: valid yaml 'description' key not found in {self.spec} file, exiting...")
             exit()
@@ -494,6 +501,7 @@ class Agent:
             print(f"Error: valid yaml 'interface' key not found in {self.spec} file, exiting...")
             exit()
         self.set_interface(spec['interface'])
+        print(f"read_spec: self.name = {self.name}")
         return spec['description']
 
     # Registers the file path of the golden Verilog to be used for LEC
@@ -987,6 +995,7 @@ class Agent:
     #
     # Intended use: user facing RTL generation
     def spec_run_loop(self, prompt: str, iterations: int = 1, continued: bool = False, update: bool = False):
+        print(f"spec_run_loop (start): self.name = {self.name}")
         if not continued:   # Maintain conversation history when iterating over design
             self.reset_conversations()
             self.reset_perf_counters()
@@ -995,7 +1004,7 @@ class Agent:
             # Re-run LEC without regenerating code
             failure_reason = self.test_lec()
             return self.finish_run(failure_reason)
-
+        print(f"spec_run_loop (end): self.name = {self.name}")
         return self.finish_run(self.code_compilation_loop(prompt, 0, iterations)[1])
 
     # Rolls back the conversation to the LLM codeblock response which failed the least amount of
@@ -1100,6 +1109,7 @@ class Agent:
 
     def dump_compile_conversation(self):
         start_idx  = 0
+        print(f"Dumping compile conversation. self.name: {self.name}, self.compile_log: {self.compile_log}")
         md_content = "# Compile Conversation\n\n"
         if self.initial_contexts:
             md_content += "**System:** Initial contexts were appended to this conversation\n\n"
