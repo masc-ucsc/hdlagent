@@ -314,9 +314,9 @@ class Agent:
     #
     # Intended use: at the beginning of a new initial prompt submission
     def set_module_name(self, name: str):
-        print(f"set_module_name (before): self.name = {self.name}")
+        # print(f"set_module_name (before): self.name = {self.name}")
         self.module_name = name
-        print(f"set_module_name: self.module_name = {self.module_name}")
+        # print(f"set_module_name: self.module_name = {self.module_name}")
         # self.name = name
         # self.update_paths()
 
@@ -338,7 +338,7 @@ class Agent:
     # Intended use: at the beginning of a new initial prompt submission
     def set_interface(self, interface: str):
         # Remove unnecessary reg/wire type
-        print(f"set_interface (before): self.name = {self.name}")
+        # print(f"set_interface (before): self.name = {self.name}")
         interface = interface.replace(' reg ', ' ').replace(' reg[', ' [')
         interface = interface.replace(' wire ', ' ').replace(' wire[', ' [')
         # Remove (legal) whitespaces from between brackets
@@ -346,7 +346,7 @@ class Agent:
         interface = interface.replace('\n', ' ')
         interface = interface.replace('endmodule', ' ')
         self.set_module_name(get_name_from_interface(interface))
-        print(f"set_interface: self.module_name = {self.module_name}")
+        # print(f"set_interface: self.module_name = {self.module_name}")
         self.io = []
         # regex search for substring between '(' and ');'
         pattern = r"\((.*?)\);"
@@ -372,7 +372,7 @@ class Agent:
         self.interface += ','.join([' '.join(inner_list) for inner_list in self.io])
         self.interface += ");"
         self.interface = self.interface.replace('  ', ' ')
-        print(f"set_interface (after): self.name = {self.name}")
+        # print(f"set_interface (after): self.name = {self.name}")
 
     # Resolves and returns w_dir as absolute path
     #
@@ -391,13 +391,13 @@ class Agent:
             path = Path(path)
 
         path = path.resolve()
-        print(f"Setting w_dir to: {path}")
+        # print(f"Setting w_dir to: {path}")
         # Create the directory if it does not exist
         if path:
             path.mkdir(parents=True, exist_ok=True)
         self.w_dir = path
         self.update_paths(spec_path)
-        print(f"After set_w_dir, self.w_dir: {self.w_dir}")
+        # print(f"After set_w_dir, self.w_dir: {self.w_dir}")
         #directory = Path(path) / ""
         #if directory:
         #    os.makedirs(directory, exist_ok=True)
@@ -409,7 +409,7 @@ class Agent:
     #
     # Intended use: inside of 'set_w_dir' or 'set_module_name'
     def update_paths(self, spec_path: str = None):
-        print(f"update_paths: self.name = {self.name}")
+        # print(f"update_paths: self.name = {self.name}")
         logs_dir = self.w_dir / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
 
@@ -458,7 +458,7 @@ class Agent:
     #
     # Intended use: within read_spec()
     def resolve_spec_path(self, target_spec: str, in_directory: bool):
-        print(f"Before resolve_spec_path, self.w_dir: {self.w_dir}")
+        # print(f"Before resolve_spec_path, self.w_dir: {self.w_dir}")
         if self.w_dir is None:
             w_dir = Path(target_spec).parent.resolve()
             if in_directory:
@@ -468,7 +468,7 @@ class Agent:
         else:
             # 'w_dir' is already set; do not change it
             pass
-        print(f"After resolve_spec_path, self.w_dir: {self.w_dir}")
+        # print(f"After resolve_spec_path, self.w_dir: {self.w_dir}")
         
     # Helper function that extracts and reformats information from spec yaml file
     # to create initial prompt(s) for compilation loop and testbench
@@ -501,7 +501,7 @@ class Agent:
             print(f"Error: valid yaml 'interface' key not found in {self.spec} file, exiting...")
             exit()
         self.set_interface(spec['interface'])
-        print(f"read_spec: self.name = {self.name}")
+        # print(f"read_spec: self.name = {self.name}")
         return spec['description']
 
     # Registers the file path of the golden Verilog to be used for LEC
@@ -832,6 +832,7 @@ class Agent:
     # Intended use: for lec check after RTL has successfully compiled into Verilog
     def test_lec(self, gold: str = None, gate: str = None, lec_feedback_limit: int = -1):
         # ./*_lec <golden_verilog> <llm_verilog>
+        print(f"%%%%%%%%%%[DEBUG] test_lec called with gold: {gold}, gate: {gate}, lec_feedback_limit: {lec_feedback_limit}")
         if gold is None:
             if self.gold is None:
                 print("Error: attemping LEC without setting gold path, exiting...")
@@ -842,6 +843,7 @@ class Agent:
         script      = self.lec_script + " " + gold + " " + gate
         res         = subprocess.run([script], capture_output=True, shell=True)
         res_string  = (str(res.stdout))[2:-1].replace("\\n","\n")
+        print(f"[DEBUG] Executing LEC script: {script}")
         self.lec_n += 1
         if "SUCCESS" not in res_string:
             self.lec_f += 1
@@ -995,7 +997,7 @@ class Agent:
     #
     # Intended use: user facing RTL generation
     def spec_run_loop(self, prompt: str, iterations: int = 1, continued: bool = False, update: bool = False):
-        print(f"spec_run_loop (start): self.name = {self.name}")
+        # print(f"spec_run_loop (start): self.name = {self.name}")
         if not continued:   # Maintain conversation history when iterating over design
             self.reset_conversations()
             self.reset_perf_counters()
@@ -1004,7 +1006,7 @@ class Agent:
             # Re-run LEC without regenerating code
             failure_reason = self.test_lec()
             return self.finish_run(failure_reason)
-        print(f"spec_run_loop (end): self.name = {self.name}")
+        # print(f"spec_run_loop (end): self.name = {self.name}")
         return self.finish_run(self.code_compilation_loop(prompt, 0, iterations)[1])
 
     # Rolls back the conversation to the LLM codeblock response which failed the least amount of
@@ -1036,6 +1038,7 @@ class Agent:
     #
     # Intended use: benchmarking effectiveness of the agent
     def lec_loop(self, prompt: str, lec_iterations: int = 1, lec_feedback_limit: int = -1, compile_iterations: int = 1, update: bool = False, testbench_iterations: int = 0):
+        print(f"[DEBUG] ***********lec_loop called with prompt: {prompt}, lec_iter: {lec_iter}, lec_feedback_limit: {lec_feedback_limit}")
         self.reset_conversations()
         self.reset_perf_counters()
         self.prev_test_cases   = float('inf')
@@ -1109,7 +1112,7 @@ class Agent:
 
     def dump_compile_conversation(self):
         start_idx  = 0
-        print(f"Dumping compile conversation. self.name: {self.name}, self.compile_log: {self.compile_log}")
+        # print(f"Dumping compile conversation. self.name: {self.name}, self.compile_log: {self.compile_log}")
         md_content = "# Compile Conversation\n\n"
         if self.initial_contexts:
             md_content += "**System:** Initial contexts were appended to this conversation\n\n"

@@ -29,6 +29,7 @@ pyrtl = "^0.11.2"
 #hdeval = { path = "../hdeval", develop = true }
 hdeval = { git = "https://github.com/masc-ucsc/hdeval.git", branch = "main" }
 pyyaml = "^6.0.2"
+ruamel-yaml = "^0.18.6"
 
 [build-system]
 requires = ["poetry-core"]

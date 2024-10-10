@@ -2,6 +2,7 @@ from agent import Agent, Role
 import json
 import os
 from pathlib import Path
+import yaml 
 
 
 def check_json(json_path: str):
@@ -184,14 +185,14 @@ class Handler:
         base_w_dir = base_w_dir.resolve()
 
         log_path = base_w_dir / "logs" / f"{spec_name}_compile_log.md"
-        print(f"Checking for log at: {log_path} (Resolved: {log_path.resolve()})")
+        #print(f"Checking for log at: {log_path} (Resolved: {log_path.resolve()})")
         # Add debug statements
-        print(f"Does log_path exist? {log_path.exists()}")
-        print(f"Listing contents of {log_path.parent}:")
-        for item in log_path.parent.iterdir():
-            print(f" - {item} (exists: {item.exists()})")
+        #print(f"Does log_path exist? {log_path.exists()}")
+        #print(f"Listing contents of {log_path.parent}:")
+        #for item in log_path.parent.iterdir():
+        #    print(f" - {item} (exists: {item.exists()})")
         if log_path.exists():
-            print("Log file found at:", log_path.resolve())
+            #print("Log file found at:", log_path.resolve())
             with open(log_path, 'r') as file:
                 lines = file.readlines()
                 if lines:
@@ -207,20 +208,21 @@ class Handler:
                         }
                         return res_dict
         else:
-            print(f"Log file not found at {log_path}")
+            # print(f"Log file not found at {log_path}")
+            pass
         return None
 
     def check_completion(self, spec_name: str, benchmark_w_dir: str):
         results = self.get_results(spec_name, benchmark_w_dir)
         if results is not None:
-            print(f"Results top_k: {results['top_k']}, Handler top_k: {self.top_k}")
+            #print(f"Results top_k: {results['top_k']}, Handler top_k: {self.top_k}")
             return results['top_k'] >= self.top_k
         return False
 
     def check_success(self, spec_name: str, benchmark_w_dir: str):
         results = self.get_results(spec_name, benchmark_w_dir)
         if results is not None:
-            print(f"*******results['lec_f']: {results['lec_f']}, results['lec_n']: {results['lec_n']}")
+            #print(f"*******results['lec_f']: {results['lec_f']}, results['lec_n']: {results['lec_n']}")
             return results['lec_f'] < results['lec_n']
         return False
 
@@ -347,19 +349,19 @@ class Handler:
     # Intended use: user-facing code and test generation
     def spec_run(self, target_spec: str, iterations: int, w_dir: str = None,
                  skip_completed: bool = True, update: bool = False, skip_successful: bool = True):
-        print(f"spec_run: skip_completed={skip_completed}, skip_successful={skip_successful}")
-        print(f"Processing spec file: {target_spec}")
+        #print(f"spec_run: skip_completed={skip_completed}, skip_successful={skip_successful}")
+        #print(f"Processing spec file: {target_spec}")
         if not os.path.exists(target_spec):
             print(f"Error: {target_spec} not found, exiting...")
             exit()
     
         designer = self.get_designer()
         spec_name = os.path.splitext(os.path.basename(target_spec))[0]
-        print(f"Spec name: {spec_name}")
+        # print(f"Spec name: {spec_name}")
     
         designer.read_spec(target_spec)
         designer.name = spec_name
-        print(f"After read_spec, designer.name: {designer.name}")
+        #print(f"After read_spec, designer.name: {designer.name}")
     
         if w_dir is not None:
             base_w_dir = Path(w_dir)
@@ -370,16 +372,16 @@ class Handler:
         benchmark_w_dir = base_w_dir / spec_name
         benchmark_w_dir = benchmark_w_dir.resolve()
         designer.set_w_dir(benchmark_w_dir)
-        print(f"Designer w_dir set to: {designer.w_dir}")
+        #print(f"Designer w_dir set to: {designer.w_dir}")
         successful = self.check_success(designer.name, benchmark_w_dir)
         completed = self.check_completion(designer.name, benchmark_w_dir)
         run = True
         if skip_completed and completed:
             run = False
-            print(f"Skipping '{spec_name}' as it is already completed.")
+            #print(f"Skipping '{spec_name}' as it is already completed.")
         elif skip_successful and successful:
             run = False
-            print(f"Skipping '{spec_name}' as it is already successful.")
+            #print(f"Skipping '{spec_name}' as it is already successful.")
     
         print(f"Successful: {successful}")
         print(f"Completed: {completed}")
@@ -387,9 +389,9 @@ class Handler:
     
         if not run:
             return
-        print(f"Before spec_run_loop, designer.name: {designer.name}")
+        #print(f"Before spec_run_loop, designer.name: {designer.name}")
         compiled = designer.spec_run_loop(designer.read_spec(target_spec), iterations)
-        print(f"After spec_run_loop, designer.name: {designer.name}")
+        #print(f"After spec_run_loop, designer.name: {designer.name}")
         if compiled:
             for agent in self.get_testers():
                 agent.set_w_dir(w_dir)
@@ -400,7 +402,7 @@ class Handler:
                           w_dir: str = './', bench_spec: bool = False, gen_spec: str = None, target_spec: str = None,
                           init_context: list = [], supp_context: bool = False, temperature: float = None,
                           short_context: bool = False):
-        print(f"%%%%%: skip_completed={skip_completed}, skip_successful={skip_successful}")
+        #print(f"%%%%%: skip_completed={skip_completed}, skip_successful={skip_successful}")
         use_spec = bench_spec or (gen_spec is not None) or (target_spec is not None)
         self.create_agents(spath, llms, lang, init_context, supp_context, use_spec, w_dir, temperature, short_context)
 
