@@ -10,6 +10,7 @@ import time
 import vertexai
 from vertexai.generative_models import *
 import yaml
+import logging
 
 from hdlang import get_hdlang
 
@@ -477,6 +478,7 @@ class Agent:
     #
     # Intended use: before a generation/lec loop is started so the prompt can be reformatted and formalized
     def read_spec(self, target_spec: str = None):
+
         if target_spec is None:
             target_spec = self.spec
     
@@ -489,8 +491,9 @@ class Agent:
         # Only set self.name if it's not already set
         if not hasattr(self, 'name') or self.name == "":
             self.name = os.path.splitext(os.path.basename(target_spec))[0]
+            logging.debug(f"Agent name set to: {self.name}")
         else:
-            print(f"self.name already set to: {self.name}, not overwriting in read_spec")
+            logging.info(f"self.name already set to: {self.name}, not overwriting in read_spec")
     
         self.resolve_spec_path(target_spec, spec.get('in_directory') is True)
     
@@ -502,6 +505,7 @@ class Agent:
             exit()
         self.set_interface(spec['interface'])
         # print(f"read_spec: self.name = {self.name}")
+        self.spec_content = spec.get('description', '')
         return spec['description']
 
     # Registers the file path of the golden Verilog to be used for LEC
@@ -509,6 +513,7 @@ class Agent:
     #
     # Intended use: at the beginning of a new initial prompt submission
     def dump_gold(self, contents: str):
+        print(f"[DEBUG] dump_gold called with contents length: {len(contents)}")
         verilog_lines = contents.split('\n')
         gold_contents = ""
         for line in verilog_lines:
@@ -519,6 +524,7 @@ class Agent:
         os.makedirs(os.path.dirname(self.gold), exist_ok=True)
         with open (self.gold, "w") as file:
             file.write(gold_contents)
+        print(f"[DEBUG] Golden Verilog written to: {self.gold}")
         self.check_gold(self.gold)
 
     # Helper function to prevent API charges in case gold Verilog
@@ -526,6 +532,7 @@ class Agent:
     #
     # Intended use: only when registering a gold module path
     def check_gold(self, file_path: str):
+        print(f"[DEBUG] check_gold called for file_path: {file_path}")
         # Helps users identify if their "golden" model has issues
         if not os.path.exists(file_path):
             print("Error: supplied Verilog file path {} invalid, exiting...".format(file_path))
@@ -538,6 +545,7 @@ class Agent:
             print(res_string)
             print("exiting...")
             exit()
+        print(f"[DEBUG] Golden Verilog passed compilation check.")
 
     # Parses common.yaml file for the 'request_spec' strings to create the
     # contents of the 'spec initial instruction' tuple which are the 2 queries
@@ -807,7 +815,6 @@ class Agent:
         script = script = self.compile_script
 
         command = [str(script), str(self.code)]
-
         # Adjust script if 'resources' is in the compile script path
         if 'resources' in str(self.compile_script):
             script = my_path / script
@@ -980,7 +987,9 @@ class Agent:
             current_query = self.get_compile_initial_instruction(prompt)
         else:
             current_query = prompt
-        for _ in range(iterations):
+        
+        for i in range(iterations):
+            
             #self.dump_codeblock(self.query_model(self.compile_conversation, current_query, True), self.code)
             codeblock = self.query_model(self.compile_conversation, current_query, True)
             self.dump_codeblock(codeblock, self.code)

@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import yaml 
+import logging
 
 
 def check_json(json_path: str):
@@ -178,21 +179,13 @@ class Handler:
     #     return False
 
     def get_results(self, spec_name: str, base_w_dir: str):
-        #spec_name = os.path.splitext(os.path.basename(yaml_file))[0]
-        #log_path = os.path.join(base_w_dir, spec_name, "logs", f"{spec_name}_compile_log.md")
         if not isinstance(base_w_dir, Path):
             base_w_dir = Path(base_w_dir)
         base_w_dir = base_w_dir.resolve()
 
         log_path = base_w_dir / "logs" / f"{spec_name}_compile_log.md"
-        #print(f"Checking for log at: {log_path} (Resolved: {log_path.resolve()})")
-        # Add debug statements
-        #print(f"Does log_path exist? {log_path.exists()}")
-        #print(f"Listing contents of {log_path.parent}:")
-        #for item in log_path.parent.iterdir():
-        #    print(f" - {item} (exists: {item.exists()})")
+ 
         if log_path.exists():
-            #print("Log file found at:", log_path.resolve())
             with open(log_path, 'r') as file:
                 lines = file.readlines()
                 if lines:
@@ -206,23 +199,21 @@ class Handler:
                             'lec_f': int(parts[6]),
                             'top_k': int(parts[7]),
                         }
+                        print(f"[DEBUG] Parsed results: {res_dict}")
                         return res_dict
         else:
-            # print(f"Log file not found at {log_path}")
             pass
         return None
 
     def check_completion(self, spec_name: str, benchmark_w_dir: str):
         results = self.get_results(spec_name, benchmark_w_dir)
         if results is not None:
-            #print(f"Results top_k: {results['top_k']}, Handler top_k: {self.top_k}")
             return results['top_k'] >= self.top_k
         return False
 
     def check_success(self, spec_name: str, benchmark_w_dir: str):
         results = self.get_results(spec_name, benchmark_w_dir)
         if results is not None:
-            #print(f"*******results['lec_f']: {results['lec_f']}, results['lec_n']: {results['lec_n']}")
             return results['lec_f'] < results['lec_n']
         return False
 
@@ -280,36 +271,101 @@ class Handler:
 
 
     def single_yaml_run(self, yaml_file: str, base_w_dir: str, skip_completed: bool, update: bool):
+        # Read and parse the YAML file
+        
+        logging.basicConfig(
+            level=logging.DEBUG,  # Capture all levels of log messages
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.StreamHandler()  # Output logs to the console
+            ]
+        )
+        logging.debug(f"Entering single_yaml_run with yaml_file: {yaml_file}")
+        print(f"[DEBUG] Entering single_yaml_run with yaml_file: {yaml_file}")
+        with open(yaml_file, 'r') as f:
+            try:
+                entry = yaml.safe_load(f)
+                print(f"[DEBUG] Parsed YAML content: {entry}")
+            except yaml.YAMLError as e:
+                print(f"Error parsing YAML file {yaml_file}: {e}")
+                exit(1)
         spec_name = os.path.splitext(os.path.basename(yaml_file))[0]
-
+        print(f"[DEBUG] Derived spec_name: {spec_name}")
         for agent in self.agents:
             agent.reset_k()
+            agent.set_interface(entry.get('interface', ''))
+            agent.set_pipeline_stages(int(entry.get('pipeline_stages', 0)))
             agent.set_w_dir(os.path.join(base_w_dir, agent.name, spec_name))
+            print(f"[DEBUG] Configured agent: {agent.name}")
 
         designer = self.get_designer()
         testers  = self.get_testers()
+        if designer is None:
+            print("[ERROR] No DESIGN agent found. Exiting...")
+            exit(1)
+        print(f"[DEBUG] Designer agent found: {designer.name}")
 
         designer.read_spec(yaml_file)
         prompt = designer.spec_content
+        print(f"[DEBUG] Spec prompt: {prompt}")
+        # prompt = entry.get('instruction', '')
+        designer.dump_gold(entry.get('bench_response', ''))
+        print(f"[DEBUG] Dumped golden Verilog for spec: {spec_name}")
 
         pass_k = self.top_k
         if skip_completed:
-            results = self.get_results(yaml_file, base_w_dir)
+            results = self.get_results(spec_name, base_w_dir)
+            print(f"[DEBUG] Results from get_results: {results}")
             if results is not None:
                 pass_k -= results['top_k']
                 designer.set_k(results['top_k'] + 1)
+                print(f"[DEBUG] Updated pass_k: {pass_k}")
 
-        for _ in range(pass_k):
-            successful   = self.check_success(yaml_file, base_w_dir)
-            completed    = self.check_completion(yaml_file, base_w_dir)
+        print(f"[DEBUG] Starting execution loop with pass_k: {pass_k}")
+        for iteration in range(pass_k):
+            print(f"[DEBUG] Iteration {iteration + 1} of {pass_k}")
+            # successful   = self.check_success(yaml_file, base_w_dir)
+            # completed    = self.check_completion(yaml_file, base_w_dir)
+            successful = self.check_success(spec_name, base_w_dir)
+            completed = self.check_completion(spec_name, base_w_dir)
+            print(f"[DEBUG] Successful: {successful}, Completed: {completed}")
+
             update_entry = completed and (not successful) and update
+            logging.debug(f"Parsed YAML content: {entry}")
+            if not testers:
+                print("[DEBUG] No VALIDATION agents found. Invoking lec_loop.")
+                lec_result = designer.lec_loop(prompt, self.lec_iter, self.lec_feedback_limit, self.comp_iter, update_entry)
+                print(f"[DEBUG] lec_loop returned: {lec_result}")
+                if lec_result:
+                    print("[DEBUG] lec_loop signaled to break the loop.")
+                    break
+            else:
+                print("[DEBUG] VALIDATION agents found. Running testbench loop.")
+                designer.reset_conversations()
+                designer.reset_perf_counters()
+                code_compiled, failure_reason = designer.code_compilation_loop(prompt, 0, self.comp_iter)
+                if code_compiled:
+                    designer.reformat_verilog(designer.name, designer.gold, designer.verilog, designer.io)
+                    print(f"[DEBUG] Reformatting Verilog completed for spec: {spec_name}")
 
-            if designer.spec_run_loop(prompt, self.comp_iter):
-                if testers:
-                    for agent in testers:
-                        agent.tb_loop(prompt)
-                break
-            designer.incr_k()
+                    testers[0].reset_conversations()
+                    testers[0].reset_perf_counters()
+                    tb_pass, failure_reason = testers[0].tb_loop(prompt, 2, designer, self.comp_iter)
+                    if tb_pass is not None:
+                        print("[DEBUG] Invoking test_lec from testbench loop.")
+                        failure_reason = designer.test_lec()
+                if designer.finish_run(failure_reason):
+                    print("[DEBUG] finish_run signaled to break the loop.")
+                    break
+                designer.incr_k()
+                print(f"[DEBUG] Incremented designer's k to: {designer.k}")
+
+            # if designer.spec_run_loop(prompt, self.comp_iter):
+            #     if testers:
+            #         for agent in testers:
+            #             agent.tb_loop(prompt)
+            #     break
+            # designer.incr_k()
 
     # Wrapper around single_json_run(), keeps track of individual problems' statuses.
     # Checking if they were passed to not repeat them.
@@ -407,6 +463,8 @@ class Handler:
         self.create_agents(spath, llms, lang, init_context, supp_context, use_spec, w_dir, temperature, short_context)
 
         if yaml_files is not None:
+            yaml_files = list(set(yaml_files))  # Remove duplicates
+            print(f"[DEBUG] Invoking yaml_run with files: {yaml_files}")
             self.yaml_run(yaml_files, skip_completed, skip_successful, update)
         else:
             if gen_spec is not None:
@@ -423,11 +481,27 @@ class Handler:
         #    if target_spec is not None:
         #        self.spec_run(target_spec, self.comp_iter)
 
-    def yaml_run(self, yaml_files: list, skip_completed: bool = False, skip_successful: bool = False, update: bool = False):
+    def yaml_run(self, yaml_files: list, skip_completed: bool = True, skip_successful: bool = False, update: bool = False):
         base_w_dir = self.get_designer().w_dir
+        print(f"[DEBUG] Starting yaml_run with base_w_dir: {base_w_dir}")
+
         for yaml_file in yaml_files:
-            successful = self.check_success(yaml_file, base_w_dir)
-            completed  = self.check_completion(yaml_file, base_w_dir)
+            spec_name = os.path.splitext(os.path.basename(yaml_file))[0]
+            # with open(yaml_file, 'r') as f:
+            #     try:
+            #         entry = yaml.safe_load(f)
+            #     except yaml.YAMLError as e:
+            #         print(f"Error parsing YAML file {yaml_file}: {e}")
+            #         continue  # Skip this file
+
+            successful = self.check_success(spec_name, base_w_dir)
+            completed = self.check_completion(spec_name, base_w_dir)
+            print(f"[DEBUG] Test '{spec_name}' - Successful: {successful}, Completed: {completed}")
+            # successful = self.check_success(yaml_file, base_w_dir)
+            # completed  = self.check_completion(yaml_file, base_w_dir)
             run        = not ((skip_completed and completed) or (skip_successful and successful))
             if run:
+                print(f"[DEBUG] Running single_yaml_run for spec: {spec_name}")
                 self.single_yaml_run(yaml_file, base_w_dir, skip_completed, update)
+            else:
+                print(f"[DEBUG] Skipping spec '{spec_name}' as per skip flags.")
