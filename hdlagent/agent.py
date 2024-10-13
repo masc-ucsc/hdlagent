@@ -503,6 +503,13 @@ class Agent:
         if 'interface' not in spec:
             print(f"Error: valid yaml 'interface' key not found in {self.spec} file, exiting...")
             exit()
+        if 'bench_response' in spec:
+            print(f"***************'bench_response' key have found.")
+            bench_response = spec.get('bench_response', '').strip()
+            self.dump_gold(bench_response)
+        else:
+            print(f"***************'bench_response' key not found. Skipping dump_gold.")
+        #     exit()
         self.set_interface(spec['interface'])
         # print(f"read_spec: self.name = {self.name}")
         self.spec_content = spec.get('description', '')
@@ -1153,8 +1160,16 @@ class Agent:
         if not isinstance(filepath, Path):
             filepath = Path(filepath)
         filepath.parent.mkdir(parents=True, exist_ok=True)
+        lines = codeblock.strip().split('\n')
+        if lines and lines[0].startswith('```') and lines[-1].startswith('```'):
+            lines = lines[1:-1]
+        cleaned_code = '\n'.join(lines)
+        print(f"Writing to file: {filepath}")
         with filepath.open('w') as f:
-            f.write(codeblock)
+           f.write(cleaned_code)
+        # print(f"Writing to file: {filepath}")
+        # with filepath.open('w') as f:
+        #     f.write(codeblock)
         # isolated_code = text.replace('```','')
         # os.makedirs(os.path.dirname(filepath), exist_ok=True)
         # with open(filepath, 'w') as file:

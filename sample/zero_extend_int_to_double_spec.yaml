@@ -1,0 +1,10 @@
+description: 'Design a module that zero extends a 32-bit int input `int_i` to a 64-bit double output `double_o`. Input(s): int_i[31:0]. Output(s): double_o[63:0].  '
+interface: |-
+  module zero_extend_int_to_double (input [31:0] int_i, output [63:0] double_o);
+bench_response: |
+  module zero_extend_int_to_double (
+      input [31:0] int_i,
+      output [63:0] double_o
+  );
+    assign double_o = {32'd0, int_i};
+  endmodule
