@@ -227,7 +227,6 @@ class Agent:
         self.lec_script           = os.path.join(self.script_dir,"common/comb_lec")
         self.tb_script            = os.path.join(self.script_dir,"common/iverilog_tb")
         self.tb_compile_script    = os.path.join(self.script_dir,"common/iverilog_tb_compile")
-        self.compile_script = 'resources/Verilog/check_verilog'
         self.comp_n               = 0
         self.comp_f               = 0
         self.lec_n                = 0
