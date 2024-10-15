@@ -307,6 +307,7 @@ class Handler:
 
         designer.read_spec(yaml_file)
         prompt = designer.spec_content
+        # self.lec_loop(prompt)
         print(f"[DEBUG] Spec prompt: {prompt}")
         # prompt = entry.get('instruction', '')
         designer.dump_gold(entry.get('bench_response', ''))
@@ -417,6 +418,7 @@ class Handler:
     
         designer.read_spec(target_spec)
         designer.name = spec_name
+        prompt = designer.spec_content
         #print(f"After read_spec, designer.name: {designer.name}")
     
         if w_dir is not None:
@@ -447,10 +449,13 @@ class Handler:
             return
         #print(f"Before spec_run_loop, designer.name: {designer.name}")
         compiled = designer.spec_run_loop(designer.read_spec(target_spec), iterations)
-        #print(f"After spec_run_loop, designer.name: {designer.name}")
+        # print(f"After spec_run_loop, designer.name: {designer.name}")
         if compiled:
+            print(f"__________________________________________________________________")
+            designer.lec_loop(prompt)
             for agent in self.get_testers():
                 agent.set_w_dir(w_dir)
+                print(f"__________________________________________________________________")
                 agent.tb_loop(agent.read_spec(target_spec))
     
     def sequential_entrypoint(self, spath: str, llms: list, lang: str, yaml_files: list = None,

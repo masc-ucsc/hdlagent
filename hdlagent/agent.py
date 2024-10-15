@@ -227,6 +227,7 @@ class Agent:
         self.lec_script           = os.path.join(self.script_dir,"common/comb_lec")
         self.tb_script            = os.path.join(self.script_dir,"common/iverilog_tb")
         self.tb_compile_script    = os.path.join(self.script_dir,"common/iverilog_tb_compile")
+        self.compile_script = 'resources/Verilog/check_verilog'
         self.comp_n               = 0
         self.comp_f               = 0
         self.lec_n                = 0
@@ -504,14 +505,12 @@ class Agent:
             print(f"Error: valid yaml 'interface' key not found in {self.spec} file, exiting...")
             exit()
         if 'bench_response' in spec:
-            print(f"***************'bench_response' key have found.")
             bench_response = spec.get('bench_response', '').strip()
             self.dump_gold(bench_response)
-        else:
-            print(f"***************'bench_response' key not found. Skipping dump_gold.")
-        #     exit()
+            # prompt = spec.get('description', '')
+            # self.lec_loop(prompt)
+
         self.set_interface(spec['interface'])
-        # print(f"read_spec: self.name = {self.name}")
         self.spec_content = spec.get('description', '')
         return spec['description']
 
@@ -812,29 +811,83 @@ class Agent:
     # document, returning the compiler feedback and error if any were detected.
     #
     # Intended use: compile new code response from LLM that was dumped to file
+    # def test_code_compile(self):
+    #     print("[DEBUG] test_code_compile called")
+    #     my_path = Path(__file__).resolve().parent
+    #     print(f"[DEBUG] Current script directory: {my_path}")
+    #     # Ensure self.compile_script is a Path object
+    #     if isinstance(self.compile_script, str):
+    #         self.compile_script = Path(self.compile_script)
+    #     print(f"[DEBUG] Initial compile_script: {self.compile_script}")
+
+    #     # Combine paths using the '/' operator
+    #     script = script = self.compile_script
+    #     print(f"[DEBUG] Absolute script path: {script}")
+    #     command = [str(script), str(self.code)]
+    #     print(f"[DEBUG] Running compile command: {command}")
+    #     # Adjust script if 'resources' is in the compile script path
+    #     if 'resources' in str(self.compile_script):
+    #         script = my_path / script
+    #         command = [str(script), str(self.code)]
+
+    #     # Run the compile command
+    #     res = subprocess.run(command, capture_output=True, shell=True)
+    #     print(f"[DEBUG] test_code_compile: returncode = {res.returncode}")
+    #     print(f"[DEBUG] test_code_compile: stdout = {res.stdout.decode()}")
+    #     print(f"[DEBUG] test_code_compile: stderr = {res.stderr.decode()}")
+
+    #     errors = self.check_errors(res)
+    #     print(f"[DEBUG] errors from check_errors: {errors}")
+    #     self.comp_n += 1
+    #     if errors is not None:
+    #         self.comp_f += 1
+    #     return errors
     def test_code_compile(self):
+        print("[DEBUG] test_code_compile called")
         my_path = Path(__file__).resolve().parent
+        print(f"[DEBUG] Current script directory: {my_path}")
+    
         # Ensure self.compile_script is a Path object
         if isinstance(self.compile_script, str):
-            self.compile_script = Path(self.compile_script)
-
-        # Combine paths using the '/' operator
-        script = script = self.compile_script
-
-        command = [str(script), str(self.code)]
-        # Adjust script if 'resources' is in the compile script path
-        if 'resources' in str(self.compile_script):
-            script = my_path / script
-            command = [str(script), str(self.code)]
-
+            self.compile_script = Path(self.compile_script.strip())
+        print(f"[DEBUG] Initial compile_script: {self.compile_script}")
+    
+        # Adjust script path
+        script = my_path / self.compile_script
+        print(f"[DEBUG] Resolved script path: {script}")
+    
+        # Ensure script path is absolute
+        script = script.resolve()
+        print(f"[DEBUG] Absolute script path: {script}")
+    
+        # Prepare the command
+        command = f"{script} {self.code}"
+        print(f"[DEBUG] Running compile command: {command}")
+    
+        # Ensure the script is executable
+        if not script.exists():
+            print(f"[ERROR] Compile script does not exist: {script}")
+            return f"Compile script does not exist: {script}"
+        if not os.access(script, os.X_OK):
+            print(f"[ERROR] Compile script is not executable: {script}")
+            return f"Compile script is not executable: {script}"
+    
         # Run the compile command
-        res = subprocess.run(command, capture_output=True, shell=True)
-
+        res = subprocess.run(command, capture_output=True, shell=True, text=True)
+    
+        print(f"[DEBUG] test_code_compile: returncode = {res.returncode}")
+        print(f"[DEBUG] test_code_compile: stdout = {res.stdout}")
+        print(f"[DEBUG] test_code_compile: stderr = {res.stderr}")
+    
         errors = self.check_errors(res)
+        print(f"[DEBUG] errors from check_errors: {errors}")
+    
         self.comp_n += 1
         if errors is not None:
             self.comp_f += 1
         return errors
+
+
 
     # Executes (temp | comb)_lec script to test LLM generated RTL versus
     # golden Verilog. *_lec script uses Yosys' SAT solver methods to find
@@ -846,7 +899,6 @@ class Agent:
     # Intended use: for lec check after RTL has successfully compiled into Verilog
     def test_lec(self, gold: str = None, gate: str = None, lec_feedback_limit: int = -1):
         # ./*_lec <golden_verilog> <llm_verilog>
-        print(f"%%%%%%%%%%[DEBUG] test_lec called with gold: {gold}, gate: {gate}, lec_feedback_limit: {lec_feedback_limit}")
         if gold is None:
             if self.gold is None:
                 print("Error: attemping LEC without setting gold path, exiting...")
@@ -854,7 +906,9 @@ class Agent:
             gold = self.gold
         if gate is None:
             gate = self.verilog
-        script      = self.lec_script + " " + gold + " " + gate
+        # script      = self.lec_script + " " + gold + " " + gate
+        print(f"%%%%%%%%%%[DEBUG] test_lec called with gold: {gold}, gate: {gate}, lec_feedback_limit: {lec_feedback_limit}")
+        script = f"{self.lec_script} {str(gold)} {str(gate)}"
         res         = subprocess.run([script], capture_output=True, shell=True)
         res_string  = (str(res.stdout))[2:-1].replace("\\n","\n")
         print(f"[DEBUG] Executing LEC script: {script}")
@@ -987,6 +1041,8 @@ class Agent:
     #
     # Intended use: inside of the lec loop
     def code_compilation_loop(self, prompt: str, lec_iteration: int = 0, iterations: int = 1):
+        print(f"[DEBUG] code_compilation_loop: prompt={prompt}, lec_iteration={lec_iteration}, iterations={iterations}")
+
         if not isinstance(self.code, Path):
             self.code = Path(self.code)
         
@@ -996,11 +1052,12 @@ class Agent:
             current_query = prompt
         
         for i in range(iterations):
-            
             #self.dump_codeblock(self.query_model(self.compile_conversation, current_query, True), self.code)
             codeblock = self.query_model(self.compile_conversation, current_query, True)
+            print(f"[DEBUG] Iteration {i}, codeblock received from LLM:\n{codeblock}\n")
             self.dump_codeblock(codeblock, self.code)
             compile_out = self.test_code_compile()
+            print(f"[DEBUG] test_code_compile returned: {compile_out}")
             if compile_out is not None:
                 current_query = self.get_compile_iteration_instruction(compile_out)
             else:
@@ -1023,7 +1080,12 @@ class Agent:
             failure_reason = self.test_lec()
             return self.finish_run(failure_reason)
         # print(f"spec_run_loop (end): self.name = {self.name}")
-        return self.finish_run(self.code_compilation_loop(prompt, 0, iterations)[1])
+        compiled, failure_reason = self.code_compilation_loop(prompt, 0, iterations)
+        print(f"[DEBUG] spec_run_loop: compiled={compiled}, failure_reason={failure_reason}")
+        self.finish_run(failure_reason)
+        # return self.finish_run(self.code_compilation_loop(prompt, 0, iterations)[1])
+        return compiled
+
 
     # Rolls back the conversation to the LLM codeblock response which failed the least amount of
     # testcases. This is to avoid regression and save on context token usage.
@@ -1053,50 +1115,118 @@ class Agent:
     # and outer loop checks generated RTL versus supplied 'gold' Verilog for logical equivalence
     #
     # Intended use: benchmarking effectiveness of the agent
-    def lec_loop(self, prompt: str, lec_iterations: int = 1, lec_feedback_limit: int = -1, compile_iterations: int = 1, update: bool = False, testbench_iterations: int = 0):
-        print(f"[DEBUG] ***********lec_loop called with prompt: {prompt}, lec_iter: {lec_iter}, lec_feedback_limit: {lec_feedback_limit}")
+    # def lec_loop(self, prompt: str, lec_iterations: int = 1, lec_feedback_limit: int = -1, compile_iterations: int = 1, update: bool = False, testbench_iterations: int = 0):
+    #     print(f"[DEBUG] ***********lec_loop called with prompt: {prompt}, lec_iterations: {lec_iterations}, lec_feedback_limit: {lec_feedback_limit}")
+    #     self.reset_conversations()
+    #     self.reset_perf_counters()
+    #     self.prev_test_cases   = float('inf')
+    #     original_prompt = prompt
+    #     for i in range(lec_iterations):
+    #         print(f"[DEBUG] lec_loop iteration {i}")
+    #         if (update) and (len(self.compile_conversation) == 0):
+    #             if self.test_code_compile() is None:    # Only try to update if code already compiles and LEC returns valid feedback
+    #                 gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
+    #                 lec_out    = self.test_lec(gold, gate, lec_feedback_limit)
+    #                 test_fail_count, failure_reason = lec_out.split('\n', 1)
+    #                 test_fail_count      = int(test_fail_count)
+    #                 self.prev_test_cases = test_fail_count
+    #                 self.lec_f           -= 1
+    #                 self.lec_n           -= 1  # preliminary checks dont count
+    #                 if test_fail_count > 0:
+    #                     prompt = self.get_lec_bootstrap_instruction(original_prompt, test_fail_count, lec_feedback_limit, failure_reason)
+    #         compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
+    #         if compiled:
+    #             # Reformat is free to modify both the gold and the gate
+    #             gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
+    #             lec_out    = self.test_lec(gold, gate, lec_feedback_limit)
+    #             if lec_out is not None:
+    #                 test_fail_count, failure_reason = lec_out.split('\n', 1)
+    #                 test_fail_count = int(test_fail_count)
+    #                 if i != lec_iterations - 1:
+    #                     prev_lec_feedback_limit = lec_feedback_limit
+    #                     lec_feedback_limit      = self.lec_regression_filter(test_fail_count, lec_feedback_limit)
+    #                     lec_out                 = self.test_lec(gold, gate, lec_feedback_limit) # re-do LEC after popping conversation
+    #                     _, failure_reason       = lec_out.split('\n', 1)
+    #                     self.lec_f             -= 1
+    #                     self.lec_n             -= 1  # preliminary checks dont count
+    #                     prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, lec_feedback_limit)
+    #             else:
+    #                 return self.finish_run()
+    #         else:
+    #             return self.finish_run(failure_reason)
+    #     return self.finish_run(failure_reason)
+
+    def lec_loop(self, prompt: str, lec_iterations: int = 1, lec_feedback_limit: int = -1,
+             compile_iterations: int = 1, update: bool = False, testbench_iterations: int = 0):
+        print(f"[DEBUG] ***********lec_loop called with prompt: {prompt}, lec_iterations: {lec_iterations}, lec_feedback_limit: {lec_feedback_limit}")
         self.reset_conversations()
         self.reset_perf_counters()
-        self.prev_test_cases   = float('inf')
+        self.prev_test_cases = float('inf')
         original_prompt = prompt
+        failure_reason = None  # Initialize failure_reason
+    
         for i in range(lec_iterations):
-            if (update) and (len(self.compile_conversation) == 0):
-                if self.test_code_compile() is None:    # Only try to update if code already compiles and LEC returns valid feedback
+            print(f"[DEBUG] lec_loop iteration {i}")
+            if update and len(self.compile_conversation) == 0:
+                if self.test_code_compile() is None:
+                    self.verilog = self.code  # Ensure self.verilog is set
                     gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
-                    lec_out    = self.test_lec(gold, gate, lec_feedback_limit)
-                    test_fail_count, failure_reason = lec_out.split('\n', 1)
-                    test_fail_count      = int(test_fail_count)
-                    self.prev_test_cases = test_fail_count
-                    self.lec_f           -= 1
-                    self.lec_n           -= 1  # preliminary checks dont count
-                    if test_fail_count > 0:
+                    lec_out = self.test_lec(gold, gate, lec_feedback_limit)
+                    self.lec_n += 1  # Increment total LEC attempts
+                    if lec_out is not None:
+                        self.lec_f += 1  # Increment LEC failures
+                        test_fail_count, failure_reason = lec_out.split('\n', 1)
+                        test_fail_count = int(test_fail_count)
+                        self.prev_test_cases = test_fail_count
                         prompt = self.get_lec_bootstrap_instruction(original_prompt, test_fail_count, lec_feedback_limit, failure_reason)
+                    else:
+                        print("[DEBUG] LEC passed during update.")
+                        return self.finish_run()
+    
             compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
             if compiled:
-                # Reformat is free to modify both the gold and the gate
+                self.verilog = self.code  # Ensure self.verilog is set
                 gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
-                lec_out    = self.test_lec(gold, gate, lec_feedback_limit)
+                lec_out = self.test_lec(gold, gate, lec_feedback_limit)
+                self.lec_n += 1  # Increment total LEC attempts
+    
                 if lec_out is not None:
+                    self.lec_f += 1  # Increment LEC failures
                     test_fail_count, failure_reason = lec_out.split('\n', 1)
                     test_fail_count = int(test_fail_count)
+                    print(f"[DEBUG] LEC failed with {test_fail_count} failures.")
+    
                     if i != lec_iterations - 1:
                         prev_lec_feedback_limit = lec_feedback_limit
-                        lec_feedback_limit      = self.lec_regression_filter(test_fail_count, lec_feedback_limit)
-                        lec_out                 = self.test_lec(gold, gate, lec_feedback_limit) # re-do LEC after popping conversation
-                        _, failure_reason       = lec_out.split('\n', 1)
-                        self.lec_f             -= 1
-                        self.lec_n             -= 1  # preliminary checks dont count
-                        prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, lec_feedback_limit)
+                        lec_feedback_limit = self.lec_regression_filter(test_fail_count, lec_feedback_limit)
+                        # Re-run LEC after adjusting feedback limit
+                        lec_out = self.test_lec(gold, gate, lec_feedback_limit)
+                        self.lec_n += 1  # Increment total LEC attempts
+                        if lec_out is not None:
+                            self.lec_f += 1  # Increment LEC failures
+                            _, failure_reason = lec_out.split('\n', 1)
+                            prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, lec_feedback_limit)
+                        else:
+                            print("[DEBUG] LEC passed after adjusting feedback limit.")
+                            return self.finish_run()
                 else:
+                    print("[DEBUG] LEC passed successfully.")
                     return self.finish_run()
             else:
+                print(f"[DEBUG] Compilation failed: {failure_reason}")
                 return self.finish_run(failure_reason)
+    
         return self.finish_run(failure_reason)
+
 
     # Helper function to handle results and logs of compile based runs
     #
     # Intended use: after test_lec() is called
     def finish_run(self, failure_reason: str = None):
+        if failure_reason is not None:
+            print(f"Run failed: {failure_reason}")
+        else:
+            print("Run completed successfully.")
         success = failure_reason is not None
         if success:
             self.dump_failure(failure_reason, self.compile_history_log)
