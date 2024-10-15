@@ -843,22 +843,17 @@ class Agent:
     #         self.comp_f += 1
     #     return errors
     def test_code_compile(self):
-        print("[DEBUG] test_code_compile called")
         my_path = Path(__file__).resolve().parent
-        print(f"[DEBUG] Current script directory: {my_path}")
     
         # Ensure self.compile_script is a Path object
         if isinstance(self.compile_script, str):
             self.compile_script = Path(self.compile_script.strip())
-        print(f"[DEBUG] Initial compile_script: {self.compile_script}")
     
         # Adjust script path
         script = my_path / self.compile_script
-        print(f"[DEBUG] Resolved script path: {script}")
     
         # Ensure script path is absolute
         script = script.resolve()
-        print(f"[DEBUG] Absolute script path: {script}")
     
         # Prepare the command
         command = f"{script} {self.code}"
@@ -907,7 +902,6 @@ class Agent:
         if gate is None:
             gate = self.verilog
         # script      = self.lec_script + " " + gold + " " + gate
-        print(f"%%%%%%%%%%[DEBUG] test_lec called with gold: {gold}, gate: {gate}, lec_feedback_limit: {lec_feedback_limit}")
         script = f"{self.lec_script} {str(gold)} {str(gate)}"
         res         = subprocess.run([script], capture_output=True, shell=True)
         res_string  = (str(res.stdout))[2:-1].replace("\\n","\n")
@@ -1158,7 +1152,6 @@ class Agent:
 
     def lec_loop(self, prompt: str, lec_iterations: int = 1, lec_feedback_limit: int = -1,
              compile_iterations: int = 1, update: bool = False, testbench_iterations: int = 0):
-        print(f"[DEBUG] ***********lec_loop called with prompt: {prompt}, lec_iterations: {lec_iterations}, lec_feedback_limit: {lec_feedback_limit}")
         self.reset_conversations()
         self.reset_perf_counters()
         self.prev_test_cases = float('inf')
@@ -1166,7 +1159,6 @@ class Agent:
         failure_reason = None  # Initialize failure_reason
     
         for i in range(lec_iterations):
-            print(f"[DEBUG] lec_loop iteration {i}")
             if update and len(self.compile_conversation) == 0:
                 if self.test_code_compile() is None:
                     self.verilog = self.code  # Ensure self.verilog is set

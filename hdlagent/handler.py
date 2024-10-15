@@ -451,7 +451,6 @@ class Handler:
         compiled = designer.spec_run_loop(designer.read_spec(target_spec), iterations)
         # print(f"After spec_run_loop, designer.name: {designer.name}")
         if compiled:
-            print(f"__________________________________________________________________")
             designer.lec_loop(prompt)
             for agent in self.get_testers():
                 agent.set_w_dir(w_dir)
