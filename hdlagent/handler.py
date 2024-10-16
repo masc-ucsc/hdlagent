@@ -436,10 +436,8 @@ class Handler:
         run = True
         if skip_completed and completed:
             run = False
-            #print(f"Skipping '{spec_name}' as it is already completed.")
         elif skip_successful and successful:
             run = False
-            #print(f"Skipping '{spec_name}' as it is already successful.")
     
         print(f"Successful: {successful}")
         print(f"Completed: {completed}")
@@ -447,11 +445,15 @@ class Handler:
     
         if not run:
             return
-        #print(f"Before spec_run_loop, designer.name: {designer.name}")
         compiled = designer.spec_run_loop(designer.read_spec(target_spec), iterations)
-        # print(f"After spec_run_loop, designer.name: {designer.name}")
+        
         if compiled:
-            designer.lec_loop(prompt)
+            if designer.gold is None:
+                print("_________Testbench will be created_________")
+                designer.tb_loop(designer.read_spec(target_spec))
+            else:
+                print("_________LEC will be run_________")
+                designer.lec_loop(prompt)
             for agent in self.get_testers():
                 agent.set_w_dir(w_dir)
                 print(f"__________________________________________________________________")

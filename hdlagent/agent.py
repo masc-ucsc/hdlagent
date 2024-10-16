@@ -810,37 +810,6 @@ class Agent:
     # document, returning the compiler feedback and error if any were detected.
     #
     # Intended use: compile new code response from LLM that was dumped to file
-    # def test_code_compile(self):
-    #     print("[DEBUG] test_code_compile called")
-    #     my_path = Path(__file__).resolve().parent
-    #     print(f"[DEBUG] Current script directory: {my_path}")
-    #     # Ensure self.compile_script is a Path object
-    #     if isinstance(self.compile_script, str):
-    #         self.compile_script = Path(self.compile_script)
-    #     print(f"[DEBUG] Initial compile_script: {self.compile_script}")
-
-    #     # Combine paths using the '/' operator
-    #     script = script = self.compile_script
-    #     print(f"[DEBUG] Absolute script path: {script}")
-    #     command = [str(script), str(self.code)]
-    #     print(f"[DEBUG] Running compile command: {command}")
-    #     # Adjust script if 'resources' is in the compile script path
-    #     if 'resources' in str(self.compile_script):
-    #         script = my_path / script
-    #         command = [str(script), str(self.code)]
-
-    #     # Run the compile command
-    #     res = subprocess.run(command, capture_output=True, shell=True)
-    #     print(f"[DEBUG] test_code_compile: returncode = {res.returncode}")
-    #     print(f"[DEBUG] test_code_compile: stdout = {res.stdout.decode()}")
-    #     print(f"[DEBUG] test_code_compile: stderr = {res.stderr.decode()}")
-
-    #     errors = self.check_errors(res)
-    #     print(f"[DEBUG] errors from check_errors: {errors}")
-    #     self.comp_n += 1
-    #     if errors is not None:
-    #         self.comp_f += 1
-    #     return errors
     def test_code_compile(self):
         my_path = Path(__file__).resolve().parent
     
@@ -916,9 +885,10 @@ class Agent:
     #
     # Intended use: compile new tb response from LLM that was dumped to file
     def test_tb_compile(self):
-        script     = self.tb_compile_script + " " + self.tb + " " + self.verilog
+        script     = self.tb_compile_script + " " + str(self.tb) + " " + str(self.verilog)
         res        = subprocess.run([script], capture_output=True, shell=True)
-        res_string = (str(res.stderr)).replace("\\n","\n")
+        # res_string = (str(res.stderr)).replace("\\n","\n")
+        res_string = res.stderr.decode('utf-8')
         self.comp_n += 1
         # This should probably be its own function chosen by yaml file, if we stop using iverilog
         if "error" in res_string:
@@ -1105,47 +1075,6 @@ class Agent:
     # and outer loop checks generated RTL versus supplied 'gold' Verilog for logical equivalence
     #
     # Intended use: benchmarking effectiveness of the agent
-    # def lec_loop(self, prompt: str, lec_iterations: int = 1, lec_feedback_limit: int = -1, compile_iterations: int = 1, update: bool = False, testbench_iterations: int = 0):
-    #     print(f"[DEBUG] ***********lec_loop called with prompt: {prompt}, lec_iterations: {lec_iterations}, lec_feedback_limit: {lec_feedback_limit}")
-    #     self.reset_conversations()
-    #     self.reset_perf_counters()
-    #     self.prev_test_cases   = float('inf')
-    #     original_prompt = prompt
-    #     for i in range(lec_iterations):
-    #         print(f"[DEBUG] lec_loop iteration {i}")
-    #         if (update) and (len(self.compile_conversation) == 0):
-    #             if self.test_code_compile() is None:    # Only try to update if code already compiles and LEC returns valid feedback
-    #                 gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
-    #                 lec_out    = self.test_lec(gold, gate, lec_feedback_limit)
-    #                 test_fail_count, failure_reason = lec_out.split('\n', 1)
-    #                 test_fail_count      = int(test_fail_count)
-    #                 self.prev_test_cases = test_fail_count
-    #                 self.lec_f           -= 1
-    #                 self.lec_n           -= 1  # preliminary checks dont count
-    #                 if test_fail_count > 0:
-    #                     prompt = self.get_lec_bootstrap_instruction(original_prompt, test_fail_count, lec_feedback_limit, failure_reason)
-    #         compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
-    #         if compiled:
-    #             # Reformat is free to modify both the gold and the gate
-    #             gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
-    #             lec_out    = self.test_lec(gold, gate, lec_feedback_limit)
-    #             if lec_out is not None:
-    #                 test_fail_count, failure_reason = lec_out.split('\n', 1)
-    #                 test_fail_count = int(test_fail_count)
-    #                 if i != lec_iterations - 1:
-    #                     prev_lec_feedback_limit = lec_feedback_limit
-    #                     lec_feedback_limit      = self.lec_regression_filter(test_fail_count, lec_feedback_limit)
-    #                     lec_out                 = self.test_lec(gold, gate, lec_feedback_limit) # re-do LEC after popping conversation
-    #                     _, failure_reason       = lec_out.split('\n', 1)
-    #                     self.lec_f             -= 1
-    #                     self.lec_n             -= 1  # preliminary checks dont count
-    #                     prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, lec_feedback_limit)
-    #             else:
-    #                 return self.finish_run()
-    #         else:
-    #             return self.finish_run(failure_reason)
-    #     return self.finish_run(failure_reason)
-
     def lec_loop(self, prompt: str, lec_iterations: int = 1, lec_feedback_limit: int = -1,
              compile_iterations: int = 1, update: bool = False, testbench_iterations: int = 0):
         self.reset_conversations()

@@ -149,13 +149,11 @@ def process_logs_and_output(logs_dir, output_file, benchmark_name):
     print(f"Benchmark '{benchmark_name}' status: {status}")
     print(f"Test result has been saved to {output_file}")
 
-
 def normalize_name(name):
     if name.endswith('_spec'):
         return name[:-5]  # Remove the last 5 characters ('_spec')
     else:
         return name
-
 
 def log(args):
     if args.benchmark_name:
@@ -411,12 +409,10 @@ def add_log_command(subparsers):
     parser = subparsers.add_parser('log', help="Collect and save RESULTS lines from previous runs.", add_help=False)
     add_shared_args(parser)
     parser.add_argument('--output-file', type=str, default='test_results.txt', help="The output file to save test results.")
-    parser.add_argument('--list-runs', action='store_true', help="List all available runs and their timestamps.")
+    # parser.add_argument('--list-runs', action='store_true', help="List all available runs and their timestamps.")
     parser.add_argument('benchmark_name', nargs='?', help="Name of the benchmark to log details for", default=None)
     # parser.add_argument('--log_dir', type=str, action="store", default="./", help='Working directory containing log files')
     parser.add_argument('--status', choices=['all', 'success', 'failed'], default='all', help='Filter logs by run status.')
-    parser.add_argument('--date-from', type=str, help='Show logs from this date (YYYY-MM-DD).')
-    parser.add_argument('--date-to', type=str, help='Show logs up to this date (YYYY-MM-DD).')
     parser.add_argument('--top_k', type=int, help='Filter logs where top_k is greater than or equal to the specified value.')
 
     return parser
