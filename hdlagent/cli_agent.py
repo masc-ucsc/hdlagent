@@ -90,214 +90,79 @@ def bench(args):
         my_handler.spec_run(target_spec=benchmark_file, iterations=args.comp_limit)
 
 def log(args):
-    base_output_dir = os.path.expanduser('~/hdlagent/hdlagent/out')
+    w_dir = os.path.abspath(args.w_dir)
+    print(f"[DEBUG] Working directory: {w_dir}")
 
-    if args.list_runs:
-        benchmark_dirs = glob.glob(os.path.join(base_output_dir, '*'))
+    # Recursively find all 'logs' directories under w_dir
+    logs_dirs = []
+    for root, dirs, files in os.walk(w_dir):
+        if 'logs' in dirs:
+            logs_dir = os.path.join(root, 'logs')
+            logs_dirs.append(logs_dir)
 
-        print("Available Runs:\n")
-        for idx, bench_dir in enumerate(benchmark_dirs, start=1):
-            last_modified = datetime.datetime.fromtimestamp(os.path.getmtime(bench_dir)).strftime('%Y-%m-%d %H:%M:%S')
-            bench_name = os.path.basename(bench_dir)
-            print(f"{idx}. {bench_name} - Run on {last_modified}")
+    if not logs_dirs:
+        print(f"No logs directories found under working directory '{w_dir}'.")
         return
 
-    elif args.benchmark_name:
-        benchmark_name = args.benchmark_name
-        logs_dir = os.path.join(base_output_dir, benchmark_name, 'logs')
+    test_results = []
 
-        if not os.path.exists(logs_dir):
-            print(f"No logs directory found for benchmark '{benchmark_name}'.")
-            return
-
+    for logs_dir in logs_dirs:
         compile_log_pattern = os.path.join(logs_dir, '*_compile_log.md')
         compile_logs = glob.glob(compile_log_pattern)
 
         if not compile_logs:
-            print(f"No compile log found for benchmark '{benchmark_name}'.")
-            return
+            print(f"No compile log files found in '{logs_dir}'.")
+            continue
 
-        # Assuming there's only one compile log per benchmark
-        compile_log_file = compile_logs[0]
+        # Extract the test case name from the parent directory of the logs directory
+        test_case_dir = os.path.dirname(logs_dir)
+        test_case_name = os.path.basename(test_case_dir)
+        print(f"[DEBUG] Processing test case: {test_case_name}")
 
-        with open(compile_log_file, 'r') as file:
-            lines = file.readlines()
+        # Process each compile log file
+        for compile_log_file in compile_logs:
+            print(f"[DEBUG] Processing compile log: {compile_log_file}")
+            with open(compile_log_file, 'r') as file:
+                lines = file.readlines()
 
-        results_line = None
-        for line in reversed(lines):
-            if line.startswith('RESULTS :'):
-                results_line = line.strip()
-                break
+            # Find the 'RESULTS :' line
+            results_line = None
+            for line in reversed(lines):
+                if line.startswith('RESULTS :'):
+                    results_line = line.strip()
+                    break
 
-        if not results_line:
-            print(f"No RESULTS line found in the compile log for benchmark '{benchmark_name}'.")
-            return
+            if not results_line:
+                print(f"No RESULTS line found in the compile log '{compile_log_file}'.")
+                continue
 
-        parts = results_line.split(' : ')
-        if len(parts) != 12:
-            print(f"Invalid RESULTS line format in the compile log for benchmark '{benchmark_name}'.")
-            return
+            parts = results_line.split(' : ')
+            if len(parts) != 12:
+                print(f"Invalid RESULTS line format in the compile log '{compile_log_file}'.")
+                continue
 
-        _, model, name, comp_n, comp_f, lec_n, lec_f, top_k, prompt_tokens, completion_tokens, world_clock_time, llm_query_time = parts
+            # Parse the parts
+            _, model, name, comp_n, comp_f, lec_n, lec_f, top_k, prompt_tokens, completion_tokens, world_clock_time, llm_query_time = parts
 
-        status = "Success" if int(comp_f) == 0 and int(lec_f) == 0 else "Failure"
+            # Determine success or failure
+            status = 'Success' if int(comp_f) == 0 and int(lec_f) == 0 else 'Failure'
 
-        run_date = datetime.datetime.fromtimestamp(os.path.getmtime(compile_log_file)).strftime('%Y-%m-%d %H:%M:%S')
+            # Use the test_case_name as the test name
+            test_results.append((test_case_name, status))
 
-        print(f"Benchmark: {benchmark_name}")
-        print(f"Run Date: {run_date}")
-        print(f"Model: {model}")
-        print(f"Status: {status}\n")
-        print("Performance Metrics:")
-        print(f"- Compilation Attempts: {comp_n}")
-        print(f"- Compilation Failures: {comp_f}")
-        print(f"- LEC Attempts: {lec_n}")
-        print(f"- LEC Failures: {lec_f}")
-        total_tokens = int(prompt_tokens) + int(completion_tokens)
-        print(f"- Total Tokens Used: {total_tokens} (Prompt: {prompt_tokens}, Completion: {completion_tokens})")
-        print(f"- Total Time: {world_clock_time} seconds (LLM Query Time: {llm_query_time} seconds)")
-        print(f"- Top_k: {top_k}\n")
-        print("Output Files:")
-        generated_code = os.path.join(base_output_dir, benchmark_name, f"{name}.v")
-        compile_log = compile_log_file
-        spec_log = os.path.join(logs_dir, f"{name}_spec_log.md")
-
-        print(f"- Generated Code: {generated_code}")
-        print(f"- Compile Log: {compile_log}")
-        print(f"- Spec Log: {spec_log}")
-
+    if not test_results:
+        print("No test results found.")
         return
 
-    else:
-        logs_dir_pattern = os.path.join(base_output_dir, '*', 'logs')
-        log_directories = glob.glob(logs_dir_pattern)
+    # Write the results to the output file
+    output_file = args.output_file if args.output_file else 'test_results.txt'
+    print(f"[DEBUG] Output file: {output_file}")
 
-        if not log_directories:
-            print(f"No logs directory found matching pattern {logs_dir_pattern}.")
-            return
+    with open(output_file, 'w') as f:
+        for name, status in test_results:
+            f.write(f"{name}: {status}\n")
 
-        results_entries = []
-        results_lines = []
-
-        for logs_dir in log_directories:
-            compile_log_pattern = os.path.join(logs_dir, '*_compile_log.md')
-            compile_logs = glob.glob(compile_log_pattern)
-
-            for log_file in compile_logs:
-                with open(log_file, 'r') as file:
-                    lines = file.readlines()
-                    results_line = None
-                    for line in reversed(lines):
-                        if line.startswith('RESULTS :'):
-                            results_line = line.strip()
-                            results_lines.append(results_line + '\n')
-                            break
-
-                if results_line:
-                    parts = results_line.split(' : ')
-                    if len(parts) != 12:
-                        continue
-
-                    _, model, name, comp_n, comp_f, lec_n, lec_f, top_k, prompt_tokens, completion_tokens, world_clock_time, llm_query_time = parts
-
-                    run_date = datetime.datetime.fromtimestamp(os.path.getmtime(log_file))
-
-                    status = 'success' if int(comp_f) == 0 and int(lec_f) == 0 else 'failed'
-
-                    entry = {
-                        'benchmark_name': name,
-                        'model': model,
-                        'comp_n': int(comp_n),
-                        'comp_f': int(comp_f),
-                        'lec_n': int(lec_n),
-                        'lec_f': int(lec_f),
-                        'top_k': int(top_k),
-                        'prompt_tokens': int(prompt_tokens),
-                        'completion_tokens': int(completion_tokens),
-                        'world_clock_time': float(world_clock_time),
-                        'llm_query_time': float(llm_query_time),
-                        'run_date': run_date,
-                        'log_file': log_file,
-                        'status': status,
-                        'results_line': results_line,
-                    }
-
-                    results_entries.append(entry)
-
-        if not results_entries:
-            print("No RESULTS entries found in the compile logs.")
-            return
-
-        filters_specified = (args.status != 'all' or args.date_from or args.date_to or args.top_k is not None)
-
-        if filters_specified:
-            filtered_entries = []
-
-            for entry in results_entries:
-                if args.status != 'all' and entry['status'] != args.status:
-                    continue
-
-                if args.date_from:
-                    try:
-                        date_from = datetime.datetime.strptime(args.date_from, '%Y-%m-%d')
-                    except ValueError:
-                        print("Invalid date format for --date-from. Use YYYY-MM-DD.")
-                        return
-                    if entry['run_date'] < date_from:
-                        continue
-                if args.date_to:
-                    try:
-                        date_to = datetime.datetime.strptime(args.date_to, '%Y-%m-%d') + datetime.timedelta(days=1)
-                    except ValueError:
-                        print("Invalid date format for --date-to. Use YYYY-MM-DD.")
-                        return
-                    if entry['run_date'] >= date_to:
-                        continue
-
-                if args.top_k is not None:
-                    if entry['top_k'] < args.top_k:
-                        continue
-
-                filtered_entries.append(entry)
-
-            if not filtered_entries:
-                print("No entries match the specified filters.")
-                return
-
-            filtered_entries.sort(key=lambda x: x['run_date'])
-
-            if args.status != 'all':
-                print(f"{args.status.capitalize()} Runs", end='')
-                if args.date_from or args.date_to:
-                    print(" between", end=' ')
-                    if args.date_from:
-                        print(f"{args.date_from}", end=' ')
-                    if args.date_to:
-                        print(f"and {args.date_to}", end=' ')
-                print(":\n")
-            else:
-                print("Filtered Runs:\n")
-
-            for idx, entry in enumerate(filtered_entries, start=1):
-                run_date_str = entry['run_date'].strftime('%Y-%m-%d %H:%M:%S')
-                print(f"{idx}. {entry['benchmark_name']} - Run on {run_date_str}")
-
-            if args.output_file:
-                with open(args.output_file, 'w') as file:
-                    for entry in filtered_entries:
-                        file.write(entry['results_line'] + '\n')
-                print(f"\nFiltered results have been saved to {args.output_file}")
-
-        else:
-            if not results_lines:
-                print("No RESULTS lines found in the compile logs.")
-                return
-
-            output_file = args.output_file if args.output_file else 'all_results.txt'
-            with open(output_file, 'w') as file:
-                file.writelines(results_lines)
-
-            print(f"Collected RESULTS lines have been saved to {output_file}")
+    print(f"Test results have been saved to {output_file}")
 
 def build(args):
     if args.help:
@@ -451,10 +316,10 @@ def add_list_models_command(subparsers):
 def add_log_command(subparsers):
     parser = subparsers.add_parser('log', help="Collect and save RESULTS lines from previous runs.", add_help=False)
     add_shared_args(parser)
-    parser.add_argument('--output-file', help="The output file to save collected RESULTS lines.")
+    parser.add_argument('--output-file', type=str, default='test_results.txt', help="The output file to save test results.")
     parser.add_argument('--list-runs', action='store_true', help="List all available runs and their timestamps.")
     parser.add_argument('benchmark_name', nargs='?', help="Name of the benchmark to log details for", default=None)
-
+    # parser.add_argument('--log_dir', type=str, action="store", default="./", help='Working directory containing log files')
     parser.add_argument('--status', choices=['all', 'success', 'failed'], default='all', help='Filter logs by run status.')
     parser.add_argument('--date-from', type=str, help='Show logs from this date (YYYY-MM-DD).')
     parser.add_argument('--date-to', type=str, help='Show logs up to this date (YYYY-MM-DD).')
@@ -527,11 +392,6 @@ Examples:
         if args.help:
             parser_list_models.print_help()
         log(args)
-    elif args.command == "batch":
-        if args.help:
-            parser_batch.print_help()
-        else:
-            batch(args)
     else:
         parser.print_help()
 

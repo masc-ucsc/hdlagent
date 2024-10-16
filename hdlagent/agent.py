@@ -1034,8 +1034,6 @@ class Agent:
     #
     # Intended use: inside of the lec loop
     def code_compilation_loop(self, prompt: str, lec_iteration: int = 0, iterations: int = 1):
-        print(f"[DEBUG] code_compilation_loop: prompt={prompt}, lec_iteration={lec_iteration}, iterations={iterations}")
-
         if not isinstance(self.code, Path):
             self.code = Path(self.code)
         
@@ -1047,7 +1045,6 @@ class Agent:
         for i in range(iterations):
             #self.dump_codeblock(self.query_model(self.compile_conversation, current_query, True), self.code)
             codeblock = self.query_model(self.compile_conversation, current_query, True)
-            print(f"[DEBUG] Iteration {i}, codeblock received from LLM:\n{codeblock}\n")
             self.dump_codeblock(codeblock, self.code)
             compile_out = self.test_code_compile()
             print(f"[DEBUG] test_code_compile returned: {compile_out}")
@@ -1158,6 +1155,7 @@ class Agent:
         failure_reason = None  # Initialize failure_reason
     
         for i in range(lec_iterations):
+            print(f"[DEBUG] lec_loop iteration {i}")
             if update and len(self.compile_conversation) == 0:
                 if self.test_code_compile() is None:
                     self.verilog = self.code  # Ensure self.verilog is set
