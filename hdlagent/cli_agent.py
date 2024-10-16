@@ -89,80 +89,174 @@ def bench(args):
         print(f"Processing YAML file: {benchmark_file}")
         my_handler.spec_run(target_spec=benchmark_file, iterations=args.comp_limit)
 
-def log(args):
-    w_dir = os.path.abspath(args.w_dir)
-    print(f"[DEBUG] Working directory: {w_dir}")
+def process_logs(logs_dir, test_case_name):
+    compile_log_pattern = os.path.join(logs_dir, '*_compile_log.md')
+    compile_logs = glob.glob(compile_log_pattern)
 
-    # Recursively find all 'logs' directories under w_dir
-    logs_dirs = []
-    for root, dirs, files in os.walk(w_dir):
-        if 'logs' in dirs:
-            logs_dir = os.path.join(root, 'logs')
-            logs_dirs.append(logs_dir)
-
-    if not logs_dirs:
-        print(f"No logs directories found under working directory '{w_dir}'.")
-        return
+    if not compile_logs:
+        print(f"No compile log files found in '{logs_dir}'.")
+        return []
 
     test_results = []
 
-    for logs_dir in logs_dirs:
-        compile_log_pattern = os.path.join(logs_dir, '*_compile_log.md')
-        compile_logs = glob.glob(compile_log_pattern)
+    # Process each compile log file
+    for compile_log_file in compile_logs:
+        with open(compile_log_file, 'r') as file:
+            lines = file.readlines()
 
-        if not compile_logs:
-            print(f"No compile log files found in '{logs_dir}'.")
+        # Find the 'RESULTS :' line
+        results_line = None
+        for line in reversed(lines):
+            if line.startswith('RESULTS :'):
+                results_line = line.strip()
+                break
+
+        if not results_line:
+            print(f"No RESULTS line found in the compile log '{compile_log_file}'.")
             continue
 
-        # Extract the test case name from the parent directory of the logs directory
-        test_case_dir = os.path.dirname(logs_dir)
-        test_case_name = os.path.basename(test_case_dir)
-        print(f"[DEBUG] Processing test case: {test_case_name}")
+        parts = results_line.split(' : ')
+        if len(parts) != 12:
+            print(f"Invalid RESULTS line format in the compile log '{compile_log_file}'.")
+            continue
 
-        # Process each compile log file
-        for compile_log_file in compile_logs:
-            print(f"[DEBUG] Processing compile log: {compile_log_file}")
-            with open(compile_log_file, 'r') as file:
-                lines = file.readlines()
+        # Parse the parts
+        _, model, name, comp_n, comp_f, lec_n, lec_f, top_k, prompt_tokens, completion_tokens, world_clock_time, llm_query_time = parts
 
-            # Find the 'RESULTS :' line
-            results_line = None
-            for line in reversed(lines):
-                if line.startswith('RESULTS :'):
-                    results_line = line.strip()
-                    break
+        # Determine success or failure
+        status = 'Success' if int(comp_f) == 0 and int(lec_f) == 0 else 'Failure'
 
-            if not results_line:
-                print(f"No RESULTS line found in the compile log '{compile_log_file}'.")
-                continue
+        test_results.append((test_case_name, status))
 
-            parts = results_line.split(' : ')
-            if len(parts) != 12:
-                print(f"Invalid RESULTS line format in the compile log '{compile_log_file}'.")
-                continue
+    return test_results
 
-            # Parse the parts
-            _, model, name, comp_n, comp_f, lec_n, lec_f, top_k, prompt_tokens, completion_tokens, world_clock_time, llm_query_time = parts
-
-            # Determine success or failure
-            status = 'Success' if int(comp_f) == 0 and int(lec_f) == 0 else 'Failure'
-
-            # Use the test_case_name as the test name
-            test_results.append((test_case_name, status))
+def process_logs_and_output(logs_dir, output_file, benchmark_name):
+    test_results = process_logs(logs_dir, benchmark_name)
 
     if not test_results:
-        print("No test results found.")
+        print(f"No test results found for benchmark '{benchmark_name}'.")
         return
 
     # Write the results to the output file
-    output_file = args.output_file if args.output_file else 'test_results.txt'
-    print(f"[DEBUG] Output file: {output_file}")
+    output_file = output_file if output_file else 'test_results.txt'
 
     with open(output_file, 'w') as f:
         for name, status in test_results:
             f.write(f"{name}: {status}\n")
 
-    print(f"Test results have been saved to {output_file}")
+    # Output result to console
+    status = test_results[0][1]  # Assuming only one result per benchmark
+    print(f"Benchmark '{benchmark_name}' status: {status}")
+    print(f"Test result has been saved to {output_file}")
+
+
+def normalize_name(name):
+    if name.endswith('_spec'):
+        return name[:-5]  # Remove the last 5 characters ('_spec')
+    else:
+        return name
+
+
+def log(args):
+    if args.benchmark_name:
+        # If benchmark_name is provided, search for it in ~/hdlagent/
+        base_dir = os.path.expanduser('~/hdlagent/')
+        benchmark_name_normalized = normalize_name(args.benchmark_name)
+
+        # Recursively search for the benchmark directory
+        found = False
+        for root, dirs, files in os.walk(base_dir):
+            dir_name = os.path.basename(root)
+            dir_name_normalized = normalize_name(dir_name)
+            if dir_name_normalized == benchmark_name_normalized:
+                # Found the benchmark directory
+                logs_dir = os.path.join(root, 'logs')
+                if not os.path.exists(logs_dir):
+                    print(f"No logs directory found for benchmark '{args.benchmark_name}'.")
+                    return
+                # Process the logs for this benchmark
+                found = True
+                break
+        if not found:
+            print(f"Benchmark '{args.benchmark_name}' not found under '{base_dir}'.")
+            return
+
+        # Process logs and output result
+        process_logs_and_output(logs_dir, args.output_file, args.benchmark_name)
+    else:
+        w_dir = os.path.abspath(args.w_dir)
+        print(f"[DEBUG] Working directory: {w_dir}")
+    
+        # Recursively find all 'logs' directories under w_dir
+        logs_dirs = []
+        for root, dirs, files in os.walk(w_dir):
+            if 'logs' in dirs:
+                logs_dir = os.path.join(root, 'logs')
+                logs_dirs.append(logs_dir)
+    
+        if not logs_dirs:
+            print(f"No logs directories found under working directory '{w_dir}'.")
+            return
+    
+        test_results = []
+    
+        for logs_dir in logs_dirs:
+            compile_log_pattern = os.path.join(logs_dir, '*_compile_log.md')
+            compile_logs = glob.glob(compile_log_pattern)
+    
+            if not compile_logs:
+                print(f"No compile log files found in '{logs_dir}'.")
+                continue
+    
+            # Extract the test case name from the parent directory of the logs directory
+            test_case_dir = os.path.dirname(logs_dir)
+            test_case_name = os.path.basename(test_case_dir)
+            print(f"[DEBUG] Processing test case: {test_case_name}")
+    
+            # Process each compile log file
+            for compile_log_file in compile_logs:
+                print(f"[DEBUG] Processing compile log: {compile_log_file}")
+                with open(compile_log_file, 'r') as file:
+                    lines = file.readlines()
+    
+                # Find the 'RESULTS :' line
+                results_line = None
+                for line in reversed(lines):
+                    if line.startswith('RESULTS :'):
+                        results_line = line.strip()
+                        break
+    
+                if not results_line:
+                    print(f"No RESULTS line found in the compile log '{compile_log_file}'.")
+                    continue
+    
+                parts = results_line.split(' : ')
+                if len(parts) != 12:
+                    print(f"Invalid RESULTS line format in the compile log '{compile_log_file}'.")
+                    continue
+    
+                # Parse the parts
+                _, model, name, comp_n, comp_f, lec_n, lec_f, top_k, prompt_tokens, completion_tokens, world_clock_time, llm_query_time = parts
+    
+                # Determine success or failure
+                status = 'Success' if int(comp_f) == 0 and int(lec_f) == 0 else 'Failure'
+    
+                # Use the test_case_name as the test name
+                test_results.append((test_case_name, status))
+    
+        if not test_results:
+            print("No test results found.")
+            return
+    
+        # Write the results to the output file
+        output_file = args.output_file if args.output_file else 'test_results.txt'
+        print(f"[DEBUG] Output file: {output_file}")
+    
+        with open(output_file, 'w') as f:
+            for name, status in test_results:
+                f.write(f"{name}: {status}\n")
+    
+        print(f"Test results have been saved to {output_file}")
 
 def build(args):
     if args.help:
