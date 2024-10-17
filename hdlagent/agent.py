@@ -11,6 +11,7 @@ import vertexai
 from vertexai.generative_models import *
 import yaml
 import logging
+import pdb
 
 from hdlang import get_hdlang
 
@@ -1030,11 +1031,9 @@ class Agent:
     #
     # Intended use: user facing RTL generation
     def spec_run_loop(self, prompt: str, iterations: int = 1, continued: bool = False, update: bool = False):
-        # print(f"spec_run_loop (start): self.name = {self.name}")
         if not continued:   # Maintain conversation history when iterating over design
             self.reset_conversations()
             self.reset_perf_counters()
-
         if update:
             # Re-run LEC without regenerating code
             failure_reason = self.test_lec()
@@ -1075,7 +1074,7 @@ class Agent:
     # and outer loop checks generated RTL versus supplied 'gold' Verilog for logical equivalence
     #
     # Intended use: benchmarking effectiveness of the agent
-    def lec_loop(self, prompt: str, lec_iterations: int = 1, lec_feedback_limit: int = -1,
+    def lec_loop(self, prompt: str, compiled : False, lec_iterations: int = 1, lec_feedback_limit: int = -1,
              compile_iterations: int = 1, update: bool = False, testbench_iterations: int = 0):
         self.reset_conversations()
         self.reset_perf_counters()
@@ -1101,7 +1100,7 @@ class Agent:
                         print("[DEBUG] LEC passed during update.")
                         return self.finish_run()
     
-            compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
+            # compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
             if compiled:
                 self.verilog = self.code  # Ensure self.verilog is set
                 gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)

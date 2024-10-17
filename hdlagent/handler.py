@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import yaml 
 import logging
+import pdb
 
 
 def check_json(json_path: str):
@@ -136,7 +137,7 @@ class Handler:
                 new_agent.set_short_context
             self.add_agent(new_agent)
             role = Role.VALIDATION          # Default only one LLM can be generate the RTL
-
+        
     # Reads the compile log file of the entry, returns the relevant results in a dictionary
     #
     # Intended use: for checking the status of previous runs
@@ -406,8 +407,7 @@ class Handler:
     # Intended use: user-facing code and test generation
     def spec_run(self, target_spec: str, iterations: int, w_dir: str = None,
                  skip_completed: bool = True, update: bool = False, skip_successful: bool = True):
-        #print(f"spec_run: skip_completed={skip_completed}, skip_successful={skip_successful}")
-        #print(f"Processing spec file: {target_spec}")
+        pdb.set_trace()
         if not os.path.exists(target_spec):
             print(f"Error: {target_spec} not found, exiting...")
             exit()
@@ -453,8 +453,11 @@ class Handler:
                 designer.tb_loop(designer.read_spec(target_spec))
             else:
                 print("_________LEC will be run_________")
-                designer.lec_loop(prompt)
+                designer.lec_loop(prompt, compiled)
+            testers = self.get_testers()
+            print(f"Testers: {testers}")
             for agent in self.get_testers():
+                print("Inside the loop.")
                 agent.set_w_dir(w_dir)
                 print(f"__________________________________________________________________")
                 agent.tb_loop(agent.read_spec(target_spec))
