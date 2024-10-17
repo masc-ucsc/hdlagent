@@ -902,7 +902,7 @@ class Agent:
     #
     # Intended use: for testbenching DUT after RTL has successfully compiled into Verilog
     def test_tb(self):
-        script     = self.tb_script + " " + self.verilog + " " + self.tb
+        script     = self.tb_script + " " + str(self.verilog) + " " + str(self.tb)
         res        = subprocess.run([script], capture_output=True, shell=True)
         res_string = (str(res.stdout))[2:-1].replace("\\n","\n")
         print(res_string)
