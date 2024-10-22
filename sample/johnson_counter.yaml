@@ -1,0 +1,21 @@
+description: 'Implement a 4-bit Johnson counter. It is a type of ring counter that outputs a unique 1-hot code for each state. The counter should transition to the next state on every rising edge of the clock. It cycles through specific sequences in a unique manner, the input is a clock and reset and the output is q[3:0].On each clock tick, the content shifts right, with the LSB being fed back to the MSB, creating a looped shift pattern where a single high bit goes in a circle. This is a special case where the fed back bit is NOT inverted. If reset is asserted, the counter resets to 4''b0001. The current state of the counter is output on q. Input(s): [0:0]clock, [0:0]reset. Output(s): [3:0]q.        '
+interface: |-
+  module johnson_counter (input clock, input reset, output reg [3:0] q);
+bench_response: |+
+  module johnson_counter (
+      input clock,
+      input reset,
+      output reg [3:0] q
+  );
+    reg [3:0] shift_reg;
+    always @(posedge clock or posedge reset) begin
+      if (reset) begin
+        shift_reg <= 4'b0001;
+      end else begin
+        shift_reg <= {shift_reg[0], shift_reg[3:1]};
+      end
+    end
+    assign q = shift_reg;
+  endmodule
+
+...

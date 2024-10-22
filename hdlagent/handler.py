@@ -407,7 +407,7 @@ class Handler:
     # Intended use: user-facing code and test generation
     def spec_run(self, target_spec: str, iterations: int, w_dir: str = None,
                  skip_completed: bool = True, update: bool = False, skip_successful: bool = True):
-        pdb.set_trace()
+        # pdb.set_trace()
         if not os.path.exists(target_spec):
             print(f"Error: {target_spec} not found, exiting...")
             exit()
@@ -416,9 +416,9 @@ class Handler:
         spec_name = os.path.splitext(os.path.basename(target_spec))[0]
         # print(f"Spec name: {spec_name}")
     
-        designer.read_spec(target_spec)
+        # designer.read_spec(target_spec)
         designer.name = spec_name
-        prompt = designer.spec_content
+        # prompt = designer.spec_content
         #print(f"After read_spec, designer.name: {designer.name}")
     
         if w_dir is not None:
@@ -446,7 +446,7 @@ class Handler:
         if not run:
             return
         compiled = designer.spec_run_loop(designer.read_spec(target_spec), iterations)
-        
+        prompt = designer.spec_content
         if compiled:
             if designer.gold is None:
                 print("_________Testbench will be created_________")

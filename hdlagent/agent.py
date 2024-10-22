@@ -255,6 +255,16 @@ class Agent:
         self.tb          = "./tests/tb.v"
         self.gold        = None
 
+    def reset_state(self):
+        self.name = None
+        self.code = None
+        self.verilog = None
+        self.gold = None
+        self.compile_conversation = []
+        self.lec_conversation = []
+        self.tb_conversation = []
+        # Reset any other attributes that hold state between runs
+
     # Sets the role of the Agent and it's LLM for the given Handler set task
     # Changes initial context to Testbench based when given VALIDATION role
     #
@@ -422,7 +432,7 @@ class Agent:
         if self.spec is not None:
             #self.spec_log = logs_dir / f"{self.name}_spec_log.md"
             self.spec_log = logs_dir / f"{self.name}_compile_log.md"
-            self.spec = self.w_dir / f"{self.name}_spec.yaml"
+            self.spec = self.w_dir / f"{self.name}.yaml"
             if self.name != "" and spec_path is not None:
                 with open(spec_path, 'r') as path:
                     contents = path.read()
@@ -479,7 +489,7 @@ class Agent:
     #
     # Intended use: before a generation/lec loop is started so the prompt can be reformatted and formalized
     def read_spec(self, target_spec: str = None):
-
+        print("[DEBUG] read_spec is called.")
         if target_spec is None:
             target_spec = self.spec
     
@@ -490,6 +500,7 @@ class Agent:
             spec = yaml.safe_load(file)
     
         # Only set self.name if it's not already set
+        self.name = os.path.splitext(os.path.basename(target_spec))[0]
         if not hasattr(self, 'name') or self.name == "":
             self.name = os.path.splitext(os.path.basename(target_spec))[0]
             logging.debug(f"Agent name set to: {self.name}")
@@ -506,6 +517,9 @@ class Agent:
             exit()
         if 'bench_response' in spec:
             bench_response = spec.get('bench_response', '').strip()
+            print("______________________________________________________________")
+            print("______________________________________________________________")
+            print("dump_gold: ", bench_response)
             self.dump_gold(bench_response)
             # prompt = spec.get('description', '')
             # self.lec_loop(prompt)
@@ -526,6 +540,8 @@ class Agent:
             gold_contents += line.rstrip()
             gold_contents += "\n"
         gold_contents += "\n"
+        if self.name is None:
+            raise ValueError("self.name is not set")
         self.gold      = os.path.join(self.w_dir, "tests", self.name + "_gold.v")
         os.makedirs(os.path.dirname(self.gold), exist_ok=True)
         with open (self.gold, "w") as file:
@@ -733,7 +749,7 @@ class Agent:
             'role': 'user',
             'content': clarification
         })
-        print("---------------------------")
+        print("------------------------------------------------------------------------------")
         print("**User:**\n" + clarification)
 
 
@@ -1015,6 +1031,7 @@ class Agent:
         
         for i in range(iterations):
             #self.dump_codeblock(self.query_model(self.compile_conversation, current_query, True), self.code)
+            print("*****************the query is: ", current_query)
             codeblock = self.query_model(self.compile_conversation, current_query, True)
             self.dump_codeblock(codeblock, self.code)
             compile_out = self.test_code_compile()
@@ -1074,10 +1091,10 @@ class Agent:
     # and outer loop checks generated RTL versus supplied 'gold' Verilog for logical equivalence
     #
     # Intended use: benchmarking effectiveness of the agent
-    def lec_loop(self, prompt: str, compiled : False, lec_iterations: int = 1, lec_feedback_limit: int = -1,
+    def lec_loop(self, prompt: str, compiled : False, lec_iterations: int = 10, lec_feedback_limit: int = -1,
              compile_iterations: int = 1, update: bool = False, testbench_iterations: int = 0):
-        self.reset_conversations()
-        self.reset_perf_counters()
+        # self.reset_conversations()
+        # self.reset_perf_counters()
         self.prev_test_cases = float('inf')
         original_prompt = prompt
         failure_reason = None  # Initialize failure_reason
@@ -1100,7 +1117,7 @@ class Agent:
                         print("[DEBUG] LEC passed during update.")
                         return self.finish_run()
     
-            # compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
+            compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
             if compiled:
                 self.verilog = self.code  # Ensure self.verilog is set
                 gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)

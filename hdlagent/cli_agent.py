@@ -10,6 +10,7 @@ import glob
 import datetime
 from hdeval import HDEvalInterface
 import logging
+import pdb
 #from interface import HDEvalInterface
 
 logging.basicConfig(level=logging.INFO)
@@ -47,7 +48,7 @@ def bench(args):
         exit()
 
     print("This example will show how you can run a yaml file: `poetry run hdlagent/cli_agent.py bench sample/RCA_spec.yaml`\n")
-
+    # pdb.set_trace()
     spath      = resources.files('resources')
     my_handler = Handler()
     my_handler.set_comp_iter(args.comp_limit)
@@ -73,8 +74,11 @@ def bench(args):
                 continue
 
             for yaml_file in yaml_files:
+                
                 print(f"Processing YAML file: {yaml_file}")
                 my_handler.spec_run(target_spec=yaml_file, iterations=args.comp_limit)
+                for agent in my_handler.agents:
+                    agent.reset_state()
         else:
             # Assume it's a YAML file path
             benchmark_file = benchmark_spec
@@ -241,6 +245,15 @@ def log(args):
     
                 # Use the test_case_name as the test name
                 test_results.append((test_case_name, status))
+
+        if not test_results:
+            print("No test results found.")
+            return
+
+        # Compute success rate
+        success_count = sum(1 for _, status in test_results if status == 'Success')
+        total_count = len(test_results)
+        success_percentage = (success_count / total_count) * 100 if total_count > 0 else 0
     
         if not test_results:
             print("No test results found.")
@@ -253,7 +266,8 @@ def log(args):
         with open(output_file, 'w') as f:
             for name, status in test_results:
                 f.write(f"{name}: {status}\n")
-    
+            f.write(f"\nSuccess rate: {success_percentage:.2f}% ({success_count}/{total_count})\n")
+        print(f"Overall success rate: {success_percentage:.2f}% ({success_count}/{total_count})")
         print(f"Test results have been saved to {output_file}")
 
 def build(args):

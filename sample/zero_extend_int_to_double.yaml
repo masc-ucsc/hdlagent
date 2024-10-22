@@ -8,3 +8,4 @@ bench_response: |
   );
     assign double_o = {32'd0, int_i};
   endmodule
+bench_test:

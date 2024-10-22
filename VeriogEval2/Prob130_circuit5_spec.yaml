@@ -1,0 +1,228 @@
+description: 'I would like you to implement a module named TopModule with the following
+interface. All input and output ports are one bit unless otherwise
+specified.
+
+ - input  a (4 bits)
+ - input  b (4 bits)
+ - input  c (4 bits)
+ - input  d (4 bits)
+ - input  e (4 bits)
+ - output q (4 bits)
+
+The module should implement a combinational circuit. Read the simulation
+waveforms to determine what the circuit does, then implement it.
+
+  time  a  b  c  d  e  q
+  0ns   x  x  x  x  x  x
+  5ns   x  x  x  x  x  x
+  10ns  x  x  x  x  x  x
+  15ns  a  b  0  d  e  b
+  20ns  a  b  1  d  e  e
+  25ns  a  b  2  d  e  a
+  30ns  a  b  3  d  e  d
+  35ns  a  b  4  d  e  f
+  40ns  a  b  5  d  e  f
+  45ns  a  b  6  d  e  f
+  50ns  a  b  7  d  e  f
+  55ns  a  b  8  d  e  f
+  60ns  a  b  9  d  e  f
+  65ns  a  b  a  d  e  f
+  70ns  a  b  b  d  e  f
+  75ns  a  b  c  d  e  f
+  80ns  a  b  d  d  e  f
+  85ns  a  b  e  d  e  f
+  90ns  a  b  f  d  e  f'
+interface: |-
+  module RefModule (
+    input [3:0] a,
+    input [3:0] b,
+    input [3:0] c,
+    input [3:0] d,
+    input [3:0] e,
+    output reg [3:0] q
+  );
+  
+    always @(*)
+      case (c)
+        0: q = b;
+        1: q = e;
+        2: q = a;
+        3: q = d;
+        default: q = 4'hf;
+      endcase
+  
+  endmodule
+bench_response: |
+  module RefModule (
+    input [3:0] a,
+    input [3:0] b,
+    input [3:0] c,
+    input [3:0] d,
+    input [3:0] e,
+    output reg [3:0] q
+  );
+  
+    always @(*)
+      case (c)
+        0: q = b;
+        1: q = e;
+        2: q = a;
+        3: q = d;
+        default: q = 4'hf;
+      endcase
+  
+  endmodule
+bench_test: |
+  `timescale 1 ps/1 ps
+  `define OK 12
+  `define INCORRECT 13
+  
+  
+  module stimulus_gen (
+  	input clk,
+  	output logic [3:0] a,b,c,d,e,
+  	output reg[511:0] wavedrom_title,
+  	output reg wavedrom_enable	
+  );
+  
+  
+  // Add two ports to module stimulus_gen:
+  //    output [511:0] wavedrom_title
+  //    output reg wavedrom_enable
+  
+  	task wavedrom_start(input[511:0] title = "");
+  	endtask
+  	
+  	task wavedrom_stop;
+  		#1;
+  	endtask	
+  
+  
+  
+  	initial begin
+  		@(negedge clk) wavedrom_start("Unknown circuit");
+  			@(posedge clk) {a,b,c,d,e} <= {20'hab0de};
+  			repeat(18) @(posedge clk, negedge clk) c <= c + 1;
+  		wavedrom_stop();
+  
+  		@(negedge clk) wavedrom_start("Unknown circuit");
+  			@(posedge clk) {a,b,c,d,e} <= {20'h12034};
+  			repeat(8) @(posedge clk, negedge clk) c <= c + 1;
+  			@(posedge clk) {a,b,c,d,e} <= {20'h56078};
+  			repeat(8) @(posedge clk, negedge clk) c <= c + 1;
+  		wavedrom_stop();
+  		
+  		repeat(100) @(posedge clk, negedge clk)
+  			{a,b,c,d,e} <= $urandom;
+  		$finish;
+  	end
+  	
+  endmodule
+  
+  module tb();
+  
+  	typedef struct packed {
+  		int errors;
+  		int errortime;
+  		int errors_q;
+  		int errortime_q;
+  
+  		int clocks;
+  	} stats;
+  	
+  	stats stats1;
+  	
+  	
+  	wire[511:0] wavedrom_title;
+  	wire wavedrom_enable;
+  	int wavedrom_hide_after_time;
+  	
+  	reg clk=0;
+  	initial forever
+  		#5 clk = ~clk;
+  
+  	logic [3:0] a;
+  	logic [3:0] b;
+  	logic [3:0] c;
+  	logic [3:0] d;
+  	logic [3:0] e;
+  	logic [3:0] q_ref;
+  	logic [3:0] q_dut;
+  
+  	initial begin 
+  		$dumpfile("wave.vcd");
+  		$dumpvars(1, stim1.clk, tb_mismatch ,a,b,c,d,e,q_ref,q_dut );
+  	end
+  
+  
+  	wire tb_match;		// Verification
+  	wire tb_mismatch = ~tb_match;
+  	
+  	stimulus_gen stim1 (
+  		.clk,
+  		.* ,
+  		.a,
+  		.b,
+  		.c,
+  		.d,
+  		.e );
+  	RefModule good1 (
+  		.a,
+  		.b,
+  		.c,
+  		.d,
+  		.e,
+  		.q(q_ref) );
+  		
+  	TopModule top_module1 (
+  		.a,
+  		.b,
+  		.c,
+  		.d,
+  		.e,
+  		.q(q_dut) );
+  
+  	
+  	bit strobe = 0;
+  	task wait_for_end_of_timestep;
+  		repeat(5) begin
+  			strobe <= !strobe;  // Try to delay until the very end of the time step.
+  			@(strobe);
+  		end
+  	endtask	
+  
+  	
+  	final begin
+  		if (stats1.errors_q) $display("Hint: Output '%s' has %0d mismatches. First mismatch occurred at time %0d.", "q", stats1.errors_q, stats1.errortime_q);
+  		else $display("Hint: Output '%s' has no mismatches.", "q");
+  
+  		$display("Hint: Total mismatched samples is %1d out of %1d samples\n", stats1.errors, stats1.clocks);
+  		$display("Simulation finished at %0d ps", $time);
+  		$display("Mismatches: %1d in %1d samples", stats1.errors, stats1.clocks);
+  	end
+  	
+  	// Verification: XORs on the right makes any X in good_vector match anything, but X in dut_vector will only match X.
+  	assign tb_match = ( { q_ref } === ( { q_ref } ^ { q_dut } ^ { q_ref } ) );
+  	// Use explicit sensitivity list here. @(*) causes NetProc::nex_input() to be called when trying to compute
+  	// the sensitivity list of the @(strobe) process, which isn't implemented.
+  	always @(posedge clk, negedge clk) begin
+  
+  		stats1.clocks++;
+  		if (!tb_match) begin
+  			if (stats1.errors == 0) stats1.errortime = $time;
+  			stats1.errors++;
+  		end
+  		if (q_ref !== ( q_ref ^ q_dut ^ q_ref ))
+  		begin if (stats1.errors_q == 0) stats1.errortime_q = $time;
+  			stats1.errors_q = stats1.errors_q+1'b1; end
+  
+  	end
+  
+     // add timeout after 100K cycles
+     initial begin
+       #1000000
+       $display("TIMEOUT");
+       $finish();
+     end
+  
+  endmodule
