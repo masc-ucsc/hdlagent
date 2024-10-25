@@ -11,7 +11,7 @@ responses:
     Can you implement the described class in the hardware description language Chisel using purely combinational logic:
 
   pipe_give_instr_prefix: |
-    Can you implement the following description of a sequential class in the hardware description language Chisel, it should have {pipe_stages} register pipeline stage(s).
+    Can you implement the following description of a sequential class in the hardware description language Chisel, it should have {bench_stage} register pipeline stage(s).
 
   give_instr_suffix: |
     

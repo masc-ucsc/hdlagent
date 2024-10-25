@@ -11,7 +11,7 @@ responses:
     Can you implement the described Module in Verilog using purely combinational logic:
 
   pipe_give_instr_prefix: |
-    Can you implement the following description of a sequential Module in Verilog, it should have {pipe_stages} register stage(s). Meaning the initial result should be ready in {pipe_stages} clock cycle(s) upon reset.
+    Can you implement the following description of a sequential Module in Verilog, it should have {bench_stage} register stage(s). Meaning the initial result should be ready in {bench_stage} clock cycle(s) upon reset.
 
   give_instr_suffix: |
     

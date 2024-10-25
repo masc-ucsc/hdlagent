@@ -19,7 +19,7 @@ responses:
     ```
     
   pipe_give_instr_prefix: |
-    Can you implement the following description of a sequential circuit in pyrtl, it should have {pipe_stages} register stage(s), start the program with:
+    Can you implement the following description of a sequential circuit in pyrtl, it should have {bench_stage} register stage(s), start the program with:
     ```
     import pyrtl
     ```

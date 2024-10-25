@@ -434,9 +434,9 @@ class Handler:
         successful = self.check_success(designer.name, benchmark_w_dir)
         completed = self.check_completion(designer.name, benchmark_w_dir)
         run = True
-        if skip_completed and completed:
-            run = False
-        elif skip_successful and successful:
+        # if skip_completed and completed:
+        #     run = False
+        if skip_successful and successful:
             run = False
     
         print(f"Successful: {successful}")
@@ -453,9 +453,12 @@ class Handler:
                 designer.tb_loop(designer.read_spec(target_spec))
             else:
                 print("_________LEC will be run_________")
-                designer.lec_loop(prompt, compiled)
+                designer.lec_loop(prompt, compiled, self.comp_iter)
+                # designer.lec_loop(prompt, compiled, self.comp_iter)
             testers = self.get_testers()
             print(f"Testers: {testers}")
+
+            #this loo never runs because we have always one agent.
             for agent in self.get_testers():
                 print("Inside the loop.")
                 agent.set_w_dir(w_dir)

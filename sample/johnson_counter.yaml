@@ -17,5 +17,4 @@ bench_response: |+
     end
     assign q = shift_reg;
   endmodule
-
-...
+bench_stage: '1'

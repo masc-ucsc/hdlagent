@@ -73,7 +73,6 @@ class HDLang_verilog(HDLang):
 
     #     return answer
     def extract_code(self, prompt: str, verilog_path: str) -> str:
-        print("HDLang_verilog.extract_code called")
         txt = self.extract_codeblock(prompt)
         txt = txt.replace('\\', '')
         logging.debug(f"Extracted text: {txt}")

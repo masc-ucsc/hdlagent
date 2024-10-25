@@ -224,7 +224,8 @@ class Agent:
         self.name                 = ""
         self.interface            = ""
         self.io                   = []
-        self.pipe_stages          = 0
+        # self.pipe_stages          = 0
+        self.bench_stage          = 0
         self.lec_script           = os.path.join(self.script_dir,"common/comb_lec")
         self.tb_script            = os.path.join(self.script_dir,"common/iverilog_tb")
         self.tb_compile_script    = os.path.join(self.script_dir,"common/iverilog_tb_compile")
@@ -337,12 +338,12 @@ class Agent:
     # method and queries accordingly.
     #
     # Intended use: at the beginning of a new initial prompt submission
-    def set_pipeline_stages(self, pipe_stages: int):
-        if (pipe_stages > 0):
+    def set_pipeline_stages(self, bench_stage: int):
+        if (bench_stage > 0):
             self.lec_script = os.path.join(self.script_dir,"common/temp_lec")
         else:
             self.lec_script = os.path.join(self.script_dir,"common/comb_lec")
-        self.pipe_stages = pipe_stages
+        self.bench_stage = bench_stage
 
     # The current run will assume this is the interface of the target module,
     # styled in a Verilog-legal module declaration syntax.
@@ -504,8 +505,8 @@ class Agent:
         if not hasattr(self, 'name') or self.name == "":
             self.name = os.path.splitext(os.path.basename(target_spec))[0]
             logging.debug(f"Agent name set to: {self.name}")
-        else:
-            logging.info(f"self.name already set to: {self.name}, not overwriting in read_spec")
+        # else:
+            # logging.info(f"self.name already set to: {self.name}, not overwriting in read_spec")
     
         self.resolve_spec_path(target_spec, spec.get('in_directory') is True)
     
@@ -523,6 +524,17 @@ class Agent:
             self.dump_gold(bench_response)
             # prompt = spec.get('description', '')
             # self.lec_loop(prompt)
+        if 'bench_stage' in spec:
+            bench_stage_value = spec.get('bench_stage')
+            try:
+                self.bench_stage = int(bench_stage_value)
+                print("bench_stage: ", self.bench_stage)
+            except ValueError:
+                print(f"Error: 'bench_stage' in {self.spec} is not a valid integer.")
+                exit()
+        else:
+            self.bench_stage = 0
+        self.set_pipeline_stages(self.bench_stage)
 
         self.set_interface(spec['interface'])
         self.spec_content = spec.get('description', '')
@@ -533,7 +545,6 @@ class Agent:
     #
     # Intended use: at the beginning of a new initial prompt submission
     def dump_gold(self, contents: str):
-        print(f"[DEBUG] dump_gold called with contents length: {len(contents)}")
         verilog_lines = contents.split('\n')
         gold_contents = ""
         for line in verilog_lines:
@@ -546,7 +557,6 @@ class Agent:
         os.makedirs(os.path.dirname(self.gold), exist_ok=True)
         with open (self.gold, "w") as file:
             file.write(gold_contents)
-        print(f"[DEBUG] Golden Verilog written to: {self.gold}")
         self.check_gold(self.gold)
 
     # Helper function to prevent API charges in case gold Verilog
@@ -554,7 +564,7 @@ class Agent:
     #
     # Intended use: only when registering a gold module path
     def check_gold(self, file_path: str):
-        print(f"[DEBUG] check_gold called for file_path: {file_path}")
+        # print(f"[DEBUG] check_gold called for file_path: {file_path}")
         # Helps users identify if their "golden" model has issues
         if not os.path.exists(file_path):
             print("Error: supplied Verilog file path {} invalid, exiting...".format(file_path))
@@ -567,7 +577,7 @@ class Agent:
             print(res_string)
             print("exiting...")
             exit()
-        print(f"[DEBUG] Golden Verilog passed compilation check.")
+        # print(f"[DEBUG] Golden Verilog passed compilation check.")
 
     # Parses common.yaml file for the 'request_spec' strings to create the
     # contents of the 'spec initial instruction' tuple which are the 2 queries
@@ -588,7 +598,7 @@ class Agent:
     #
     # Intended use: to begin the iterative part of the compilation conversation
     def get_compile_initial_instruction(self, prompt: str):
-        pipe_stages = self.pipe_stages
+        bench_stage = self.bench_stage
         prefix = self.responses['comb_give_instr_prefix']
         output_count = 0    # XXX - fixme hacky, Special case for DSLX
         for wire in self.io:
@@ -598,11 +608,12 @@ class Agent:
             suffix = self.responses['simple_give_instr_suffix']
         else:
             suffix = self.responses['give_instr_suffix']
-        if pipe_stages > 0:
+        # if pipe_stages > 0:
+        if bench_stage > 0:
             prefix = self.responses['pipe_give_instr_prefix']
         # Escape curly braces for string formatting
         prompt = prompt.replace("{", "{{").replace("}", "}}")
-        return (prefix + prompt + suffix).format(interface=self.interface,name=self.name, pipe_stages=pipe_stages)
+        return (prefix + prompt + suffix).format(interface=self.interface,name=self.name, bench_stage=bench_stage)
 
     # Parses language-specific *.yaml file for the 'compile_err' strings
     # to create the 'iteration instruction' which is the query sent to the
@@ -647,7 +658,7 @@ class Agent:
         elif (test_fail_count < self.prev_test_cases) and (self.prev_test_cases > 0):
             lec_fail_prefix = self.responses['improve_comb_lec_fail_prefix']
         lec_fail_suffix = self.responses['lec_fail_suffix']
-        if self.pipe_stages > 0:
+        if self.bench_stage > 0:
             lec_fail_prefix = self.responses['pipe_lec_fail_prefix']
         return lec_fail_prefix.format(test_fail_count=test_fail_count, feedback=lec_output, lec_feedback_limit=min(lec_feedback_limit, test_fail_count)) + lec_fail_suffix
 
@@ -842,7 +853,7 @@ class Agent:
     
         # Prepare the command
         command = f"{script} {self.code}"
-        print(f"[DEBUG] Running compile command: {command}")
+        # print(f"[DEBUG] Running compile command: {command}")
     
         # Ensure the script is executable
         if not script.exists():
@@ -855,9 +866,8 @@ class Agent:
         # Run the compile command
         res = subprocess.run(command, capture_output=True, shell=True, text=True)
     
-        print(f"[DEBUG] test_code_compile: returncode = {res.returncode}")
         print(f"[DEBUG] test_code_compile: stdout = {res.stdout}")
-        print(f"[DEBUG] test_code_compile: stderr = {res.stderr}")
+        # print(f"[DEBUG] test_code_compile: stderr = {res.stderr}")
     
         errors = self.check_errors(res)
         print(f"[DEBUG] errors from check_errors: {errors}")
@@ -879,6 +889,7 @@ class Agent:
     # Intended use: for lec check after RTL has successfully compiled into Verilog
     def test_lec(self, gold: str = None, gate: str = None, lec_feedback_limit: int = -1):
         # ./*_lec <golden_verilog> <llm_verilog>
+        print(".......test_lec is called")
         if gold is None:
             if self.gold is None:
                 print("Error: attemping LEC without setting gold path, exiting...")
@@ -894,6 +905,8 @@ class Agent:
         self.lec_n += 1
         if "SUCCESS" not in res_string:
             self.lec_f += 1
+            print("********************", "lec_n=", self.lec_n, "lec_f=", self.lec_f)
+            print("..........lec_filter_function:", self.lec_filter_function(res_string, lec_feedback_limit))
             return self.lec_filter_function(res_string, lec_feedback_limit)
         return None
 
@@ -1030,8 +1043,8 @@ class Agent:
             current_query = prompt
         
         for i in range(iterations):
+            print("compile iteration: ", i)
             #self.dump_codeblock(self.query_model(self.compile_conversation, current_query, True), self.code)
-            print("*****************the query is: ", current_query)
             codeblock = self.query_model(self.compile_conversation, current_query, True)
             self.dump_codeblock(codeblock, self.code)
             compile_out = self.test_code_compile()
@@ -1049,6 +1062,7 @@ class Agent:
     # Intended use: user facing RTL generation
     def spec_run_loop(self, prompt: str, iterations: int = 1, continued: bool = False, update: bool = False):
         if not continued:   # Maintain conversation history when iterating over design
+            print("00000000reset all the counter here.")
             self.reset_conversations()
             self.reset_perf_counters()
         if update:
@@ -1057,8 +1071,8 @@ class Agent:
             return self.finish_run(failure_reason)
         # print(f"spec_run_loop (end): self.name = {self.name}")
         compiled, failure_reason = self.code_compilation_loop(prompt, 0, iterations)
-        print(f"[DEBUG] spec_run_loop: compiled={compiled}, failure_reason={failure_reason}")
-        self.finish_run(failure_reason)
+        print(f"/////////compiled=", compiled, "failure_reason=",failure_reason)
+        # self.finish_run(failure_reason)
         # return self.finish_run(self.code_compilation_loop(prompt, 0, iterations)[1])
         return compiled
 
@@ -1091,13 +1105,15 @@ class Agent:
     # and outer loop checks generated RTL versus supplied 'gold' Verilog for logical equivalence
     #
     # Intended use: benchmarking effectiveness of the agent
-    def lec_loop(self, prompt: str, compiled : False, lec_iterations: int = 10, lec_feedback_limit: int = -1,
+    def lec_loop(self, prompt: str, compiled: bool = False, lec_iterations: int = 5, lec_feedback_limit: int = 5,
              compile_iterations: int = 1, update: bool = False, testbench_iterations: int = 0):
         # self.reset_conversations()
         # self.reset_perf_counters()
+        # pdb.set_trace()
         self.prev_test_cases = float('inf')
         original_prompt = prompt
         failure_reason = None  # Initialize failure_reason
+
     
         for i in range(lec_iterations):
             print(f"[DEBUG] lec_loop iteration {i}")
@@ -1116,41 +1132,38 @@ class Agent:
                     else:
                         print("[DEBUG] LEC passed during update.")
                         return self.finish_run()
-    
-            compiled, failure_reason = self.code_compilation_loop(prompt, i, compile_iterations)
-            if compiled:
-                self.verilog = self.code  # Ensure self.verilog is set
-                gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
-                lec_out = self.test_lec(gold, gate, lec_feedback_limit)
-                self.lec_n += 1  # Increment total LEC attempts
-    
-                if lec_out is not None:
-                    self.lec_f += 1  # Increment LEC failures
-                    test_fail_count, failure_reason = lec_out.split('\n', 1)
-                    test_fail_count = int(test_fail_count)
-                    print(f"[DEBUG] LEC failed with {test_fail_count} failures.")
-    
-                    if i != lec_iterations - 1:
-                        prev_lec_feedback_limit = lec_feedback_limit
-                        lec_feedback_limit = self.lec_regression_filter(test_fail_count, lec_feedback_limit)
-                        # Re-run LEC after adjusting feedback limit
-                        lec_out = self.test_lec(gold, gate, lec_feedback_limit)
-                        self.lec_n += 1  # Increment total LEC attempts
-                        if lec_out is not None:
-                            self.lec_f += 1  # Increment LEC failures
-                            _, failure_reason = lec_out.split('\n', 1)
-                            prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, lec_feedback_limit)
-                        else:
-                            print("[DEBUG] LEC passed after adjusting feedback limit.")
-                            return self.finish_run()
+
+            self.verilog = self.code  # Ensure self.verilog is set
+            gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
+            lec_out = self.test_lec(gold, gate, lec_feedback_limit)
+            # pdb.set_trace()
+            #lec will be run to see if the code passes lec or not,
+            if lec_out is not None:
+                #it means that the code doe not pass lec and llm has to generate the code agiain with the proper prompt
+                test_fail_count, failure_reason = lec_out.split('\n', 1)
+                test_fail_count = int(test_fail_count)
+                prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, lec_feedback_limit)
+                compiled, failure_reason = self.code_compilation_loop(prompt, i+1, compile_iterations)
+                #the new code has to compiled and see if it compiled or not if it compiled, it has to pass the lec agin
+                print("***********comipled:", compiled, "failure_reason:", failure_reason)
+                if compiled:
+                    #it means that after i lec loop it generate the code that pass the compilation and now it needs to pass the lec agein
+                    pass
                 else:
-                    print("[DEBUG] LEC passed successfully.")
-                    return self.finish_run()
+                    print(f"[DEBUG] Compilation failed after:", i, "with this reasson:", failure_reason)
+                    return self.finish_run(failure_reason)
             else:
-                print(f"[DEBUG] Compilation failed: {failure_reason}")
+                print("[DEBUG] LEC passed successfully.")
                 return self.finish_run(failure_reason)
-    
+            if i == lec_iterations - 1:
+                print("It has to be the last lec loop--------------")
+                lec_out = self.test_lec(gold, gate, lec_feedback_limit)
+                if lec_out is not None:
+                    print("last failure_reason:", failure_reason)
+                    test_fail_count, failure_reason = lec_out.split('\n', 1)
+                    return self.finish_run(failure_reason)
         return self.finish_run(failure_reason)
+            
 
 
     # Helper function to handle results and logs of compile based runs
@@ -1166,7 +1179,7 @@ class Agent:
             self.dump_failure(failure_reason, self.compile_history_log)
         else:
             self.success_message(self.compile_history_log)
-
+        print("lec_n=", self.lec_n, "lec_f=", self.lec_f)
         self.dump_compile_conversation()
         return success
 
@@ -1228,7 +1241,7 @@ class Agent:
         if lines and lines[0].startswith('```') and lines[-1].startswith('```'):
             lines = lines[1:-1]
         cleaned_code = '\n'.join(lines)
-        print(f"Writing to file: {filepath}")
+        # print(f"Writing to file: {filepath}")
         with filepath.open('w') as f:
            f.write(cleaned_code)
         # print(f"Writing to file: {filepath}")

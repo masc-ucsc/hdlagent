@@ -79,6 +79,7 @@ def bench(args):
                 my_handler.spec_run(target_spec=yaml_file, iterations=args.comp_limit)
                 for agent in my_handler.agents:
                     agent.reset_state()
+            return
         else:
             # Assume it's a YAML file path
             benchmark_file = benchmark_spec
@@ -88,9 +89,9 @@ def bench(args):
 
             for f in args.file_list:
                 my_handler.spec_run(target_spec=f, iterations=args.comp_limit)
-            print(f"Processing YAML file: {benchmark_file}")
-
-        print(f"Processing YAML file: {benchmark_file}")
+            # print(f"Processing YAML file: {yaml_file}")
+            return
+        # print(f"Processing YAML file: {benchmark_file}")
         my_handler.spec_run(target_spec=benchmark_file, iterations=args.comp_limit)
 
 def process_logs(logs_dir, test_case_name):
