@@ -89,8 +89,8 @@ def bench(args):
 
             for f in args.file_list:
                 my_handler.spec_run(target_spec=f, iterations=args.comp_limit)
-            # print(f"Processing YAML file: {yaml_file}")
-            return
+                print(f"Processing YAML file: {yaml_file}")
+            
         # print(f"Processing YAML file: {benchmark_file}")
         my_handler.spec_run(target_spec=benchmark_file, iterations=args.comp_limit)
 

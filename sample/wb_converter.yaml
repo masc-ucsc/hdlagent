@@ -1,0 +1,56 @@
+description: 'Develop a `wb_converter` module to interface between a Wishbone bus and a processing unit, supporting both instruction and data transactions. The module utilizes inputs such as `wb_clk_i` (clock signal), `wb_rst_i` (reset signal), `wbs_stb_i` (strobe signal indicating a valid transaction), `wbs_cyc_i` (cycle signal for bus transaction duration), `wbs_we_i` (write enable signal), `wbs_sel_i` (byte select signals), `wbs_dat_i` (input data from the bus), and `wbs_adr_i` (address input from the bus). It outputs `wbs_ack_o` (acknowledge signal), `wbs_dat_o` (data output for read operations), alongside custom interface signals: `load_recv_msg` (64-bit data for load operations), `load_recv_val` (validation signal for load operations), `instruction_recv_msg` (32-bit data for instruction operations), `instruction_recv_val` (validation signal for instruction operations), and `store_send_rdy` (readiness signal for store operations). Operational logic is as follows: for address `0x30000000`, forward `wbs_dat_i` to `instruction_recv_msg`; for addresses `>= 0x30000004`, adjust the address by subtracting `0x30000004` and use it to form `load_recv_msg` for data transactions, while setting `instruction_recv_msg` to indicate VSTORE (read operation) or VLOAD (write operation) based on `wbs_we_i`. Acknowledgments and data flow control are managed according to the address, operation type, and the processing unit''s readiness, ensuring smooth communication between the Wishbone bus and the processing unit. This module is crucial for data and instruction transaction management, adapting signals for appropriate handling based on the current operation, thereby facilitating effective data and instruction flow between the bus and the processing unit.        '
+interface: |-
+  module wb_converter (input wb_clk_i, input wb_rst_i, input wbs_stb_i, input wbs_cyc_i, input wbs_we_i, input [3:0] wbs_sel_i, input [31:0] wbs_dat_i, input [31:0] wbs_adr_i, output logic wbs_ack_o, output [31:0] wbs_dat_o, output logic [63:0] load_recv_msg, output logic load_recv_val, input load_recv_rdy, output logic [31:0] instruction_recv_msg, output logic instruction_recv_val, input instruction_recv_rdy, input [31:0] store_send_msg, input store_send_val, output logic store_send_rdy);
+bench_response: |-
+  module wb_converter (
+      input wb_clk_i,
+      input wb_rst_i,
+      input wbs_stb_i,
+      input wbs_cyc_i,
+      input wbs_we_i,
+      input [3:0] wbs_sel_i,
+      input [31:0] wbs_dat_i,
+      input [31:0] wbs_adr_i,
+      output logic wbs_ack_o,
+      output [31:0] wbs_dat_o,
+
+      output logic [63:0] load_recv_msg,
+      output logic load_recv_val,
+      input load_recv_rdy,
+
+      output logic [31:0] instruction_recv_msg,
+      output logic instruction_recv_val,
+      input instruction_recv_rdy,
+
+      input [31:0] store_send_msg,
+      input store_send_val,
+      output logic store_send_rdy
+  );
+
+      assign wbs_ack_o = wbs_cyc_i && wbs_stb_i && 
+                         ((wbs_adr_i == 32'h30000000 && instruction_recv_rdy) || 
+                         ((wbs_adr_i > 32'h30000000) && (!wbs_we_i && store_send_val && store_send_rdy)) ||
+                         ((wbs_adr_i > 32'h30000000) && wbs_we_i && load_recv_rdy && instruction_recv_rdy));
+      assign store_send_rdy = !wbs_we_i && wbs_cyc_i && wbs_stb_i && (wbs_adr_i > 32'h30000000);
+      assign wbs_dat_o = store_send_msg;
+
+      always_comb begin
+               load_recv_msg = 64'b0;
+          load_recv_val = 0;
+          instruction_recv_msg = 32'b0;
+          instruction_recv_val = 0;
+
+          if (wbs_adr_i == 32'h30000000) begin
+                         instruction_recv_msg = wbs_dat_i;
+              instruction_recv_val = wbs_cyc_i && wbs_stb_i;
+          end else if (wbs_adr_i > 32'h30000000) begin
+        load_recv_msg = {(wbs_adr_i - 32'h30000004) >> 2, wbs_dat_i};            load_recv_val = wbs_cyc_i && wbs_stb_i;
+              if (wbs_we_i) begin
+              instruction_recv_msg = {5'b00000, 27'b0};           end else begin
+                  instruction_recv_msg = {5'b00001, 27'b0};         end
+              instruction_recv_val = wbs_cyc_i && wbs_stb_i;
+          end
+      end
+
+  endmodule
+bench_stage: '1'

@@ -866,7 +866,7 @@ class Agent:
         # Run the compile command
         res = subprocess.run(command, capture_output=True, shell=True, text=True)
     
-        print(f"[DEBUG] test_code_compile: stdout = {res.stdout}")
+        # print(f"[DEBUG] test_code_compile: stdout = {res.stdout}")
         # print(f"[DEBUG] test_code_compile: stderr = {res.stderr}")
     
         errors = self.check_errors(res)
@@ -1036,7 +1036,6 @@ class Agent:
     def code_compilation_loop(self, prompt: str, lec_iteration: int = 0, iterations: int = 1):
         if not isinstance(self.code, Path):
             self.code = Path(self.code)
-        
         if lec_iteration == 0:
             current_query = self.get_compile_initial_instruction(prompt)
         else:
@@ -1048,9 +1047,10 @@ class Agent:
             codeblock = self.query_model(self.compile_conversation, current_query, True)
             self.dump_codeblock(codeblock, self.code)
             compile_out = self.test_code_compile()
-            print(f"[DEBUG] test_code_compile returned: {compile_out}")
+            # print(f"[DEBUG] test_code_compile returned: {compile_out}")
             if compile_out is not None:
                 current_query = self.get_compile_iteration_instruction(compile_out)
+                # continue
             else:
                 return True, None
         return False, compile_out
@@ -1062,7 +1062,6 @@ class Agent:
     # Intended use: user facing RTL generation
     def spec_run_loop(self, prompt: str, iterations: int = 1, continued: bool = False, update: bool = False):
         if not continued:   # Maintain conversation history when iterating over design
-            print("00000000reset all the counter here.")
             self.reset_conversations()
             self.reset_perf_counters()
         if update:
@@ -1071,7 +1070,6 @@ class Agent:
             return self.finish_run(failure_reason)
         # print(f"spec_run_loop (end): self.name = {self.name}")
         compiled, failure_reason = self.code_compilation_loop(prompt, 0, iterations)
-        print(f"/////////compiled=", compiled, "failure_reason=",failure_reason)
         # self.finish_run(failure_reason)
         # return self.finish_run(self.code_compilation_loop(prompt, 0, iterations)[1])
         return compiled
@@ -1145,21 +1143,13 @@ class Agent:
                 prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, lec_feedback_limit)
                 compiled, failure_reason = self.code_compilation_loop(prompt, i+1, compile_iterations)
                 #the new code has to compiled and see if it compiled or not if it compiled, it has to pass the lec agin
-                print("***********comipled:", compiled, "failure_reason:", failure_reason)
-                if compiled:
-                    #it means that after i lec loop it generate the code that pass the compilation and now it needs to pass the lec agein
-                    pass
-                else:
-                    print(f"[DEBUG] Compilation failed after:", i, "with this reasson:", failure_reason)
+                if not compiled:
                     return self.finish_run(failure_reason)
             else:
                 print("[DEBUG] LEC passed successfully.")
                 return self.finish_run(failure_reason)
             if i == lec_iterations - 1:
-                print("It has to be the last lec loop--------------")
-                lec_out = self.test_lec(gold, gate, lec_feedback_limit)
                 if lec_out is not None:
-                    print("last failure_reason:", failure_reason)
                     test_fail_count, failure_reason = lec_out.split('\n', 1)
                     return self.finish_run(failure_reason)
         return self.finish_run(failure_reason)
