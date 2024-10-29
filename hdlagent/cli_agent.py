@@ -31,6 +31,7 @@ def start(args):
     spath      = resources.files('resources')
     my_handler = Handler()
     my_handler.set_comp_iter(args.comp_limit)
+    my_handler.set_lec_iter(args.lec_limit)
 
     for f in args.file_list:
         if args.help:
@@ -52,6 +53,7 @@ def bench(args):
     spath      = resources.files('resources')
     my_handler = Handler()
     my_handler.set_comp_iter(args.comp_limit)
+    my_handler.set_lec_iter(args.lec_limit)
     my_handler.create_agents(spath=str(spath), llms=args.llm, lang=args.lang, use_spec=True, temperature= None, w_dir=args.w_dir, init_context=args.init_context, supp_context=args.supp_context, short_context=args.short_context)
 
     if len(args.bench_list) == 0: # Check current directory to build
@@ -76,7 +78,7 @@ def bench(args):
             for yaml_file in yaml_files:
                 
                 print(f"Processing YAML file: {yaml_file}")
-                my_handler.spec_run(target_spec=yaml_file, iterations=args.comp_limit)
+                my_handler.spec_run(target_spec=yaml_file, lec_iterations=args.lec_limit,comp_iterations=args.comp_limit)
                 for agent in my_handler.agents:
                     agent.reset_state()
             return
@@ -88,11 +90,11 @@ def bench(args):
                 continue  # Skip to the next benchmark
 
             for f in args.file_list:
-                my_handler.spec_run(target_spec=f, iterations=args.comp_limit)
+                my_handler.spec_run(target_spec=f, lec_iterations=args.lec_limit,comp_iterations=args.comp_limit)
                 print(f"Processing YAML file: {yaml_file}")
             
         # print(f"Processing YAML file: {benchmark_file}")
-        my_handler.spec_run(target_spec=benchmark_file, iterations=args.comp_limit)
+        my_handler.spec_run(target_spec=benchmark_file, lec_iterations=args.lec_limit,comp_iterations=args.comp_limit)
 
 def process_logs(logs_dir, test_case_name):
     compile_log_pattern = os.path.join(logs_dir, '*_compile_log.md')
@@ -291,7 +293,7 @@ def build(args):
             print(f"spec:{f}")
     else:
         for f in args.file_list:
-            my_handler.spec_run(target_spec=f, iterations=args.comp_limit)
+            my_handler.spec_run(target_spec=f, lec_iterations=args.lec_limit,comp_iterations=args.comp_limit)
 
 def list_models(args):
     if args.help:
@@ -350,6 +352,7 @@ def add_shared_args(model):
 
     model.add_argument('--w_dir',         type=str,   action="store",       default="./",         help='Working dir to generate resource and log files')
     model.add_argument('--comp_limit',    type=int,   action="store",       default=4,            help='The amount of LLM attempts, max iterations = (top_k * lec_limit * comp_limit)')
+    model.add_argument('--lec_limit',    type=int,   action="store",       default=1,            help='The amount of LLM attempts, max iterations = (top_k * lec_limit * comp_limit)')
 
     model.add_argument('--init_context',  action="append",      default=[], help='Use per language specialized initial context')
     model.add_argument('--supp_context',  action="store_false", help='Use per each compile error a supplemental context')

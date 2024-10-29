@@ -77,6 +77,12 @@ class Handler:
             exit()
         self.comp_iter = n
     
+    def set_lec_iter(self, n: int):
+        if n < 1:
+            print("Error: cannot set lec iterations to less than 1, exiting...")
+            exit()
+        self.lec_iter = n
+
     # Sets the amount of allowed iterations for a LEC loop.
     #
     # Intended use: before a new run
@@ -405,7 +411,7 @@ class Handler:
     # Additional Agents may be used to testbench the generated RTL
     #
     # Intended use: user-facing code and test generation
-    def spec_run(self, target_spec: str, iterations: int, w_dir: str = None,
+    def spec_run(self, target_spec: str, lec_iterations: int, comp_iterations: int, w_dir: str = None,
                  skip_completed: bool = True, update: bool = False, skip_successful: bool = True):
         # pdb.set_trace()
         if not os.path.exists(target_spec):
@@ -445,7 +451,7 @@ class Handler:
     
         if not run:
             return
-        compiled = designer.spec_run_loop(designer.read_spec(target_spec), iterations)
+        compiled = designer.spec_run_loop(designer.read_spec(target_spec), lec_iterations, comp_iterations)
         prompt = designer.spec_content
         if compiled:
             if designer.gold is None:
@@ -453,7 +459,7 @@ class Handler:
                 designer.tb_loop(designer.read_spec(target_spec))
             else:
                 print("_________LEC will be run_________")
-                designer.lec_loop(prompt, compiled, self.comp_iter)
+                designer.lec_loop(prompt, compiled, self.lec_iter, self.lec_feedback_limit, self.comp_iter)
                 # designer.lec_loop(prompt, compiled, self.comp_iter)
             testers = self.get_testers()
             print(f"Testers: {testers}")

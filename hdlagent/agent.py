@@ -1033,7 +1033,7 @@ class Agent:
     # supplemental context if enabled
     #
     # Intended use: inside of the lec loop
-    def code_compilation_loop(self, prompt: str, lec_iteration: int = 0, iterations: int = 1):
+    def code_compilation_loop(self, prompt: str, lec_iteration: int = 1, comp_iterations: int = 1):
         if not isinstance(self.code, Path):
             self.code = Path(self.code)
         if lec_iteration == 0:
@@ -1041,7 +1041,7 @@ class Agent:
         else:
             current_query = prompt
         
-        for i in range(iterations):
+        for i in range(comp_iterations):
             print("compile iteration: ", i)
             #self.dump_codeblock(self.query_model(self.compile_conversation, current_query, True), self.code)
             codeblock = self.query_model(self.compile_conversation, current_query, True)
@@ -1060,7 +1060,7 @@ class Agent:
     # and dumps the conversation.
     #
     # Intended use: user facing RTL generation
-    def spec_run_loop(self, prompt: str, iterations: int = 1, continued: bool = False, update: bool = False):
+    def spec_run_loop(self, prompt: str, lec_iterations: int = 1, comp_iterations: int = 1, continued: bool = False, update: bool = False):
         if not continued:   # Maintain conversation history when iterating over design
             self.reset_conversations()
             self.reset_perf_counters()
@@ -1069,7 +1069,7 @@ class Agent:
             failure_reason = self.test_lec()
             return self.finish_run(failure_reason)
         # print(f"spec_run_loop (end): self.name = {self.name}")
-        compiled, failure_reason = self.code_compilation_loop(prompt, 0, iterations)
+        compiled, failure_reason = self.code_compilation_loop(prompt, 0, comp_iterations)
         # self.finish_run(failure_reason)
         # return self.finish_run(self.code_compilation_loop(prompt, 0, iterations)[1])
         return compiled
@@ -1103,8 +1103,7 @@ class Agent:
     # and outer loop checks generated RTL versus supplied 'gold' Verilog for logical equivalence
     #
     # Intended use: benchmarking effectiveness of the agent
-    def lec_loop(self, prompt: str, compiled: bool = False, lec_iterations: int = 5, lec_feedback_limit: int = 5,
-             compile_iterations: int = 1, update: bool = False, testbench_iterations: int = 0):
+    def lec_loop(self, prompt: str, compiled: bool = False, lec_iterations: int = 1, lec_feedback_limit: int = 1, compile_iterations: int = 1, update: bool = False, testbench_iterations: int = 0):
         # self.reset_conversations()
         # self.reset_perf_counters()
         # pdb.set_trace()
