@@ -372,6 +372,7 @@ class Agent:
                 parts = port.split()
                 if parts[0] not in ["input","output","inout"]:
                     print(f"Error: 'interface' {interface} contains invalid port direction, exiting...")
+                    return self.finish_run("Error: interface contains invalid port direction")
                     exit()
                 if not parts[1] == "signed":    # empty string for unsigned
                     parts.insert(1, '')
@@ -490,7 +491,6 @@ class Agent:
     #
     # Intended use: before a generation/lec loop is started so the prompt can be reformatted and formalized
     def read_spec(self, target_spec: str = None):
-        print("[DEBUG] read_spec is called.")
         if target_spec is None:
             target_spec = self.spec
     
@@ -576,6 +576,7 @@ class Agent:
             print("Error: supplied Verilog file path {} did not pass Yosys compilation check, fix the following errors/warnings and try again".format(file_path))
             print(res_string)
             print("exiting...")
+            return self.finish_run(res_string)
             exit()
         # print(f"[DEBUG] Golden Verilog passed compilation check.")
 
@@ -889,7 +890,6 @@ class Agent:
     # Intended use: for lec check after RTL has successfully compiled into Verilog
     def test_lec(self, gold: str = None, gate: str = None, lec_feedback_limit: int = -1):
         # ./*_lec <golden_verilog> <llm_verilog>
-        print(".......test_lec is called")
         if gold is None:
             if self.gold is None:
                 print("Error: attemping LEC without setting gold path, exiting...")
@@ -905,8 +905,6 @@ class Agent:
         self.lec_n += 1
         if "SUCCESS" not in res_string:
             self.lec_f += 1
-            print("********************", "lec_n=", self.lec_n, "lec_f=", self.lec_f)
-            print("..........lec_filter_function:", self.lec_filter_function(res_string, lec_feedback_limit))
             return self.lec_filter_function(res_string, lec_feedback_limit)
         return None
 
@@ -1110,10 +1108,7 @@ class Agent:
         self.prev_test_cases = float('inf')
         original_prompt = prompt
         failure_reason = None  # Initialize failure_reason
-
-    
         for i in range(lec_iterations):
-            print(f"[DEBUG] lec_loop iteration {i}")
             if update and len(self.compile_conversation) == 0:
                 if self.test_code_compile() is None:
                     self.verilog = self.code  # Ensure self.verilog is set
@@ -1133,12 +1128,16 @@ class Agent:
             self.verilog = self.code  # Ensure self.verilog is set
             gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
             lec_out = self.test_lec(gold, gate, lec_feedback_limit)
+            print("LEC is done Now!!!!!!")
             # pdb.set_trace()
             #lec will be run to see if the code passes lec or not,
             if lec_out is not None:
                 #it means that the code doe not pass lec and llm has to generate the code agiain with the proper prompt
+                print("[DEBUG] LEC didn't pass!!!!!!!")
                 test_fail_count, failure_reason = lec_out.split('\n', 1)
                 test_fail_count = int(test_fail_count)
+                if i == lec_iterations - 1:
+                    return self.finish_run(failure_reason)
                 prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, lec_feedback_limit)
                 compiled, failure_reason = self.code_compilation_loop(prompt, i+1, compile_iterations)
                 #the new code has to compiled and see if it compiled or not if it compiled, it has to pass the lec agin
