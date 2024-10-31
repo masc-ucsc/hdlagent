@@ -523,3 +523,23 @@ class Handler:
                 self.single_yaml_run(yaml_file, base_w_dir, skip_completed, update)
             else:
                 print(f"[DEBUG] Skipping spec '{spec_name}' as per skip flags.")
+
+    def opt_run(self, input_verilog: str, lec_iterations: int, comp_iterations: int, w_dir: str = None):
+        if not os.path.exists(input_verilog):
+            print(f"Error: {input_verilog} not found, exiting...")
+            exit()
+        designer = self.get_designer()
+        if w_dir is not None:
+            base_w_dir = Path(w_dir)
+        else:
+            base_w_dir = Path('.')
+        base_w_dir = base_w_dir.resolve()
+        mod_name = os.path.splitext(os.path.basename(input_verilog))[0]
+
+        benchmark_w_dir = base_w_dir / mod_name
+        benchmark_w_dir = benchmark_w_dir.resolve()
+        designer.set_w_dir(benchmark_w_dir)
+        compiled = designer.opt_run_loop(designer.read_verilog(input_verilog), lec_iterations, comp_iterations)
+        if compiled:
+            print("_________LEC will be run_________")
+            designer.lec_loop(designer.gold, compiled, self.lec_iter, self.lec_feedback_limit, self.comp_iter)

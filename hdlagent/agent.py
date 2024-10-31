@@ -539,6 +539,27 @@ class Agent:
         self.set_interface(spec['interface'])
         self.spec_content = spec.get('description', '')
         return spec['description']
+    
+    def read_verilog(self, input_verilog: str = None):
+        if input_verilog is None:
+            print("Error: attempting to read Verilog code that is empty, exiting...")
+            exit()
+        if not os.path.exists(input_verilog):
+            print(f"Error: Verilog file '{input_verilog}' does not exist.")
+            exit()
+        
+        
+
+        with open(input_verilog, 'r') as file:
+            verilog_code = file.read()
+
+        self.gold = input_verilog 
+        self.gold_code = verilog_code 
+        self.name = os.path.splitext(os.path.basename(input_verilog))[0]
+        print(f"[DEBUG] self.name set to: '{self.name}' in read_verilog")
+        self.check_gold(self.gold) 
+
+        return verilog_code
 
     # Registers the file path of the golden Verilog to be used for LEC
     # and dumps the contents into the file.
@@ -1071,7 +1092,32 @@ class Agent:
         # self.finish_run(failure_reason)
         # return self.finish_run(self.code_compilation_loop(prompt, 0, iterations)[1])
         return compiled
+    
+    def opt_run_loop(self, prompt: str, lec_iterations: int = 1, comp_iterations: int = 1, continued: bool = False):
+        if not continued:
+            self.reset_conversations()
+            self.reset_perf_counters()
 
+        print(f"[DEBUG] self.name before generating prompt: '{self.name}'")
+
+        #here i have to generate a sutable prompt, so far the verilgo code is prompt, 
+        prompt = f"""
+            I have a Verilog design described in the following code:
+            ```
+            {self.gold_code}
+            ```
+            I want to optimize this design to increase its operational frequency. The goal is to enhance the design's performance by making it capable of running at a higher frequency while preserving all existing functionality.
+
+            Your task:
+            - Generate an optimized version of the Verilog code that maintains the same functionality but is optimized for higher frequency.
+            - Provide only the optimized Verilog code, and no explanation or comments.
+            """
+        optimized_code_file = os.path.join(self.w_dir, f"{self.name}_optimized.v")
+        self.code = optimized_code_file
+        print(f"[DEBUG] self.code set to: '{self.code}'")
+        compiled, failure_reason = self.code_compilation_loop(prompt, 1, comp_iterations)
+        print("failure_reason: ", failure_reason)
+        return compiled
 
     # Rolls back the conversation to the LLM codeblock response which failed the least amount of
     # testcases. This is to avoid regression and save on context token usage.

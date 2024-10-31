@@ -19,6 +19,40 @@ DEFAULT_MODEL = 'gpt-4o'
 #DEFAULT_MODEL = 'llama3-405b'
 #DEFAULT_MODEL = 'gpt-4-1106-preview'
 
+def opt(args):
+    if args.help:
+        print("\n\nOptimize Verilog code using LLM")
+        return
+
+    spath = resources.files('resources')
+    my_handler = Handler()
+    my_handler.set_comp_iter(args.comp_limit)
+    my_handler.set_lec_iter(args.lec_limit)
+    my_handler.create_agents(
+        spath=str(spath),
+        llms=args.llm,
+        lang=args.lang,
+        use_spec=False,
+        temperature=None,
+        w_dir=args.w_dir,
+        init_context=args.init_context,
+        supp_context=args.supp_context,
+        short_context=args.short_context
+    )
+
+    if len(args.verilog_files) == 0:
+        # No files provided, look for Verilog files in the working directory
+        files = os.listdir(args.w_dir)
+        args.verilog_files = [os.path.join(args.w_dir, file) for file in files if file.endswith(".v")]
+
+    for verilog_file in args.verilog_files:
+        if not os.path.exists(verilog_file):
+            print(f"Error: Verilog file '{verilog_file}' not found.")
+            continue  # Skip to the next file
+
+        print(f"Optimizing Verilog file: {verilog_file}")
+        my_handler.opt_run(verilog_file, lec_iterations=args.lec_limit, comp_iterations=args.comp_limit)
+
 def start(args):
     if args.help:
         print("\n\nStart a new structured spec file out of a plain problem explanation")
@@ -442,6 +476,12 @@ def add_batch_command(subparsers):
 
     return parser
 
+def add_opt_command(subparsers):
+    parser = subparsers.add_parser("opt", help="Optimize Verilog code using LLM", add_help=False)
+    add_shared_args(parser)
+    parser.add_argument("verilog_files", nargs="*", help="List of Verilog files to optimize")
+    return parser
+
 def cli_agent():
 
     parser     = argparse.ArgumentParser(description = "hdlagent: A Hardware Description Language Agent",
@@ -450,7 +490,7 @@ Examples:
   hdlagent start description.txt
   hdlagent bench sample/RCA_spec.yaml
   hdlagent build
-  hdlagent batch sample/
+  hdlagent opt your_verilog_file.v
   hdlagent list-models
   hdlagent log [--list-runs: List all available runs and their timestamps.| benchmark_name: log details| --status, --date-from, --date-to, --top_k: Filter logs|--output-file: to save collected RESULTS lines]
 """,
@@ -461,6 +501,7 @@ Examples:
     parser_build       = add_build_command(subparsers)
     parser_list_models = add_list_models_command(subparsers)
     parser_start       = add_start_command(subparsers)
+    parser_opt = add_opt_command(subparsers)
     parser_log         = add_log_command(subparsers)
     parser_batch = add_batch_command(subparsers)  # Add the batch parser
 
@@ -498,8 +539,14 @@ Examples:
         list_models(args)
     elif args.command == "log":
         if args.help:
-            parser_list_models.print_help()
+            parser_log.print_help()
         log(args)
+    elif args.command == "opt":
+        if args.help:
+            parser_opt.print_help()
+        else:
+            check_args(args)
+        opt(args)
     else:
         parser.print_help()
 
