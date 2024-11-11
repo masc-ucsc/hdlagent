@@ -1,0 +1,59 @@
+  Time Signal Name                    Dec       Hex                         Bin
+  ---- ---------------------- ----------- --------- ---------------------------
+  init \gate.byte1 [2:0]               --        --                         xxx
+  init \gate.byte1 [7:4]               --        --                        xxxx
+  init \gate.byte2                     --        --                    xxxxxxxx
+  init \gate.byte3                     --        --                    xxxxxxxx
+  init \gate.done                      --        --                           x
+  init \gate.out_bytes                 --        --    xxxxxxxxxxxxxxxxxxxxxxxx
+  init \gate.state                     --        --                          xx
+  init \gold.out_bytes_r               --        --    xxxxxxxxxxxxxxxxxxxxxxxx
+  init \gold.state                     --        --                          xx
+  ---- ---------------------- ----------- --------- ---------------------------
+     1 \gate_done                      --        --                           x
+     1 \gate_out_bytes                 --        --    xxxxxxxxxxxxxxxxxxxxxxxx
+     1 \gold_done                      --        --                           x
+     1 \gold_out_bytes                 --        --    xxxxxxxxxxxxxxxxxxxxxxxx
+     1 \in_clk                          0         0                           0
+     1 \in_in                           0         0                    00000000
+     1 \in_reset                        1         1                           1
+     1 \trigger                         0         0                           0
+  ---- ---------------------- ----------- --------- ---------------------------
+     2 \gate_done                       0         0                           0
+     2 \gate_out_bytes                  0         0    000000000000000000000000
+     2 \gold_done                       0         0                           0
+     2 \gold_out_bytes                 --        --    xxxxxxxxxxxxxxxxxxxxxxxx
+     2 \in_clk                          0         0                           0
+     2 \in_in                         255        ff                    11111111
+     2 \in_reset                        0         0                           0
+     2 \trigger                         0         0                           0
+  ---- ---------------------- ----------- --------- ---------------------------
+     3 \gate_done                       0         0                           0
+     3 \gate_out_bytes                  0         0    000000000000000000000000
+     3 \gold_done                       0         0                           0
+     3 \gold_out_bytes                 --        --    xxxxxxxxxxxxxxxxxxxxxxxx
+     3 \in_clk                          0         0                           0
+     3 \in_in                         255        ff                    11111111
+     3 \in_reset                        0         0                           0
+     3 \trigger                         0         0                           0
+  ---- ---------------------- ----------- --------- ---------------------------
+     4 \gate_done                       0         0                           0
+     4 \gate_out_bytes                  0         0    000000000000000000000000
+     4 \gold_done                       0         0                           0
+     4 \gold_out_bytes                 --        --    xxxxxxxxxxxxxxxxxxxxxxxx
+     4 \in_clk                          0         0                           0
+     4 \in_in                         255        ff                    11111111
+     4 \in_reset                        0         0                           0
+     4 \trigger                         0         0                           0
+  ---- ---------------------- ----------- --------- ---------------------------
+     5 \gate_done                       0         0                           0
+     5 \gate_out_bytes                  0         0    000000000000000000000000
+     5 \gold_done                       1         1                           1
+     5 \gold_out_bytes           16777215    ffffff    111111111111111111111111
+     5 \in_clk                          0         0                           0
+     5 \in_in                           0         0                    00000000
+     5 \in_reset                        0         0                           0
+     5 \trigger                         1         1                           1
+
+End of script. Logfile hash: 2e87d1b706, CPU: user 0.20s system 0.02s, MEM: 46.90 MB peak
+Yosys 0.42+40 (git sha1 a739e21a5, clang++ 14.0.0-1ubuntu1.1 -fPIC -Os)

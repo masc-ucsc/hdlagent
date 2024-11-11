@@ -112,7 +112,7 @@ def bench(args):
             for yaml_file in yaml_files:
                 
                 print(f"Processing YAML file: {yaml_file}")
-                my_handler.spec_run(target_spec=yaml_file, lec_iterations=args.lec_limit,comp_iterations=args.comp_limit)
+                my_handler.spec_run(target_spec=yaml_file, w_dir=args.w_dir, lec_iterations=args.lec_limit, comp_iterations=args.comp_limit)
                 for agent in my_handler.agents:
                     agent.reset_state()
             return
@@ -135,7 +135,7 @@ def process_logs(logs_dir, test_case_name):
     compile_logs = glob.glob(compile_log_pattern)
 
     if not compile_logs:
-        print(f"No compile log files found in '{logs_dir}'.")
+        # print(f"No compile log files found in '{logs_dir}'.")
         return []
 
     test_results = []
@@ -224,7 +224,7 @@ def log(args):
         process_logs_and_output(logs_dir, args.output_file, args.benchmark_name)
     else:
         w_dir = os.path.abspath(args.w_dir)
-        print(f"[DEBUG] Working directory: {w_dir}")
+        # print(f"[DEBUG] Working directory: {w_dir}")
     
         # Recursively find all 'logs' directories under w_dir
         logs_dirs = []
@@ -244,17 +244,17 @@ def log(args):
             compile_logs = glob.glob(compile_log_pattern)
     
             if not compile_logs:
-                print(f"No compile log files found in '{logs_dir}'.")
+                # print(f"No compile log files found in '{logs_dir}'.")
                 continue
     
             # Extract the test case name from the parent directory of the logs directory
             test_case_dir = os.path.dirname(logs_dir)
             test_case_name = os.path.basename(test_case_dir)
-            print(f"[DEBUG] Processing test case: {test_case_name}")
+            # print(f"[DEBUG] Processing test case: {test_case_name}")
     
             # Process each compile log file
             for compile_log_file in compile_logs:
-                print(f"[DEBUG] Processing compile log: {compile_log_file}")
+                # print(f"[DEBUG] Processing compile log: {compile_log_file}")
                 with open(compile_log_file, 'r') as file:
                     lines = file.readlines()
     
@@ -298,14 +298,14 @@ def log(args):
     
         # Write the results to the output file
         output_file = args.output_file if args.output_file else 'test_results.txt'
-        print(f"[DEBUG] Output file: {output_file}")
+        # print(f"[DEBUG] Output file: {output_file}")
     
         with open(output_file, 'w') as f:
             for name, status in test_results:
                 f.write(f"{name}: {status}\n")
             f.write(f"\nSuccess rate: {success_percentage:.2f}% ({success_count}/{total_count})\n")
-        print(f"Overall success rate: {success_percentage:.2f}% ({success_count}/{total_count})")
-        print(f"Test results have been saved to {output_file}")
+        print(f"{success_percentage:.2f}% ({success_count}/{total_count})")
+        # print(f"Test results have been saved to {output_file}")
 
 def build(args):
     if args.help:

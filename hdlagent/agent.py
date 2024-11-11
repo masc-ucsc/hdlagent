@@ -45,7 +45,7 @@ def list_openai_models(warn: bool = True):
 
 
 # XXX - hacky until Vertex adds a list API
-vertexai_models = ["gemini-1.0-pro-002", "gemini-1.0-pro-001", "gemini-1.0-pro", "gemini-1.5-pro-preview-0409"]
+vertexai_models = ["gemini-1.0-pro-002", "gemini-1.0-pro-001", "gemini-1.0-pro", "gemini-1.5-pro-preview-0409", "gemini-1.5-flash-002"]
 
 def list_vertexai_models():
     return vertexai_models
@@ -1059,7 +1059,7 @@ class Agent:
             current_query = self.get_compile_initial_instruction(prompt)
         else:
             current_query = prompt
-        
+        print(f"[DEBUG] Original self.code: {self.code}")
         for i in range(comp_iterations):
             print("compile iteration: ", i)
             #self.dump_codeblock(self.query_model(self.compile_conversation, current_query, True), self.code)
@@ -1160,13 +1160,15 @@ class Agent:
                     self.verilog = self.code  # Ensure self.verilog is set
                     gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
                     lec_out = self.test_lec(gold, gate, lec_feedback_limit)
-                    self.lec_n += 1  # Increment total LEC attempts
+                    print("LEC is done Now in update!!!!!!")
                     if lec_out is not None:
-                        self.lec_f += 1  # Increment LEC failures
                         test_fail_count, failure_reason = lec_out.split('\n', 1)
                         test_fail_count = int(test_fail_count)
                         self.prev_test_cases = test_fail_count
                         prompt = self.get_lec_bootstrap_instruction(original_prompt, test_fail_count, lec_feedback_limit, failure_reason)
+                        compiled, failure_reason = self.code_compilation_loop(prompt, i+1, compile_iterations)
+                        if not compiled:
+                            return self.finish_run(failure_reason)
                     else:
                         print("[DEBUG] LEC passed during update.")
                         return self.finish_run()
@@ -1176,17 +1178,16 @@ class Agent:
             lec_out = self.test_lec(gold, gate, lec_feedback_limit)
             print("LEC is done Now!!!!!!")
             # pdb.set_trace()
-            #lec will be run to see if the code passes lec or not,
             if lec_out is not None:
-                #it means that the code doe not pass lec and llm has to generate the code agiain with the proper prompt
                 print("[DEBUG] LEC didn't pass!!!!!!!")
+
                 test_fail_count, failure_reason = lec_out.split('\n', 1)
                 test_fail_count = int(test_fail_count)
                 if i == lec_iterations - 1:
                     return self.finish_run(failure_reason)
                 prompt = self.get_lec_fail_instruction(self.prev_test_cases, failure_reason, lec_feedback_limit)
                 compiled, failure_reason = self.code_compilation_loop(prompt, i+1, compile_iterations)
-                #the new code has to compiled and see if it compiled or not if it compiled, it has to pass the lec agin
+
                 if not compiled:
                     return self.finish_run(failure_reason)
             else:
@@ -1268,8 +1269,15 @@ class Agent:
             md_file.write("Reason for failure:\n" + reason)
 
     def dump_codeblock(self, codeblock: str, filepath):
+        print(f"[DEBUG] Original filepath: {filepath}")
         if not isinstance(filepath, Path):
             filepath = Path(filepath)
+        if not filepath.is_absolute():
+        # If filepath is not absolute, make it relative to self.w_dir
+            filepath = Path(self.w_dir) / filepath
+            print(f"[DEBUG] Filepath after adding self.w_dir: {filepath}")
+        else:
+            print(f"[DEBUG] Filepath is absolute: {filepath}")
         filepath.parent.mkdir(parents=True, exist_ok=True)
         lines = codeblock.strip().split('\n')
         if lines and lines[0].startswith('```') and lines[-1].startswith('```'):

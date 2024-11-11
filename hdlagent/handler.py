@@ -44,7 +44,7 @@ def set_json_bounds(json_data: dict, limit: int = -1, start_from: str = None):
 class Handler:
     def __init__(self):
         self.agents             = []
-
+        
         self.comp_iter          = 4
         self.lec_iter           = 1
         self.tb_iter            = 1
@@ -417,7 +417,7 @@ class Handler:
         if not os.path.exists(target_spec):
             print(f"Error: {target_spec} not found, exiting...")
             exit()
-    
+        
         designer = self.get_designer()
         spec_name = os.path.splitext(os.path.basename(target_spec))[0]
         # print(f"Spec name: {spec_name}")
@@ -426,22 +426,21 @@ class Handler:
         designer.name = spec_name
         # prompt = designer.spec_content
         #print(f"After read_spec, designer.name: {designer.name}")
-    
         if w_dir is not None:
             base_w_dir = Path(w_dir)
         else:
             base_w_dir = Path('.')
+
         base_w_dir = base_w_dir.resolve()
-    
+        
         benchmark_w_dir = base_w_dir / spec_name
         benchmark_w_dir = benchmark_w_dir.resolve()
         designer.set_w_dir(benchmark_w_dir)
-        #print(f"Designer w_dir set to: {designer.w_dir}")
         successful = self.check_success(designer.name, benchmark_w_dir)
         completed = self.check_completion(designer.name, benchmark_w_dir)
         run = True
         if skip_completed and completed:
-            run = False
+           run = False
         if skip_successful and successful:
             run = False
     
