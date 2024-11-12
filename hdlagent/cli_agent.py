@@ -337,7 +337,8 @@ def log(args):
             # f.write(f"\nSuccess rate: {success_percentage:.2f}% ({success_count}/{total_count})\n")
             f.write(f"\nSuccess rate: {success_percentage:.2f}% ({total_successes}/{total_tests})\n")
         # print(f"{success_percentage:.2f}% ({success_count}/{total_count})")
-        print(f"{success_percentage:.2f}% ({total_successes}/{total_tests})")
+        # print(f"{success_percentage:.2f}% ({total_successes}/{total_tests})")
+        print(f"{total_successes}")
         # print(f"Test results have been saved to {output_file}")
 
 def build(args):

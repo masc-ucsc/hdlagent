@@ -1,0 +1,35 @@
+  Time Signal Name                  Dec       Hex           Bin
+  ---- -------------------- ----------- --------- -------------
+  init \gate.state_reg               --        --            xx
+  init \gold.state                   --        --            xx
+  ---- -------------------- ----------- --------- -------------
+     1 \gate_done                    --        --             x
+     1 \gold_done                    --        --             x
+     1 \in_clk                        0         0             0
+     1 \in_in                         0         0      00000000
+     1 \in_reset                      1         1             1
+     1 \trigger                       0         0             0
+  ---- -------------------- ----------- --------- -------------
+     2 \gate_done                     0         0             0
+     2 \gold_done                     0         0             0
+     2 \in_clk                        0         0             0
+     2 \in_in                         8         8      00001000
+     2 \in_reset                      0         0             0
+     2 \trigger                       0         0             0
+  ---- -------------------- ----------- --------- -------------
+     3 \gate_done                     0         0             0
+     3 \gold_done                     0         0             0
+     3 \in_clk                        0         0             0
+     3 \in_in                         0         0      00000000
+     3 \in_reset                      0         0             0
+     3 \trigger                       0         0             0
+  ---- -------------------- ----------- --------- -------------
+     4 \gate_done                     1         1             1
+     4 \gold_done                     0         0             0
+     4 \in_clk                        0         0             0
+     4 \in_in                         0         0      00000000
+     4 \in_reset                      0         0             0
+     4 \trigger                       1         1             1
+
+End of script. Logfile hash: ee731e2f2c, CPU: user 0.04s system 0.00s, MEM: 16.24 MB peak
+Yosys 0.42+40 (git sha1 a739e21a5, clang++ 14.0.0-1ubuntu1.1 -fPIC -Os)

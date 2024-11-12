@@ -1,0 +1,20 @@
+  Time Signal Name                     Dec       Hex           Bin
+  ---- ----------------------- ----------- --------- -------------
+  init \gate.r_edge [7:1]               --        --       xxxxxxx
+  init \gold.d_last                     --        --      xxxxxxxx
+  init \gold.pedge                      --        --      xxxxxxxx
+  ---- ----------------------- ----------- --------- -------------
+     1 \gate_pedge                      --        --      xxxxxxx0
+     1 \gold_pedge                      --        --      xxxxxxxx
+     1 \in_clk                           0         0             0
+     1 \in_in                            1         1      00000001
+     1 \trigger                          0         0             0
+  ---- ----------------------- ----------- --------- -------------
+     2 \gate_pedge                     128        80      10000000
+     2 \gold_pedge                      --        --      0000000x
+     2 \in_clk                           0         0             0
+     2 \in_in                            0         0      00000000
+     2 \trigger                          1         1             1
+
+End of script. Logfile hash: 3ae05b8d7c, CPU: user 0.04s system 0.00s, MEM: 15.65 MB peak
+Yosys 0.42+40 (git sha1 a739e21a5, clang++ 14.0.0-1ubuntu1.1 -fPIC -Os)

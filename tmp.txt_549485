@@ -1,0 +1,17 @@
+  Time Signal Name             Dec       Hex           Bin
+  ---- --------------- ----------- --------- -------------
+  init \gate.p                  --        --             x
+  init \gate.q                  --        --             x
+  init \gold.q                  --        --             x
+  ---- --------------- ----------- --------- -------------
+     1 \gate_p                  --        --             x
+     1 \gate_q                  --        --             x
+     1 \gold_p                   1         1             1
+     1 \gold_q                  --        --             x
+     1 \in_a                     0         0             0
+     1 \in_clock                 0         0             0
+     1 \trigger                  1         1             1
+
+Warnings: 1 unique messages, 2 total
+End of script. Logfile hash: 8ded743e55, CPU: user 0.02s system 0.00s, MEM: 12.35 MB peak
+Yosys 0.42+40 (git sha1 a739e21a5, clang++ 14.0.0-1ubuntu1.1 -fPIC -Os)

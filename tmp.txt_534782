@@ -1,0 +1,23 @@
+  Time Signal Name                         Dec       Hex           Bin
+  ---- --------------------------- ----------- --------- -------------
+  init \gate.addr                           --        --       xxxxxxx
+  init \gate.global_history                 --        --       xxxxxxx
+  ---- --------------------------- ----------- --------- -------------
+     1 \gate_predict_history                --        --       xxxxxxx
+     1 \gate_predict_taken                   1         1             1
+     1 \gold_predict_history                 0         0       0000000
+     1 \gold_predict_taken                   0         0             0
+     1 \in_areset                            0         0             0
+     1 \in_clk                               0         0             0
+     1 \in_predict_pc                      125        7d       1111101
+     1 \in_predict_valid                     1         1             1
+     1 \in_train_history                     0         0       0000000
+     1 \in_train_mispredicted                1         1             1
+     1 \in_train_pc                         38        26       0100110
+     1 \in_train_taken                       0         0             0
+     1 \in_train_valid                       1         1             1
+     1 \trigger                              1         1             1
+
+Warnings: 140 unique messages, 277 total
+End of script. Logfile hash: 8cd725abad, CPU: user 1.06s system 0.03s, MEM: 88.98 MB peak
+Yosys 0.42+40 (git sha1 a739e21a5, clang++ 14.0.0-1ubuntu1.1 -fPIC -Os)

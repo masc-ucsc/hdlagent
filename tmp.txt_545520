@@ -1,0 +1,17 @@
+  Time Signal Name                     Dec       Hex           Bin
+  ---- ----------------------- ----------- --------- -------------
+  init \gate.q                          --        --          xxxx
+  ---- ----------------------- ----------- --------- -------------
+     1 \gate_q                          --        --          xxxx
+     1 \gold_q                           0         0          0000
+     1 \in_clock                         0         0             0
+     1 \in_data_in                       0         0          0000
+     1 \in_data_in_serial                0         0             0
+     1 \in_reset                         0         0             0
+     1 \in_shift_dir                     0         0             0
+     1 \in_shift_mode                    1         1             1
+     1 \trigger                          1         1             1
+
+Warnings: 2 unique messages, 3 total
+End of script. Logfile hash: 226e95d406, CPU: user 0.01s system 0.03s, MEM: 13.06 MB peak
+Yosys 0.42+40 (git sha1 a739e21a5, clang++ 14.0.0-1ubuntu1.1 -fPIC -Os)

@@ -1,0 +1,26 @@
+  Time Signal Name              Dec       Hex           Bin
+  ---- ---------------- ----------- --------- -------------
+  init \gate.q                   --        --             x
+  init \gate.state               --        --             x
+  init \gold.c                   --        --             x
+  ---- ---------------- ----------- --------- -------------
+     1 \gate_q                   --        --             x
+     1 \gate_state               --        --             x
+     1 \gold_q                   --        --             x
+     1 \gold_state               --        --             x
+     1 \in_a                      1         1             1
+     1 \in_b                      1         1             1
+     1 \in_clk                    0         0             0
+     1 \trigger                   0         0             0
+  ---- ---------------- ----------- --------- -------------
+     2 \gate_q                    1         1             1
+     2 \gate_state                0         0             0
+     2 \gold_q                    1         1             1
+     2 \gold_state                1         1             1
+     2 \in_a                      0         0             0
+     2 \in_b                      0         0             0
+     2 \in_clk                    0         0             0
+     2 \trigger                   1         1             1
+
+End of script. Logfile hash: 094e92c51f, CPU: user 0.02s system 0.00s, MEM: 13.13 MB peak
+Yosys 0.42+40 (git sha1 a739e21a5, clang++ 14.0.0-1ubuntu1.1 -fPIC -Os)

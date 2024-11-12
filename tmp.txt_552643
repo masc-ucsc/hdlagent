@@ -1,0 +1,43 @@
+  Time Signal Name              Dec       Hex           Bin
+  ---- ---------------- ----------- --------- -------------
+  init \gate.out                 --        --             x
+  init \gate.state               --        --            xx
+  init \gold.state               --        --            xx
+  ---- ---------------- ----------- --------- -------------
+     1 \gate_out                 --        --             x
+     1 \gold_out                 --        --             x
+     1 \in_clk                    0         0             0
+     1 \in_in                     1         1             1
+     1 \in_reset                  1         1             1
+     1 \trigger                   0         0             0
+  ---- ---------------- ----------- --------- -------------
+     2 \gate_out                  0         0             0
+     2 \gold_out                  0         0             0
+     2 \in_clk                    0         0             0
+     2 \in_in                     1         1             1
+     2 \in_reset                  0         0             0
+     2 \trigger                   0         0             0
+  ---- ---------------- ----------- --------- -------------
+     3 \gate_out                  0         0             0
+     3 \gold_out                  0         0             0
+     3 \in_clk                    0         0             0
+     3 \in_in                     0         0             0
+     3 \in_reset                  0         0             0
+     3 \trigger                   0         0             0
+  ---- ---------------- ----------- --------- -------------
+     4 \gate_out                  0         0             0
+     4 \gold_out                  0         0             0
+     4 \in_clk                    0         0             0
+     4 \in_in                     1         1             1
+     4 \in_reset                  0         0             0
+     4 \trigger                   0         0             0
+  ---- ---------------- ----------- --------- -------------
+     5 \gate_out                  0         0             0
+     5 \gold_out                  1         1             1
+     5 \in_clk                    0         0             0
+     5 \in_in                     0         0             0
+     5 \in_reset                  0         0             0
+     5 \trigger                   1         1             1
+
+End of script. Logfile hash: 776d2a3821, CPU: user 0.05s system 0.00s, MEM: 18.05 MB peak
+Yosys 0.42+40 (git sha1 a739e21a5, clang++ 14.0.0-1ubuntu1.1 -fPIC -Os)

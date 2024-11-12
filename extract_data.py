@@ -74,30 +74,40 @@ def run_command(command):
             command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
         output = result.stdout.strip()
-        
-        # Example output: "63.10% (53/84)"
-        # Extract the number inside the parentheses
+
+        # Try parsing the output
+        # First, attempt to find a number inside parentheses (e.g., "(53/84)")
         match = re.search(r'\((\d+)/\d+\)', output)
         if match:
             value = int(match.group(1))
-            return value
+            print(f"Parsed value from output: {value}")
+            return value, output
         else:
-            # If parentheses not found, try extracting percentage
+            # Next, try extracting a percentage (e.g., "63.10%")
             match = re.search(r'(\d+(\.\d+)?)%', output)
             if match:
                 value = int(float(match.group(1)))
-                return value
-        print(f"Unable to parse output for command: {command}", file=sys.stderr)
-        print(f"Output: {output}", file=sys.stderr)
-        return 0
+                print(f"Parsed percentage value from output: {value}")
+                return value, output
+            else:
+                # Finally, try parsing the output as an integer directly
+                try:
+                    value = int(output)
+                    print(f"Parsed integer value from output: {value}")
+                    return value, output
+                except ValueError:
+                    print(f"Unable to parse output for command: {command}", file=sys.stderr)
+                    print(f"Output: {output}", file=sys.stderr)
+                    return 0, output  # Return a tuple
     except subprocess.CalledProcessError as e:
         print(f"Command failed: {command}", file=sys.stderr)
-        print(f"Error: {e.stderr}", file=sys.stderr)
-        return 0
-    except ValueError:
-        print(f"Unexpected output for command: {command}", file=sys.stderr)
-        print(f"Output: {result.stdout}", file=sys.stderr)
-        return 0
+        print(f"Error: {e.stderr.strip()}", file=sys.stderr)
+        return 0, e.stderr.strip()  # Return a tuple
+    except Exception as ex:
+        print(f"An unexpected error occurred: {command}", file=sys.stderr)
+        print(f"Error: {str(ex)}", file=sys.stderr)
+        return 0, ""  # Return a tuple
+
 
 def generate_and_execute_commands():
     for llm_id in llms:
@@ -113,6 +123,7 @@ def generate_and_execute_commands():
                 continue
 
             for lang in languages:
+                previous_max_value = 0
                 for cmd_index, cmd in enumerate(commands_order):
                     details = command_details.get(cmd)
                     if not details:
@@ -141,11 +152,18 @@ def generate_and_execute_commands():
                     print(f"Executing command: {command}")
 
                     # Run the command and get the output
-                    value, output = run_command(command)
+                    current_value, output = run_command(command)
                     print(f"Command output: {output}\n")
 
-                    # Update the data dictionary
-                    data[lang][llm_name][category][cmd_index] += value  # Assuming aggregation is sum
+                    
+                    # Compute delta
+                    delta = current_value - previous_max_value
+                    if delta > 0:
+                        data[lang][llm_name][category][cmd_index] = delta
+                        previous_max_value = current_value  # Update previous max value
+                    else:
+                        data[lang][llm_name][category][cmd_index] = 0  # No increase, report 0
+                    print(f"Updated data[{lang}][{llm_name}][{category}][{cmd_index}] = {data[lang][llm_name][category][cmd_index]}")
 
     # Save the data per language
     for lang in languages:
@@ -167,8 +185,10 @@ def generate_and_execute_commands():
             f.write("# ['simple', 'init_desc', 'few_shot', 'init', 'supp']\n")
             f.write("data = {\n")
             for llm, category_data in formatted_data.items():
-                f.write(f"    '{llm}': [\n")
-                for category_list in category_data:
+                f.write(f"    '{llm}': [  # Data for {llm}\n")
+                for idx, category_list in enumerate(category_data):
+                    benchmark_label = ['HC', 'HP', 'VE2-C', 'VE2-P'][idx]
+                    f.write(f"        # {benchmark_label}\n")
                     f.write(f"        {category_list},\n")
                 f.write("    ],\n")
             f.write("}\n")

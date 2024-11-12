@@ -1,0 +1,50 @@
+  Time Signal Name              Dec       Hex           Bin
+  ---- ---------------- ----------- --------- -------------
+  init \gate.dfr                 --        --             x
+  init \gate.fr0                 --        --             x
+  init \gate.fr1                 --        --             x
+  init \gate.fr2                 --        --             x
+  init \gate.s_d                 --        --           xxx
+  init \gold.state               --        --           xxx
+  ---- ---------------- ----------- --------- -------------
+     1 \gate_dfr                 --        --             x
+     1 \gate_fr0                 --        --             x
+     1 \gate_fr1                 --        --             x
+     1 \gate_fr2                 --        --             x
+     1 \gold_dfr                 --        --             x
+     1 \gold_fr0                 --        --             x
+     1 \gold_fr1                 --        --             x
+     1 \gold_fr2                 --        --             x
+     1 \in_clk                    0         0             0
+     1 \in_reset                  1         1             1
+     1 \in_s                      0         0           000
+     1 \trigger                   0         0             0
+  ---- ---------------- ----------- --------- -------------
+     2 \gate_dfr                  1         1             1
+     2 \gate_fr0                  1         1             1
+     2 \gate_fr1                  1         1             1
+     2 \gate_fr2                  1         1             1
+     2 \gold_dfr                  1         1             1
+     2 \gold_fr0                  1         1             1
+     2 \gold_fr1                  1         1             1
+     2 \gold_fr2                  1         1             1
+     2 \in_clk                    0         0             0
+     2 \in_reset                  0         0             0
+     2 \in_s                      2         2           010
+     2 \trigger                   0         0             0
+  ---- ---------------- ----------- --------- -------------
+     3 \gate_dfr                  1         1             1
+     3 \gate_fr0                  1         1             1
+     3 \gate_fr1                  0         0             0
+     3 \gate_fr2                  0         0             0
+     3 \gold_dfr                  1         1             1
+     3 \gold_fr0                  1         1             1
+     3 \gold_fr1                  1         1             1
+     3 \gold_fr2                  1         1             1
+     3 \in_clk                    0         0             0
+     3 \in_reset                  0         0             0
+     3 \in_s                      0         0           000
+     3 \trigger                   1         1             1
+
+End of script. Logfile hash: f6d5540854, CPU: user 0.07s system 0.00s, MEM: 19.68 MB peak
+Yosys 0.42+40 (git sha1 a739e21a5, clang++ 14.0.0-1ubuntu1.1 -fPIC -Os)

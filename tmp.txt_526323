@@ -1,0 +1,33 @@
+  Time Signal Name                             Dec       Hex                                                                 Bin
+  ---- ------------------------------- ----------- --------- -------------------------------------------------------------------
+     1 \gate_instruction_recv_msg               --        --                                    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+     1 \gate_instruction_recv_val                0         0                                                                   0
+     1 \gate_load_recv_msg                      --        --    00000000000000000000000000000000xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+     1 \gate_load_recv_val                       0         0                                                                   0
+     1 \gate_store_send_rdy                      1         1                                                                   1
+     1 \gate_wbs_ack_o                           1         1                                                                   1
+     1 \gate_wbs_dat_o                           0         0                                    00000000000000000000000000000000
+     1 \gold_instruction_recv_msg                0         0                                    00000000000000000000000000000000
+     1 \gold_instruction_recv_val                0         0                                                                   0
+     1 \gold_load_recv_msg                      --        --    0000000000000000000000000000000000000000000000000000000000000000
+     1 \gold_load_recv_val                       0         0                                                                   0
+     1 \gold_store_send_rdy                      0         0                                                                   0
+     1 \gold_wbs_ack_o                           0         0                                                                   0
+     1 \gold_wbs_dat_o                          -1  ffffffff                                    11111111111111111111111111111111
+     1 \in_instruction_recv_rdy                  0         0                                                                   0
+     1 \in_load_recv_rdy                         0         0                                                                   0
+     1 \in_store_send_msg                       -1  ffffffff                                    11111111111111111111111111111111
+     1 \in_store_send_val                        0         0                                                                   0
+     1 \in_wb_clk_i                              0         0                                                                   0
+     1 \in_wb_rst_i                              0         0                                                                   0
+     1 \in_wbs_adr_i                     805306372  30000004                                    00110000000000000000000000000100
+     1 \in_wbs_cyc_i                             0         0                                                                   0
+     1 \in_wbs_dat_i                             0         0                                    00000000000000000000000000000000
+     1 \in_wbs_sel_i                             0         0                                                                0000
+     1 \in_wbs_stb_i                             0         0                                                                   0
+     1 \in_wbs_we_i                              1         1                                                                   1
+     1 \trigger                                  1         1                                                                   1
+
+Warnings: 37 unique messages, 74 total
+End of script. Logfile hash: f2c5c008e6, CPU: user 0.09s system 0.00s, MEM: 31.46 MB peak
+Yosys 0.42+40 (git sha1 a739e21a5, clang++ 14.0.0-1ubuntu1.1 -fPIC -Os)

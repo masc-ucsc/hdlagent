@@ -1,0 +1,15 @@
+  Time Signal Name               Dec       Hex           Bin
+  ---- ----------------- ----------- --------- -------------
+  init \gate.and_ff               --        --             x
+  init \gate.or_ff                --        --             x
+  init \gate.xor_ff               --        --             x
+  init \gold.s                     0         0           000
+  ---- ----------------- ----------- --------- -------------
+     1 \gate_z                    --        --             x
+     1 \gold_z                     1         1             1
+     1 \in_clk                     0         0             0
+     1 \in_x                       0         0             0
+     1 \trigger                    1         1             1
+
+End of script. Logfile hash: a9ecd03a7e, CPU: user 0.02s system 0.00s, MEM: 12.65 MB peak
+Yosys 0.42+40 (git sha1 a739e21a5, clang++ 14.0.0-1ubuntu1.1 -fPIC -Os)
