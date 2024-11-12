@@ -197,6 +197,9 @@ def normalize_name(name):
         return name
 
 def log(args):
+    total_tests = 0
+    total_successes = 0
+    first_try_successes = 0
     if args.benchmark_name:
         # If benchmark_name is provided, search for it in ~/hdlagent/
         base_dir = os.path.expanduser('~/hdlagent/')
@@ -275,13 +278,38 @@ def log(args):
                     continue
     
                 # Parse the parts
-                _, model, name, comp_n, comp_f, lec_n, lec_f, top_k, prompt_tokens, completion_tokens, world_clock_time, llm_query_time = parts
+                # _, model, name, comp_n, comp_f, lec_n, lec_f, top_k, prompt_tokens, completion_tokens, world_clock_time, llm_query_time = parts
+                # Parse the parts
+                # _, model, name, comp_n, comp_f, lec_n, lec_f, top_k, prompt_tokens, completion_tokens, world_clock_time, llm_query_time = parts
+                # Adjusted parsing to correctly assign variables
+                (_, model, name, comp_n, comp_f, lec_n, lec_f,
+                 top_k, prompt_tokens, completion_tokens,
+                 world_clock_time, llm_query_time) = parts
+                
+                # Convert string values to integers
+                comp_n = int(comp_n)
+                comp_f = int(comp_f)
+                lec_n = int(lec_n)
+                lec_f = int(lec_f)
     
                 # Determine success or failure
-                status = 'Success' if int(comp_f) == 0 and int(lec_f) == 0 else 'Failure'
+                # status = 'Success' if int(comp_f) == 0 and int(lec_f) == 0 else 'Failure'
+                status = 'Success' if int(comp_n) > int(comp_f) and int(lec_n) > int(lec_f) else 'Failure'
+                success = comp_n > comp_f and lec_n > lec_f
+                # Determine if it's a first-try success
+
+                # Apply filtering based on --desc
+                if args.desc:
+                    success = success and comp_n == 1 and comp_f == 0
+
+                # Update counters
+                total_tests += 1
+                if success:
+                    total_successes += 1
     
-                # Use the test_case_name as the test name
-                test_results.append((test_case_name, status))
+                # # Use the test_case_name as the test name
+                # test_results.append((test_case_name, status))
+                test_results.append((test_case_name, 'Success' if success else 'Failure'))
 
         if not test_results:
             print("No test results found.")
@@ -290,7 +318,10 @@ def log(args):
         # Compute success rate
         success_count = sum(1 for _, status in test_results if status == 'Success')
         total_count = len(test_results)
-        success_percentage = (success_count / total_count) * 100 if total_count > 0 else 0
+        # success_percentage = (success_count / total_count) * 100 if total_count > 0 else 0
+
+        # Compute success rate
+        success_percentage = (total_successes / total_tests) * 100 if total_tests > 0 else 0
     
         if not test_results:
             print("No test results found.")
@@ -303,8 +334,10 @@ def log(args):
         with open(output_file, 'w') as f:
             for name, status in test_results:
                 f.write(f"{name}: {status}\n")
-            f.write(f"\nSuccess rate: {success_percentage:.2f}% ({success_count}/{total_count})\n")
-        print(f"{success_percentage:.2f}% ({success_count}/{total_count})")
+            # f.write(f"\nSuccess rate: {success_percentage:.2f}% ({success_count}/{total_count})\n")
+            f.write(f"\nSuccess rate: {success_percentage:.2f}% ({total_successes}/{total_tests})\n")
+        # print(f"{success_percentage:.2f}% ({success_count}/{total_count})")
+        print(f"{success_percentage:.2f}% ({total_successes}/{total_tests})")
         # print(f"Test results have been saved to {output_file}")
 
 def build(args):
@@ -466,6 +499,7 @@ def add_log_command(subparsers):
     # parser.add_argument('--log_dir', type=str, action="store", default="./", help='Working directory containing log files')
     parser.add_argument('--status', choices=['all', 'success', 'failed'], default='all', help='Filter logs by run status.')
     parser.add_argument('--top_k', type=int, help='Filter logs where top_k is greater than or equal to the specified value.')
+    parser.add_argument('--desc', action='store_true', help='Filter results to include only successful tests that passed on the first attempt (comp_n == 1 and comp_f == 0).')
 
     return parser
 
