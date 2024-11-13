@@ -8,13 +8,13 @@ reformat_verilog_function: resources.Verilog.Verilog_agent.custom_reformat_veril
 
 responses:
   comb_give_instr_prefix: |
-    Can you implement the described Module in Verilog using purely combinational logic:
+    Implement the described module in synthesizable Verilog using purely combinational logic:
 
   pipe_give_instr_prefix: |
-    Can you implement the following description of a sequential Module in Verilog, it should have {bench_stage} register stage(s). Meaning the initial result should be ready in {bench_stage} clock cycle(s) upon reset.
+    Implement the following description of a sequential module in synthesizable Verilog, it should have {bench_stage} register stage(s). Meaning the initial result should be ready in {bench_stage} clock cycle(s) upon reset.
 
   give_instr_suffix: |
-    
+
     Please respond with only valid program syntax. Set input/output names exactly as stated, avoid abbreviation. Please do not provide any additional English explanation, short comments in the code are allowed.
     The module declaration is: {interface}
 
@@ -27,24 +27,24 @@ responses:
     ```verilog
     {gold_verilog}
     ```
-    
+
     {test_fail_count} failed test results were found. The feedback from the compiler shows the values that were tested as well as the output value(s) that were seen, called the 'DUT', and the desired output value(s) are labeled 'Expected'. Here are {lec_feedback_limit} results of the {test_fail_count} failed test cases:
 
     {feedback}
-    
+
     Just return the corrected code, I dont care about your reasoning or any sort of documentation or comments.
 
   comb_lec_fail_prefix: |
     The previous module failed {test_fail_count} test cases of the desired implementation. Remember that all other possible input combinations are implemented correctly, and that only the output(s) mentioned in the test case need modification. Unmentioned outputs should not be touched. Here are {lec_feedback_limit} results of the {test_fail_count} failed test cases:
-    
+
     {feedback}
-    
+
   improve_comb_lec_fail_prefix: |
     This looks better, that last program only failed {test_fail_count} test cases. Remember that all other possible input combinations are implemented correctly, and that only the output(s) mentioned in the test case need modification. Unmentioned outputs should not be touched. Here are {lec_feedback_limit} results of the {test_fail_count} failed test cases:
     {feedback}
-    
+
   pipe_lec_fail_prefix: |
-    The Verilog module you just wrote was tested for logical equivalence versus a golden model named 'gold'. Below are two truth tables that represent the input/output values of the ideal 'gold' model and the module you supplied, renamed 'gate'. These are the last two timesteps from the test before the 'gate' models output diverged from the 'gold'. Hence why in the top table, the in/out values are the same but the bottom table the values differ:
+    The Verilog module you just wrote was tested for logical equivalence against a reference 'gold' model. Below are two truth tables that represent the input/output values of the ideal 'gold' model and the module you supplied, renamed 'gate'. These are the last two timesteps from the test before the 'gate' models output diverged from the 'gold'. Hence why in the top table, the in/out values are the same but the bottom table the values differ:
 
   bad_port_lec_fail_prefix: |
     The Verilog module you just wrote does not comply with the desired interface, as it is missing a port named {feedback}. Please ensure you did not misspell any port names.
@@ -54,7 +54,7 @@ responses:
     Remove implicit latches from the design, make sure all 'switch' statements have a 'default' 'case'.
 
   lec_fail_suffix: |
-    
+
     Please rewrite the Verilog module in its entirety to match the 'Expected output values' of the testbench. And as previously mentioned, return only valid program syntax. No english explanations, except in the form of short comments.
 
   system_info: |
