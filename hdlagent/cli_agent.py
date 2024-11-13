@@ -408,7 +408,18 @@ def list_models(args):
                     print("\n")
         else:
             print("SambaNova unavailable unless SAMBANOVA_API_KEY is set")
-
+    
+    if "fireworks" in args.model or showall:
+        if "FIREWORKS_AI_API_KEY" in os.environ:
+                models = agent.list_fireworks_models()
+                if len(models):
+                    all_models += models
+                    print("FireWorks models:")
+                    for m in models:
+                            print(" ", m)
+                    print("\n")
+        else:
+            print("FireWorks unavailable unless SAMBANOVA_API_KEY is set")
     return all_models
 
 def add_shared_args(model):

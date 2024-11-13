@@ -12,6 +12,8 @@ from vertexai.generative_models import *
 import yaml
 import logging
 import pdb
+from litellm import completion as completion_litellm
+
 
 from hdlang import get_hdlang
 
@@ -62,7 +64,22 @@ def list_sambanova_models(warn: bool = True):
             print("Warning: SAMBANOVA_API_KEY not set")
         return []
     
-
+def list_fireworks_models(warn: bool = True):
+    if "FIREWORKS_AI_API_KEY" in os.environ:
+        return [
+            "fireworks_ai/accounts/fireworks/models/llama-v3-70b-instruct",
+            "fireworks_ai/llama-v3p2-1b-instruct",
+            "fireworks_ai/llama-v3p2-3b-instruct",
+            "fireworks_ai/llama-v3p2-11b-vision-instruct",
+            "fireworks_ai/llama-v3p2-90b-vision-instruct",
+            "fireworks_ai/mixtral-8x7b-instruct",
+            "fireworks_ai/firefunction-v1",
+            "fireworks_ai/llama-v2-70b-chat"
+        ]
+    else:
+        if warn:
+            print("Warning: FIREWORKS_AI_API_KEY not set")
+        return []
 
 def md_to_convo(md_file):
     with open(md_file, 'r') as f:
@@ -191,6 +208,9 @@ class Agent:
                 base_url=SAMBANOVA_API_URL,
                 api_key=SAMBANOVA_API_KEY,
             )
+        elif model in list_fireworks_models():
+            self.chat_completion = self.fireworks_chat_completion  # Fireworks-specific completion method
+            self.model = model  # Fireworks requires model specified in completion call
         elif model in list_vertexai_models():
             self.chat_completion = self.vertexai_chat_completion
             try:
@@ -202,8 +222,8 @@ class Agent:
                 print("gcloud auth application-default login")
                 exit(-2)
 
-        elif ("OPENAI_API_KEY" not in os.environ) and ("SAMBANOVA_API_KEY" not in os.environ) and ("PROJECT_ID" not in os.environ):
-            print("Please set either OPENAI_API_KEY or SAMBANOVA_API_KEY or PROJECT_ID environment variable(s) before continuing, exiting...")
+        elif ("OPENAI_API_KEY" not in os.environ) and ("SAMBANOVA_API_KEY" not in os.environ) and ("FIREWORKS_AI_API_KEY" not in os.environ) and ("PROJECT_ID" not in os.environ):
+            print("Please set either OPENAI_API_KEY or SAMBANOVA_API_KEY or FIREWORKS_AI_API_KEY or PROJECT_ID environment variable(s) before continuing, exiting...")
             exit()
         if self.chat_completion is None:
             print(f"Error: {model} is an invalid model, please check --list_models for available LLM selection, exiting...")
@@ -697,6 +717,20 @@ class Agent:
     # Intended use: querying LLM for testbench generation
     def get_tb_initial_instruction(self, prompt: str):
         return (self.responses['request_testbench']).format(prompt=prompt, interface=self.interface)
+
+    def fireworks_chat_completion(self, conversation, compile_convo: bool = False, stream: bool = False):
+        """Send conversation to Fireworks AI model using LiteLLM."""
+        messages = [{"role": entry['role'], "content": entry['content']} for entry in conversation]
+        response = completion_litellm(
+            model=self.model,
+            messages=messages,
+            stream=stream
+        )
+        
+        if stream:
+            return ''.join(chunk['choices'][0]['delta']['content'] for chunk in response)
+        else:
+            return response.choices[0].message.content
 
     def vertexai_chat_completion(self, conversation, compile_convo: bool = False):
         contents  = []
