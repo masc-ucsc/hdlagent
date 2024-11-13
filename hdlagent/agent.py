@@ -1091,6 +1091,7 @@ class Agent:
             current_query = prompt
         print(f"[DEBUG] Original self.code: {self.code}")
         for i in range(comp_iterations):
+            time.sleep(1)
             print("compile iteration: ", i)
             #self.dump_codeblock(self.query_model(self.compile_conversation, current_query, True), self.code)
             codeblock = self.query_model(self.compile_conversation, current_query, True)
