@@ -54,7 +54,7 @@ SAMBANOVA_API_URL = "https://fast-api.snova.ai/v1"
 SAMBANOVA_API_KEY = os.environ.get("SAMBANOVA_API_KEY")
 
 def list_sambanova_models(warn: bool = True):
-    sambanova_models = ["llama3-8b", "llama3-70b", "llama3-405b"]
+    sambanova_models = ["Meta-Llama-3.1-8B-Instruct", "Meta-Llama-3.1-70B-Instruct", "Meta-Llama-3.1-405B-Instruct", "Meta-Llama-3.2-1B-Instruct", "Meta-Llama-3.2-3B-Instruct", "Llama-3.2-11B-Vision-Instruct", "Llama-3.2-90B-Vision-Instruct"]
     if "SAMBANOVA_API_KEY" in os.environ:
         return sambanova_models
     else:
@@ -190,10 +190,6 @@ class Agent:
             self.client = OpenAI(
                 base_url=SAMBANOVA_API_URL,
                 api_key=SAMBANOVA_API_KEY,
-                default_headers={
-                    "Authorization": f"Basic {SAMBANOVA_API_KEY}",
-                    "Content-Type": "application/json"
-                }
             )
         elif model in list_vertexai_models():
             self.chat_completion = self.vertexai_chat_completion
@@ -755,7 +751,7 @@ class Agent:
     def sambanova_chat_completion(self, conversation, compile_convo: bool = False, **kwargs,):
         if self.temp is None:
             completion = self.client.chat.completions.create(
-                model="llama3-405b",
+                model="Meta-Llama-3.1-8B-Instruct",
                 messages=conversation,
                 # stream=True,
                 **kwargs,
