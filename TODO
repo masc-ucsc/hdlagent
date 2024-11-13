@@ -5,8 +5,10 @@
   +Use remote hdeval prompt support
 
 -Create some unit test for hdlagent
-  +Use some llm-ollama local model in hdlagent and pull tests from hdeval
+  +Use some llm-ollama local or sambanova model in hdlagent and pull tests from hdeval
   +We can run the test in hdlagent in llmhdl server
+
+-Add multiple HDLs to the unit test target using HDEval 24a
 
 # SPEC improvements
 
@@ -89,7 +91,5 @@ model=genai.GenerativeModel(
 response = model.generate_content("Good morning! How are you?")
 print(response.text)
 ```
-
--Add samba Nova API
 
 
