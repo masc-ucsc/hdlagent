@@ -67,14 +67,19 @@ def list_sambanova_models(warn: bool = True):
 def list_fireworks_models(warn: bool = True):
     if "FIREWORKS_AI_API_KEY" in os.environ:
         return [
-            "fireworks_ai/accounts/fireworks/models/llama-v3-70b-instruct",
+            "fireworks_ai/llama-v3-70b-instruct",
             "fireworks_ai/llama-v3p2-1b-instruct",
             "fireworks_ai/llama-v3p2-3b-instruct",
             "fireworks_ai/llama-v3p2-11b-vision-instruct",
             "fireworks_ai/llama-v3p2-90b-vision-instruct",
             "fireworks_ai/mixtral-8x7b-instruct",
             "fireworks_ai/firefunction-v1",
-            "fireworks_ai/llama-v2-70b-chat"
+            "fireworks_ai/mixtral-8x22b-instruct",
+            "fireworks_ai/qwen2p5-coder-32b-instruct",
+            "fireworks_ai/qwen2p5-72b-instruct",
+            "fireworks_ai/llama-v3p1-405b-instruct",
+            "fireworks_ai/llama-v3p1-70b-instruct",
+            "fireworks_ai/llama-v3p1-8b-instruct"
         ]
     else:
         if warn:
