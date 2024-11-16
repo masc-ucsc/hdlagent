@@ -63,7 +63,7 @@ def list_sambanova_models(warn: bool = True):
         if warn:
             print("Warning: SAMBANOVA_API_KEY not set")
         return []
-    
+
 def list_fireworks_models(warn: bool = True):
     if "FIREWORKS_AI_API_KEY" in os.environ:
         return [
@@ -504,23 +504,23 @@ class Agent:
             # 'w_dir' is already set; do not change it
             pass
         # print(f"After resolve_spec_path, self.w_dir: {self.w_dir}")
-        
+
     # Helper function that extracts and reformats information from spec yaml file
     # to create initial prompt(s) for compilation loop and testbench
-    # loop (if applicable). Sets interface and module name, and copies spec to 
+    # loop (if applicable). Sets interface and module name, and copies spec to
     # w_dir if necessary.
     #
     # Intended use: before a generation/lec loop is started so the prompt can be reformatted and formalized
     def read_spec(self, target_spec: str = None):
         if target_spec is None:
             target_spec = self.spec
-    
+
         if target_spec is None:
             print("Error: attempting to read spec in a run where it is not employed, exiting...")
             exit()
         with open(target_spec, 'r') as file:
             spec = yaml.safe_load(file)
-    
+
         # Only set self.name if it's not already set
         self.name = os.path.splitext(os.path.basename(target_spec))[0]
         if not hasattr(self, 'name') or self.name == "":
@@ -528,9 +528,9 @@ class Agent:
             logging.debug(f"Agent name set to: {self.name}")
         # else:
             # logging.info(f"self.name already set to: {self.name}, not overwriting in read_spec")
-    
+
         self.resolve_spec_path(target_spec, spec.get('in_directory') is True)
-    
+
         if 'description' not in spec:
             print(f"Error: valid yaml 'description' key not found in {self.spec} file, exiting...")
             exit()
@@ -560,7 +560,7 @@ class Agent:
         self.set_interface(spec['interface'])
         self.spec_content = spec.get('description', '')
         return spec['description']
-    
+
     def read_verilog(self, input_verilog: str = None):
         if input_verilog is None:
             print("Error: attempting to read Verilog code that is empty, exiting...")
@@ -568,17 +568,17 @@ class Agent:
         if not os.path.exists(input_verilog):
             print(f"Error: Verilog file '{input_verilog}' does not exist.")
             exit()
-        
-        
+
+
 
         with open(input_verilog, 'r') as file:
             verilog_code = file.read()
 
-        self.gold = input_verilog 
-        self.gold_code = verilog_code 
+        self.gold = input_verilog
+        self.gold_code = verilog_code
         self.name = os.path.splitext(os.path.basename(input_verilog))[0]
         print(f"[DEBUG] self.name set to: '{self.name}' in read_verilog")
-        self.check_gold(self.gold) 
+        self.check_gold(self.gold)
 
         return verilog_code
 
@@ -672,7 +672,7 @@ class Agent:
 
     def get_tb_initial_instruction(self, prompt: str):
         instruction = self.responses['request_testbench']
-        return instruction.format(prompt=prompt, interface=self.interface) 
+        return instruction.format(prompt=prompt, interface=self.interface)
 
     def get_compile_tb_iteration_instruction(self, compiler_output: str):
         clarification = self.responses['compile_testbench_iteration']
@@ -731,7 +731,7 @@ class Agent:
             messages=messages,
             stream=stream
         )
-        
+
         if stream:
             return ''.join(chunk['choices'][0]['delta']['content'] for chunk in response)
         else:
@@ -786,7 +786,7 @@ class Agent:
         self.prompt_tokens     += completion.usage.prompt_tokens
         self.completion_tokens += completion.usage.completion_tokens
         return completion.choices[0].message.content
-    
+
     def sambanova_chat_completion(self, conversation, compile_convo: bool = False, **kwargs,):
         if self.temp is None:
             completion = self.client.chat.completions.create(
@@ -897,23 +897,23 @@ class Agent:
     # Intended use: compile new code response from LLM that was dumped to file
     def test_code_compile(self):
         my_path = Path(__file__).resolve().parent
-    
+
         # Ensure self.compile_script is a Path object
         if isinstance(self.compile_script, str):
             self.compile_script = Path(self.compile_script.strip())
-    
+
         # Adjust script path
         script = my_path / self.compile_script
-    
+
         # Ensure script path is absolute
         script = script.resolve()
         print("_____________________************script****************", script)
-    
+
         # Prepare the command
         command = f"{script} {self.code}"
         print("_____________________************command****************", command)
         # print(f"[DEBUG] Running compile command: {command}")
-    
+
         # Ensure the script is executable
         if not script.exists():
             print(f"[ERROR] Compile script does not exist: {script}")
@@ -921,16 +921,16 @@ class Agent:
         if not os.access(script, os.X_OK):
             print(f"[ERROR] Compile script is not executable: {script}")
             return f"Compile script is not executable: {script}"
-    
+
         # Run the compile command
         res = subprocess.run(command, capture_output=True, shell=True, text=True)
-    
-        # print(f"[DEBUG] test_code_compile: stdout = {res.stdout}")
-        # print(f"[DEBUG] test_code_compile: stderr = {res.stderr}")
-    
+
+        print(f"[DEBUG] test_code_compile: stdout = {res.stdout}")
+        print(f"[DEBUG] test_code_compile: stderr = {res.stderr}")
+
         errors = self.check_errors(res)
         print(f"[DEBUG] errors from check_errors: {errors}")
-    
+
         self.comp_n += 1
         if errors is not None:
             self.comp_f += 1
@@ -956,7 +956,7 @@ class Agent:
         else:
             return file_name_str
 
-    
+
     # Intended use: for lec check after RTL has successfully compiled into Verilog
     def test_lec(self, gold: str = None, gate: str = None, lec_feedback_limit: int = -1):
         # ./*_lec <golden_verilog> <llm_verilog>
@@ -1049,7 +1049,7 @@ class Agent:
                 current_query = self.get_compile_tb_iteration_instruction(compile_out)
             else:
                 return True, None
-        return False, compile_out 
+        return False, compile_out
 
     # The "outer loop" of the testbench generation process, which confirms
     # the tb compiled and the RTL exists, and runs them against one another.
@@ -1146,7 +1146,7 @@ class Agent:
         # self.finish_run(failure_reason)
         # return self.finish_run(self.code_compilation_loop(prompt, 0, iterations)[1])
         return compiled
-    
+
     def opt_run_loop(self, prompt: str, lec_iterations: int = 1, comp_iterations: int = 1, continued: bool = False):
         if not continued:
             self.reset_conversations()
@@ -1154,7 +1154,7 @@ class Agent:
 
         print(f"[DEBUG] self.name before generating prompt: '{self.name}'")
 
-        #here i have to generate a sutable prompt, so far the verilgo code is prompt, 
+        #here i have to generate a sutable prompt, so far the verilgo code is prompt,
         prompt = f"""
             I have a Verilog design described in the following code:
             ```
@@ -1252,7 +1252,7 @@ class Agent:
                     test_fail_count, failure_reason = lec_out.split('\n', 1)
                     return self.finish_run(failure_reason)
         return self.finish_run(failure_reason)
-            
+
 
 
     # Helper function to handle results and logs of compile based runs

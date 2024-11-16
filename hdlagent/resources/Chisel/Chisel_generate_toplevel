@@ -1,23 +1,32 @@
 #!/bin/bash
 
 script_pathname=$(dirname "$0")
-filename=$1
-modulename="${filename##*/}"
+src_scala=$1
+modulename="${src_scala##*/}"
 modulename="${modulename/.scala/}"
-pathname="${filename%/*}"
+pathname="${src_scala%/*}"
 bootstrap_pathname="${pathname}/chisel_bootstrap"
-
+if [ $# -ge 2 ]; then
+  dst_verilog=$2
+else
+  dst_verilog=${pathname}/${modulename}.v
+fi
 
 if [ ! -d "$bootstrap_pathname" ]; then
     cp -r "${script_pathname}/chisel_bootstrap" "$bootstrap_pathname"
 fi
 
-cp "$filename" "$bootstrap_pathname/src/main/scala/"
+cp -f "$src_scala" "$bootstrap_pathname/src/main/scala/"
+${script_pathname}/Chisel_fix.py "${bootstrap_pathname}/src/main/scala/${modulename}.scala"
+
 pushd "$bootstrap_pathname"
-sbt "runMain chisel3.stage.ChiselMain  --module $modulename"
-if [ -e "$modulename.v" ]; then
-    mv "$modulename.v" ../
-fi
+sbt run
 popd
+if [ -e "${bootstrap_pathname}/${modulename}.sv" ]; then
+  sv2v --write=adjacent "${bootstrap_pathname}/${modulename}.sv"
+fi
+if [ -e "${bootstrap_pathname}/${modulename}.v" ]; then
+    cp -f "${bootstrap_pathname}/${modulename}.v" ${dst_verilog}
+fi
 #  --emission-options=disableMemRandomization,disableRegisterRandomization
 stty sane;

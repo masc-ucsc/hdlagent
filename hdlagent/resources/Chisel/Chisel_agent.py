@@ -3,26 +3,22 @@ import re
 def custom_check_errors(compiler_output):
     res_string = (str(compiler_output.stdout))[2:-1].replace("\\n", "\n")
     err_string = (str(compiler_output.stderr))[2:-1].replace("\\n", "\n")
+    print(f"[DEBUG2] test_code_compile: stdout = {res_string}")
+    print(f"[DEBUG2] test_code_compile: stderr = {err_string}")
     firrtl_exception = "Exception" in err_string
     program_compiled = ("error" not in res_string) and (firrtl_exception == False)
     if program_compiled == False:
         newlines = []
-        if (firrtl_exception == False):
-            # Isolate the error message from the SBT info
-            for line in res_string.splitlines():
-                if "[error]" in line:
-                    newlines.append(line)
-            res_string = '\n'.join(newlines[:-2])
-        else:
-            # Tell LLM about exception
-            for line in res_string.splitlines():
-                if "Error" in line:
-                    newlines.append(line)
-            newlines.append(err_string)
-            res_string = '\n'.join(newlines)
+        for line in res_string.splitlines():
+            if "[error]" in line:
+                newlines.append(line)
+            elif "Error" in line:
+                newlines.append(line)
+
+        res_string = '\n'.join(newlines)
         return res_string
-    else:
-        return None
+
+    return None
 
 
 def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):

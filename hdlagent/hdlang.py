@@ -33,21 +33,21 @@ class HDLang(ABC):
         if text is None:
             logging.debug("Text is None")
             return ""
-        
+
         pattern = re.compile(r'```(?:\w+)?\n?([\s\S]*?)```', re.MULTILINE)
         matches = pattern.findall(text)
         logging.debug(f"Found {len(matches)} code block(s)")
-        
+
         if matches:
             code = '\n\n'.join(match.strip() for match in matches)
             logging.debug("Extracted code using regex")
         else:
             code = text.replace('```', '').strip()
             logging.debug("No code blocks found, stripped backticks")
-        
+
         code = code.replace('`', '')
         logging.debug("Removed any remaining backticks")
-        
+
         return code
 
 class HDLang_verilog(HDLang):
@@ -76,7 +76,7 @@ class HDLang_verilog(HDLang):
         txt = self.extract_codeblock(prompt)
         txt = txt.replace('\\', '')
         logging.debug(f"Extracted text: {txt}")
-        
+
         answer = ""
         in_module = False
         for l in txt.splitlines():
@@ -91,10 +91,10 @@ class HDLang_verilog(HDLang):
                 elif "module " in l:
                     in_module = True
                     answer += s + "\n"
-            
+
             if "endmodule" in l:
                 in_module = False
-        
+
         logging.debug(f"Final extracted Verilog code: {answer}")
         return answer
 
