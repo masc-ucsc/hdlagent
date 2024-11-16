@@ -469,6 +469,8 @@ class Handler:
                 agent.set_w_dir(w_dir)
                 print(f"__________________________________________________________________")
                 agent.tb_loop(agent.read_spec(target_spec))
+        else:
+            designer.finish_run(designer.code_compilation_loop(prompt, 0, comp_iterations)[1])
     
     def sequential_entrypoint(self, spath: str, llms: list, lang: str, yaml_files: list = None,
                           skip_completed: bool = True, skip_successful: bool = True, update: bool = False,
