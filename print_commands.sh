@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Lists of LLMs, languages, benchmarks, and labels
-llms=("gpt-4-1106-preview" "gpt-3.5-turbo-0125" "gpt-3.5-turbo-1106" "gemini-1.0-pro-002" "gemini-1.5-flash-002" "llama3-405b")
+llms=("gpt-4-1106-preview" "gpt-3.5-turbo-0125" "gpt-3.5-turbo-1106" "gemini-1.0-pro-002" "gemini-1.5-flash-002" "Meta-Llama-3.1-70B-Instruct" "Meta-Llama-3.1-405B-Instruct")
 languages=("Verilog" "Chisel" "PyRTL" "DSLX")
 benchmarks=("HDLEval-comb" "HDLEval-pipe" "VerilogEval2-comb" "VerilogEval2-pipe")
 labels=("init" "simple" "supp" "desc")

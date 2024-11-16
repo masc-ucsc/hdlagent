@@ -907,9 +907,11 @@ class Agent:
     
         # Ensure script path is absolute
         script = script.resolve()
+        print("_____________________************script****************", script)
     
         # Prepare the command
         command = f"{script} {self.code}"
+        print("_____________________************command****************", command)
         # print(f"[DEBUG] Running compile command: {command}")
     
         # Ensure the script is executable
@@ -943,6 +945,18 @@ class Agent:
     # truth table dump of the golden vs gate output values.
     # Note: lec_filter_function() is intended to reformat the output of Yosys LEC
     #
+    def get_verilog_file_name(original_file_name):
+        file_name_str = str(original_file_name)
+        if '.scala' in file_name_str:
+            return file_name_str.replace('.scala', '.v')
+        elif '.pyrtl' in file_name_str:
+            return file_name_str.replace('.pyrtl', '.v')
+        elif '.dslx' in file_name_str:
+            return file_name_str.replace('.dslx', '.v')
+        else:
+            return file_name_str
+
+    
     # Intended use: for lec check after RTL has successfully compiled into Verilog
     def test_lec(self, gold: str = None, gate: str = None, lec_feedback_limit: int = -1):
         # ./*_lec <golden_verilog> <llm_verilog>
@@ -953,8 +967,12 @@ class Agent:
             gold = self.gold
         if gate is None:
             gate = self.verilog
+
+        gate_verilog = Agent.get_verilog_file_name(gate)
+        gate_verilog = str(gate_verilog)
+
         # script      = self.lec_script + " " + gold + " " + gate
-        script = f"{self.lec_script} {str(gold)} {str(gate)}"
+        script = f"{self.lec_script} {str(gold)} {gate_verilog}"
         res         = subprocess.run([script], capture_output=True, shell=True)
         res_string  = (str(res.stdout))[2:-1].replace("\\n","\n")
         print(f"[DEBUG] Executing LEC script: {script}")

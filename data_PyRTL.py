@@ -54,7 +54,17 @@ data = {
         # VE2-P
         [0, 0, 0, 0, 0],
     ],
-    'llama': [  # Data for llama
+    'llmama40': [  # Data for llmama40
+        # HC
+        [0, 0, 0, 0, 0],
+        # HP
+        [0, 0, 0, 0, 0],
+        # VE2-C
+        [0, 0, 0, 0, 0],
+        # VE2-P
+        [0, 0, 0, 0, 0],
+    ],
+    'llama70': [  # Data for llama70
         # HC
         [0, 0, 0, 0, 0],
         # HP

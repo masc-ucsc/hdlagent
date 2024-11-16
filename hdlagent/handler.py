@@ -439,8 +439,8 @@ class Handler:
         successful = self.check_success(designer.name, benchmark_w_dir)
         completed = self.check_completion(designer.name, benchmark_w_dir)
         run = True
-        # if skip_completed and completed:
-        #    run = False
+        if skip_completed and completed:
+           run = False
         if skip_successful and successful:
             run = False
     

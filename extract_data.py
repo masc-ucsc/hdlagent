@@ -10,7 +10,8 @@ llm_mapping = {
     "gpt-3.5-turbo-1106": "GPT-3.5o",
     "gemini-1.0-pro-002": "GPro-1.0",
     "gemini-1.5-flash-002": "Gpro_1.5",
-    "llama3-405b": "llama"
+    "Meta-Llama-3.1-405B-Instruct" : "llmama40",
+    "Meta-Llama-3.1-70B-Instruct": "llama70"
 }
 
 benchmark_mapping = {
@@ -54,7 +55,8 @@ llms = [
     "gpt-3.5-turbo-1106",
     "gemini-1.0-pro-002", 
     "gemini-1.5-flash-002", 
-    "llama3-405b"
+    "Meta-Llama-3.1-70B-Instruct",
+    "Meta-Llama-3.1-405B-Instruct"
 ]
 languages = ["Verilog", "Chisel", "PyRTL", "DSLX"]
 benchmarks = ["HDLEval-comb", "HDLEval-pipe", "VerilogEval2-comb", "VerilogEval2-pipe"]
