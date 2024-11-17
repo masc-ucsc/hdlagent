@@ -951,7 +951,7 @@ class Agent:
             return file_name_str.replace('.scala', '.v')
         elif '.pyrtl' in file_name_str:
             return file_name_str.replace('.pyrtl', '.v')
-        elif '.dslx' in file_name_str:
+        elif '.x' in file_name_str:
             return file_name_str.replace('.dslx', '.v')
         else:
             return file_name_str
