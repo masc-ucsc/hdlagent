@@ -10,6 +10,12 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
     outputs = []
     inputs  = []
 
+    print(f"[DEBUG] custom_reformat_verilog called with:")
+    print(f"        name: {name}")
+    print(f"        ref_file: {ref_file}")
+    print(f"        in_file: {in_file}")
+    print(f"        io_list: {io_list}")
+
     for io in io_list:
         #print(io)
         if io[0] == "output":
@@ -30,19 +36,29 @@ def custom_reformat_verilog(name: str, ref_file: str, in_file: str, io_list):
     #    if input_name != in_file_input_name:
     #        in_file_content = in_file_content.replace()
 
+    # Debug: Show original content
+    print(f"[DEBUG] Original Verilog content:\n{in_file_content}\n{'-'*50}")
+
     if len(outputs) == 1:
         output_name = outputs[0][3]
-        # Rename all lines that may have the output_name as a local wire
-        in_file_content = in_file_content.replace(f"{output_name}\n", f"{output_name}_w\n")
-        in_file_content = in_file_content.replace(f"{output_name};", f"{output_name}_w;")
-        in_file_content = in_file_content.replace("{" + output_name + "};", "{" + output_name + "_w};")
-        in_file_content = in_file_content.replace(f" {output_name} ", f" {output_name}_w ")
-        in_file_content = in_file_content.replace(f"({output_name});", f"({output_name}_w);")
-        # Rename output as desired output_name
-        in_file_content = in_file_content.replace("out\n", output_name + "\n")
-        in_file_content = in_file_content.replace("out;", output_name + ";")
-        in_file_content = in_file_content.replace(" out ", " " + output_name + " ")
-        in_file_content = in_file_content.replace("(out);", "(" + output_name + ");")
+        # Rename internal wires that might conflict with the output name
+        in_file_content = in_file_content.replace(f'wire [63:0] {output_name};', f'wire [63:0] {output_name}_w;')
+        in_file_content = in_file_content.replace(f'assign {output_name} =', f'assign {output_name}_w =')
+        # Replace 'out' with the correct output name
+        pattern = r'\bout\b'
+        in_file_content = re.sub(pattern, output_name, in_file_content)
+
+        # # Rename all lines that may have the output_name as a local wire
+        # in_file_content = in_file_content.replace(f"{output_name}\n", f"{output_name}_w\n")
+        # in_file_content = in_file_content.replace(f"{output_name};", f"{output_name}_w;")
+        # in_file_content = in_file_content.replace("{" + output_name + "};", "{" + output_name + "_w};")
+        # in_file_content = in_file_content.replace(f" {output_name} ", f" {output_name}_w ")
+        # in_file_content = in_file_content.replace(f"({output_name});", f"({output_name}_w);")
+        # # Rename output as desired output_name
+        # in_file_content = in_file_content.replace("out\n", output_name + "\n")
+        # in_file_content = in_file_content.replace("out;", output_name + ";")
+        # in_file_content = in_file_content.replace(" out ", " " + output_name + " ")
+        # in_file_content = in_file_content.replace("(out);", "(" + output_name + ");")
     else:
         # Replace modules header 'out' with outputs directly
         output_declarations = ""

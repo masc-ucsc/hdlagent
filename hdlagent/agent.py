@@ -952,7 +952,7 @@ class Agent:
         elif '.pyrtl' in file_name_str:
             return file_name_str.replace('.pyrtl', '.v')
         elif '.x' in file_name_str:
-            return file_name_str.replace('.dslx', '.v')
+            return file_name_str.replace('.x', '.v')
         else:
             return file_name_str
 
@@ -1211,7 +1211,8 @@ class Agent:
         for i in range(lec_iterations):
             if update and len(self.compile_conversation) == 0:
                 if self.test_code_compile() is None:
-                    self.verilog = self.code  # Ensure self.verilog is set
+                    # self.verilog = self.code  # Ensure self.verilog is set
+                    self.verilog = Agent.get_verilog_file_name(self.code)
                     gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
                     lec_out = self.test_lec(gold, gate, lec_feedback_limit)
                     print("LEC is done Now in update!!!!!!")
@@ -1227,7 +1228,8 @@ class Agent:
                         print("[DEBUG] LEC passed during update.")
                         return self.finish_run()
 
-            self.verilog = self.code  # Ensure self.verilog is set
+            # self.verilog = self.code  # Ensure self.verilog is set
+            self.verilog = Agent.get_verilog_file_name(self.code)
             gold, gate = self.reformat_verilog(self.name, self.gold, self.verilog, self.io)
             lec_out = self.test_lec(gold, gate, lec_feedback_limit)
             print("LEC is done Now!!!!!!")
